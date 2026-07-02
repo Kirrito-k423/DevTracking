@@ -109,6 +109,28 @@ scripts/build-delivery-dashboard.py \
 
 该仪表盘读取 Plane timeline 和 progress audit，不读取 secret，不写 Plane。它会展示项目、工作项、人员进展证据、阻塞、未绑定草稿、stale work 和近期时间线。
 
+### 报告、AI 上下文和备份清单
+
+Phase 4 的报告入口：
+
+```bash
+scripts/generate-delivery-reports.py \
+  --dashboard exports/delivery/dashboard.json \
+  --output-dir exports/reports \
+  --backup-dir exports/backup
+```
+
+输出：
+
+- `exports/reports/daily.md`
+- `exports/reports/weekly.md`
+- `exports/reports/risk-help.md`
+- `exports/reports/retrospective.md`
+- `exports/reports/ai-context.jsonl`
+- `exports/backup/manifest.json`
+
+当前仓库没有配置 git remote，所以 GitHub 备份是 remote gate：先配置 `origin`，再决定是否把选定 exports 发布到备份仓库。不要提交 `plane.env`、API token 或 secret。
+
 ### Plane API 评论 writer
 
 Plane v1.3.1 后端路由中，工作项评论创建/更新走：
