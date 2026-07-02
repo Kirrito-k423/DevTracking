@@ -131,6 +131,25 @@ scripts/generate-delivery-reports.py \
 
 当前仓库没有配置 git remote，所以 GitHub 备份是 remote gate：先配置 `origin`，再决定是否把选定 exports 发布到备份仓库。不要提交 `plane.env`、API token 或 secret。
 
+### 需求过滤、优先级和能力匹配
+
+Phase 5 的本地需求入口：
+
+```bash
+scripts/triage-demand.py \
+  --requirement "浦江项目需要新增chunkmoe性能优化任务，优先级高，影响SFT交付" \
+  --source manual
+```
+
+输出：
+
+- `exports/demand/demand-backlog.json`
+- `exports/demand/triage.md`
+- `exports/demand/capability-matrix.json`
+- `exports/demand/planned-plane-changes.json`
+
+低清晰度需求会被标记为 `bounced`，需要补充目标、影响范围和验收标准。通过过滤的需求只生成 Plane work item draft，不会自动写入 Plane。
+
 ### Plane API 评论 writer
 
 Plane v1.3.1 后端路由中，工作项评论创建/更新走：
