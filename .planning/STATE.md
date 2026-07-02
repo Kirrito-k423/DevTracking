@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Executing Phase 04
-last_updated: "2026-07-02T12:40:36.654Z"
+status: Phase 04 complete
+last_updated: "2026-07-02T12:41:59.223Z"
 progress:
   total_phases: 5
   completed_phases: 4
@@ -38,7 +38,8 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 - Phase 3 local ship recorded; PR creation skipped because no git remote is configured.
 - Phase 4 reports, AI context, and backup manifest have been executed.
 - Reports include daily, weekly, risk-help, retrospective, AI context JSONL, and a local backup manifest.
-- Next recommended command: `$gsd-verify-work 4`
+- Phase 4 verification passed.
+- Next recommended command: `$gsd-ship 4`
 
 ## Phase Status
 
@@ -47,7 +48,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 | 1 | Complete | 20% |
 | 2 | Complete | 40% |
 | 3 | Complete | 60% |
-| 4 | Executed | 80% |
+| 4 | Complete | 80% |
 | 5 | Pending | 0% |
 
 ## Active Decisions
