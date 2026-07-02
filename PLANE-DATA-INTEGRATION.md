@@ -1,5 +1,7 @@
 # Plane 数据集成方案
 
+图文入门教程见：`docs/PLANE-QUICKSTART.md`。
+
 ## 判断
 
 这个方案可行，但边界要清楚：
