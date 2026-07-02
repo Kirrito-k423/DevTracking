@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Executing Phase 03
-last_updated: "2026-07-02T12:35:58.737Z"
+status: Phase 03 complete
+last_updated: "2026-07-02T12:37:02.267Z"
 progress:
   total_phases: 5
   completed_phases: 3
@@ -34,7 +34,8 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 - Phase 2 local ship recorded; PR creation skipped because no git remote is configured.
 - Phase 3 delivery dashboard has been executed.
 - Dashboard outputs now include project `浦江`, issue `InternS2 SFT`, blocker `排队一天`, people evidence, and unresolved draft `chunkmoe`.
-- Next recommended command: `$gsd-verify-work 3`
+- Phase 3 verification passed.
+- Next recommended command: `$gsd-ship 3`
 
 ## Phase Status
 
@@ -42,7 +43,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 |-------|--------|----------|
 | 1 | Complete | 20% |
 | 2 | Complete | 40% |
-| 3 | Executed | 60% |
+| 3 | Complete | 60% |
 | 4 | Pending | 0% |
 | 5 | Pending | 0% |
 
