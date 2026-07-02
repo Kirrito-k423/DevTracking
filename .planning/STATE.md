@@ -19,7 +19,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-02)
 
 **Core value:** Turn natural-language team progress into trustworthy Plane state, visual timelines, and delivery reports without making every contributor do heavy manual bookkeeping.
-**Current focus:** Phase 02 — conversational-progress-to-plane
+**Current focus:** Phase 3 - Delivery Plan And Visualization
 
 ## Current Status
 
@@ -31,7 +31,8 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 - Phase 2 conversational progress preview has been executed.
 - Seed update now resolves `SFT任务` to Plane issue `1-1 InternS2 SFT` and keeps unresolved `chunkmoe` as a draft/manual-target change.
 - Phase 2 verification passed.
-- Next recommended command: `$gsd-ship 2`
+- Phase 2 local ship recorded; PR creation skipped because no git remote is configured.
+- Next recommended command: `$gsd-discuss-phase 3`
 
 ## Phase Status
 
