@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Executing Phase 02
-last_updated: "2026-07-02T12:29:30.000Z"
+status: Phase 02 complete
+last_updated: "2026-07-02T12:30:47.048Z"
 progress:
   total_phases: 5
   completed_phases: 2
@@ -30,14 +30,15 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 - Phase 1 local ship recorded; PR creation skipped because no git remote is configured.
 - Phase 2 conversational progress preview has been executed.
 - Seed update now resolves `SFT任务` to Plane issue `1-1 InternS2 SFT` and keeps unresolved `chunkmoe` as a draft/manual-target change.
-- Next recommended command: `$gsd-verify-work 2`
+- Phase 2 verification passed.
+- Next recommended command: `$gsd-ship 2`
 
 ## Phase Status
 
 | Phase | Status | Progress |
 |-------|--------|----------|
 | 1 | Complete | 20% |
-| 2 | Executed | 40% |
+| 2 | Complete | 40% |
 | 3 | Pending | 0% |
 | 4 | Pending | 0% |
 | 5 | Pending | 0% |
