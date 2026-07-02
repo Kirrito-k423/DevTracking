@@ -27,6 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 - Local Plane is running at `http://localhost:8090`.
 - Phase 1 connector foundation is complete and verified.
 - Plane health check, read-only timeline export, progress parser, and API comment writer dry-run all pass.
+- Phase 1 local ship recorded; PR creation skipped because no git remote is configured.
 - Next recommended command: `$gsd-discuss-phase 2`
 
 ## Phase Status
