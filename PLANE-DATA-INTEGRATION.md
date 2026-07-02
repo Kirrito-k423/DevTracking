@@ -53,6 +53,43 @@ scripts/parse-progress-case.py "侯玉峰，浦江项目，开发chunkmoe；于�
 - `planned_plane_changes`: 后续可通过 Plane API 执行的评论、阻塞或跟进任务计划
 - `source`: 原始输入与分段索引，供报告追溯
 
+### 对话进展到 Plane 预览
+
+Phase 2 的主入口是：
+
+```bash
+scripts/progress-to-plane.py "侯玉峰，浦江项目，开发chunkmoe；于家硕，浦江项目，SFT任务排队一天。"
+```
+
+默认行为：
+
+- 读取或生成 `exports/plane/timeline.jsonl`
+- 解析自然语言进展
+- 匹配 Plane 项目和工作项
+- 输出人类可读 preview
+- 写入审计 JSON 到 `exports/progress/`
+- 不修改 Plane
+
+如果要刷新 Plane 时间线：
+
+```bash
+scripts/progress-to-plane.py --refresh-timeline "侯玉峰，浦江项目，开发chunkmoe；于家硕，浦江项目，SFT任务排队一天。"
+```
+
+如果要输出完整 JSON：
+
+```bash
+scripts/progress-to-plane.py --json "侯玉峰，浦江项目，开发chunkmoe；于家硕，浦江项目，SFT任务排队一天。"
+```
+
+如果要真实写入可解析的评论，必须显式使用 `--apply`，并提前设置 `PLANE_API_KEY`：
+
+```bash
+PLANE_API_KEY=<redacted> scripts/progress-to-plane.py --apply "侯玉峰，浦江项目，开发chunkmoe；于家硕，浦江项目，SFT任务排队一天。"
+```
+
+匹配不明确或未找到工作项时，命令只生成 draft/manual-target 变更，不会静默写入 Plane。
+
 ### Plane API 评论 writer
 
 Plane v1.3.1 后端路由中，工作项评论创建/更新走：
