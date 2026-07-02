@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Phase 05 complete
-last_updated: "2026-07-02T12:46:45.363Z"
+last_updated: "2026-07-02T12:48:30.000Z"
 progress:
   total_phases: 5
   completed_phases: 5
@@ -19,7 +19,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-02)
 
 **Core value:** Turn natural-language team progress into trustworthy Plane state, visual timelines, and delivery reports without making every contributor do heavy manual bookkeeping.
-**Current focus:** Phase 05 — demand-triage-and-capability-matching
+**Current focus:** Milestone v1.0 complete — conversational progress, delivery visualization, reports, and demand triage are locally shipped.
 
 ## Current Status
 
@@ -43,7 +43,8 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 - Phase 5 demand triage and capability matching have been executed.
 - Clear demand now produces ranked draft Plane changes and assignee recommendation; unclear demand is bounced back.
 - Phase 5 verification passed.
-- Next recommended command: `$gsd-ship 5`
+- Phase 5 local ship recorded; PR creation skipped because no git remote is configured.
+- Next recommended command: `$gsd-progress`
 
 ## Phase Status
 
