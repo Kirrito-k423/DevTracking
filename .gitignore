@@ -2,3 +2,5 @@ plane-selfhost/plane-app/plane.env
 plane-selfhost/plane-app/archive/
 plane-selfhost/plane-app/backup/
 exports/
+__pycache__/
+*.pyc
