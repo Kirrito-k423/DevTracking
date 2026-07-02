@@ -90,6 +90,25 @@ PLANE_API_KEY=<redacted> scripts/progress-to-plane.py --apply "侯玉峰，浦�
 
 匹配不明确或未找到工作项时，命令只生成 draft/manual-target 变更，不会静默写入 Plane。
 
+### 交付仪表盘和交付计划
+
+Phase 3 的本地可视化入口：
+
+```bash
+scripts/build-delivery-dashboard.py \
+  --timeline exports/plane/timeline.jsonl \
+  --progress-dir exports/progress \
+  --output-dir exports/delivery
+```
+
+输出文件：
+
+- `exports/delivery/dashboard.html`: 可直接在浏览器打开的静态仪表盘。
+- `exports/delivery/dashboard.json`: 仪表盘结构化数据。
+- `exports/delivery/delivery-plan.md`: 按项目分组的交付方案。
+
+该仪表盘读取 Plane timeline 和 progress audit，不读取 secret，不写 Plane。它会展示项目、工作项、人员进展证据、阻塞、未绑定草稿、stale work 和近期时间线。
+
 ### Plane API 评论 writer
 
 Plane v1.3.1 后端路由中，工作项评论创建/更新走：
