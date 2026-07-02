@@ -19,7 +19,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-02)
 
 **Core value:** Turn natural-language team progress into trustworthy Plane state, visual timelines, and delivery reports without making every contributor do heavy manual bookkeeping.
-**Current focus:** Phase 03 — delivery-plan-and-visualization
+**Current focus:** Phase 4 - Reports, AI Context, And Backup
 
 ## Current Status
 
@@ -35,7 +35,8 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 - Phase 3 delivery dashboard has been executed.
 - Dashboard outputs now include project `浦江`, issue `InternS2 SFT`, blocker `排队一天`, people evidence, and unresolved draft `chunkmoe`.
 - Phase 3 verification passed.
-- Next recommended command: `$gsd-ship 3`
+- Phase 3 local ship recorded; PR creation skipped because no git remote is configured.
+- Next recommended command: `$gsd-discuss-phase 4`
 
 ## Phase Status
 
