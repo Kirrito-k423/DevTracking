@@ -1,6 +1,7 @@
 # Plane 数据集成方案
 
 图文入门教程见：`docs/PLANE-QUICKSTART.md`。
+Plane 可视化构件说明见：`docs/PLANE-VISUAL-CONSTRUCTS.md`。
 
 ## 判断
 
