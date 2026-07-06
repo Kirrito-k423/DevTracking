@@ -296,8 +296,396 @@ def next_actions(project: dict[str, Any]) -> list[str]:
     return actions
 
 
+def compact_label(value: Any, limit: int = 8) -> str:
+    text = " ".join(str(value or "").split())
+    return text[:limit]
+
+
+def normalize_date(value: Any) -> str | None:
+    if not value:
+        return None
+    text = str(value)
+    parsed = parse_dt(text)
+    if parsed:
+        return parsed.date().isoformat()
+    if len(text) >= 10 and text[4:5] == "-" and text[7:8] == "-":
+        return text[:10]
+    return None
+
+
+def source_ref(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "event_time": row.get("event_time"),
+        "event_type": row.get("event_type"),
+        "source": row.get("source") or {},
+    }
+
+
+def append_unique(items: list[Any], value: Any) -> None:
+    if value and value not in items:
+        items.append(value)
+
+
+def current_issue_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    current: dict[str, Any] = {}
+    nested = payload.get("current_issue")
+    if isinstance(nested, dict):
+        current.update(nested)
+    for key in ("parent_id", "start_date", "target_date", "completed_at", "priority", "state"):
+        if key in payload:
+            current[key] = payload.get(key)
+    return current
+
+
+def issue_sort_key(task: dict[str, Any]) -> tuple[str, int, str]:
+    issue_key = task.get("issue_key") or ""
+    try:
+        sequence = int(str(issue_key).rsplit("-", 1)[-1])
+    except ValueError:
+        sequence = 999999
+    return (task.get("project") or "", sequence, issue_key)
+
+
+def completed_state(state: Any) -> bool:
+    text = str(state or "").strip().lower()
+    return text in {"done", "completed", "complete", "closed", "已完成", "完成"} or "done" in text
+
+
+def blocked_state(state: Any) -> bool:
+    text = str(state or "").strip().lower()
+    return any(token in text for token in ("blocked", "waiting", "wait", "stuck", "阻塞", "等待", "卡住"))
+
+
+def estimate_progress(task: dict[str, Any]) -> int:
+    state = task.get("state")
+    labels = {str(label).lower() for label in task.get("labels", [])}
+    if task.get("completed_at") or completed_state(state):
+        return 100
+    if "blocked" in labels or "needs-help" in labels or blocked_state(state):
+        return 25
+    if str(state or "").strip().lower() in {"todo", "backlog", "待办"}:
+        return 0
+    if state:
+        return 50
+    return 10
+
+
+def build_gantt_data(timeline: list[dict[str, Any]], audits: list[dict[str, Any]]) -> dict[str, Any]:
+    now = datetime.now(timezone.utc)
+    tasks: dict[str, dict[str, Any]] = {}
+    events: dict[str, dict[str, Any]] = {}
+    key_to_id: dict[str, str] = {}
+    timeline_events = sorted(timeline, key=lambda row: row.get("event_time") or "")
+
+    def ensure_task(row: dict[str, Any]) -> dict[str, Any] | None:
+        issue_id = row.get("issue_id")
+        if not issue_id:
+            return None
+        issue_id = str(issue_id)
+        task = tasks.setdefault(
+            issue_id,
+            {
+                "id": issue_id,
+                "issue_id": issue_id,
+                "issue_key": row.get("issue_key"),
+                "title": row.get("issue_title") or row.get("issue_key") or issue_id,
+                "compact_label": compact_label(row.get("issue_title") or row.get("issue_key") or issue_id),
+                "parent_id": None,
+                "children": [],
+                "depth": 0,
+                "order": 0,
+                "project": row.get("project"),
+                "state": None,
+                "priority": None,
+                "progress": 0,
+                "owner": None,
+                "labels": [],
+                "modules": [],
+                "start_date": None,
+                "target_date": None,
+                "completed_at": None,
+                "source_refs": [],
+                "delivery_summary": {},
+                "_parent_key": None,
+                "_first_event_date": normalize_date(row.get("event_time")),
+                "_latest_event_date": normalize_date(row.get("event_time")),
+                "_audit_events": [],
+            },
+        )
+        task["issue_key"] = task.get("issue_key") or row.get("issue_key")
+        task["title"] = task.get("title") or row.get("issue_title") or row.get("issue_key") or issue_id
+        task["project"] = task.get("project") or row.get("project")
+        if task.get("issue_key"):
+            key_to_id[str(task["issue_key"])] = issue_id
+        event_date = normalize_date(row.get("event_time"))
+        if event_date:
+            task["_first_event_date"] = min(task.get("_first_event_date") or event_date, event_date)
+            task["_latest_event_date"] = max(task.get("_latest_event_date") or event_date, event_date)
+        task["source_refs"].append(source_ref(row))
+        return task
+
+    def add_event(task: dict[str, Any], event_type: str, row: dict[str, Any], label: str, summary: str) -> None:
+        event_date = normalize_date(row.get("event_time")) or task.get("target_date") or task.get("start_date")
+        event_id = f"{task['id']}:{event_type}:{event_date}:{(row.get('source') or {}).get('id') or len(events)}"
+        events.setdefault(
+            event_id,
+            {
+                "id": event_id,
+                "task_id": task["id"],
+                "type": event_type,
+                "compact_label": compact_label(label),
+                "date": event_date,
+                "summary": summary,
+                "source_refs": [source_ref(row)],
+            },
+        )
+
+    for row in timeline_events:
+        task = ensure_task(row)
+        if not task:
+            continue
+        payload = row.get("payload") or {}
+        if not isinstance(payload, dict):
+            payload = {}
+        current = current_issue_payload(payload)
+        for field in ("state", "priority"):
+            if current.get(field):
+                task[field] = current.get(field)
+        if current.get("completed_at"):
+            task["completed_at"] = row.get("event_time") or current.get("completed_at")
+        if current.get("parent_id"):
+            task["parent_id"] = str(current.get("parent_id"))
+        if current.get("start_date"):
+            task["start_date"] = normalize_date(current.get("start_date"))
+        if current.get("target_date"):
+            task["target_date"] = normalize_date(current.get("target_date"))
+
+        event_type = row.get("event_type")
+        if event_type == "issue_activity":
+            field = payload.get("field")
+            new_value = payload.get("new_value")
+            if field == "parent" and new_value:
+                task["_parent_key"] = str(new_value)
+            elif field == "start_date":
+                task["start_date"] = normalize_date(new_value)
+            elif field == "target_date":
+                task["target_date"] = normalize_date(new_value)
+            elif field == "state" and new_value:
+                task["state"] = new_value
+        elif event_type == "label_added":
+            label = payload.get("label")
+            append_unique(task["labels"], label)
+            label_text = str(label or "")
+            label_lower = label_text.lower()
+            if label_lower.startswith("owner:"):
+                task["owner"] = label_text.split(":", 1)[1].strip() or task.get("owner")
+            if label_lower in {"blocked", "needs-help", "blocker"}:
+                add_event(task, "blocked", row, "阻塞" if label_lower == "blocked" else "求助", f"{label_text}: {task['title']}")
+            if label_lower == "milestone":
+                add_event(task, "milestone", row, "里程碑", f"Milestone: {task['title']}")
+        elif event_type == "module_linked":
+            append_unique(task["modules"], payload.get("module"))
+            task["start_date"] = task.get("start_date") or normalize_date(payload.get("start_date"))
+            task["target_date"] = task.get("target_date") or normalize_date(payload.get("target_date"))
+        elif event_type == "cycle_linked":
+            task["start_date"] = task.get("start_date") or normalize_date(payload.get("start_date"))
+            task["target_date"] = task.get("target_date") or normalize_date(payload.get("end_date"))
+        elif event_type == "assignee_added":
+            task["owner"] = task.get("owner") or payload.get("assignee")
+        elif event_type == "issue_completed":
+            task["completed_at"] = row.get("event_time") or task.get("completed_at")
+            task["state"] = task.get("state") or payload.get("state") or "Done"
+            add_event(task, "completed", row, "完成", f"Completed: {task['title']}")
+
+    for task in tasks.values():
+        raw_parent = task.get("parent_id") or task.get("_parent_key")
+        if raw_parent:
+            raw_parent = str(raw_parent)
+            parent_id = raw_parent if raw_parent in tasks else key_to_id.get(raw_parent, raw_parent)
+            if parent_id != task["id"]:
+                task["parent_id"] = parent_id
+        if not task.get("start_date"):
+            task["start_date"] = task.get("_first_event_date")
+        if not task.get("target_date"):
+            task["target_date"] = task.get("_latest_event_date") or task.get("start_date")
+        if task.get("start_date") and task.get("target_date") and task["target_date"] < task["start_date"]:
+            task["target_date"] = task["start_date"]
+
+    for task in tasks.values():
+        parent_id = task.get("parent_id")
+        if parent_id in tasks:
+            append_unique(tasks[parent_id]["children"], task["id"])
+        elif parent_id:
+            task["parent_id"] = None
+
+    for task in tasks.values():
+        if not any(event["task_id"] == task["id"] and event["type"] == "completed" for event in events.values()):
+            if task.get("completed_at") or completed_state(task.get("state")):
+                add_event(
+                    task,
+                    "completed",
+                    {"event_time": task.get("completed_at") or task.get("_latest_event_date"), "event_type": "state_completed", "source": {"table": "issues", "field": "completed_at", "id": task["id"]}},
+                    "完成",
+                    f"Completed: {task['title']}",
+                )
+        if blocked_state(task.get("state")) and not any(event["task_id"] == task["id"] and event["type"] == "blocked" for event in events.values()):
+            add_event(
+                task,
+                "blocked",
+                {"event_time": task.get("_latest_event_date"), "event_type": "state_blocked", "source": {"table": "issues", "field": "state", "id": task["id"]}},
+                "阻塞",
+                f"Blocked state: {task['title']}",
+            )
+
+    title_index = [(task_id, str(task.get("title") or "").lower()) for task_id, task in tasks.items()]
+    for audit in audits:
+        audit_source = {"source_id": audit.get("source_id"), "path": audit.get("_audit_path")}
+        for progress_event in audit.get("events", []):
+            work_item = str(progress_event.get("work_item") or "").lower()
+            if not work_item:
+                continue
+            matched_id = None
+            for task_id, title in title_index:
+                if work_item in title or title in work_item:
+                    matched_id = task_id
+                    break
+            if not matched_id:
+                continue
+            task = tasks[matched_id]
+            task["_audit_events"].append(progress_event)
+            task["owner"] = task.get("owner") or progress_event.get("person")
+            task["delivery_summary"]["next_action"] = progress_event.get("next_action") or task["delivery_summary"].get("next_action")
+            if progress_event.get("blocker"):
+                task["delivery_summary"]["blocker"] = progress_event.get("blocker")
+            task["source_refs"].append(
+                {
+                    "event_time": progress_event.get("event_time"),
+                    "event_type": "progress_audit",
+                    "source": audit_source,
+                }
+            )
+
+    def rollup(task_id: str, visiting: set[str] | None = None) -> tuple[str | None, str | None, int]:
+        visiting = visiting or set()
+        if task_id in visiting:
+            return None, None, estimate_progress(tasks[task_id])
+        visiting.add(task_id)
+        task = tasks[task_id]
+        child_ranges = [rollup(child_id, visiting.copy()) for child_id in task["children"] if child_id in tasks]
+        child_starts = [item[0] for item in child_ranges if item[0]]
+        child_targets = [item[1] for item in child_ranges if item[1]]
+        if child_starts and (not task.get("start_date") or min(child_starts) < task["start_date"]):
+            task["start_date"] = min(child_starts)
+        if child_targets and (not task.get("target_date") or max(child_targets) > task["target_date"]):
+            task["target_date"] = max(child_targets)
+        if child_ranges:
+            task["progress"] = round(sum(item[2] for item in child_ranges) / len(child_ranges))
+        else:
+            task["progress"] = estimate_progress(task)
+        return task.get("start_date"), task.get("target_date"), task["progress"]
+
+    roots = sorted([task_id for task_id, task in tasks.items() if not task.get("parent_id")], key=lambda task_id: issue_sort_key(tasks[task_id]))
+    for root_id in roots:
+        rollup(root_id)
+
+    ordered: list[dict[str, Any]] = []
+
+    def visit(task_id: str, depth: int, seen: set[str]) -> None:
+        if task_id in seen:
+            return
+        seen.add(task_id)
+        task = tasks[task_id]
+        task["depth"] = depth
+        task["children"].sort(key=lambda child_id: issue_sort_key(tasks[child_id]))
+        ordered.append(task)
+        for child_id in task["children"]:
+            visit(child_id, depth + 1, seen)
+
+    seen_order: set[str] = set()
+    for root_id in roots:
+        visit(root_id, 0, seen_order)
+    for task_id in sorted(tasks, key=lambda item: issue_sort_key(tasks[item])):
+        visit(task_id, 0, seen_order)
+
+    for index, task in enumerate(ordered):
+        task["order"] = index
+        task["compact_label"] = compact_label(task.get("title") or task.get("issue_key"))
+        if not task.get("delivery_summary").get("next_action"):
+            if any(event["task_id"] == task["id"] and event["type"] == "blocked" for event in events.values()):
+                task["delivery_summary"]["next_action"] = "确认阻塞解除时间和协助人"
+            elif task.get("children"):
+                task["delivery_summary"]["next_action"] = "展开子任务复查交付路径"
+            else:
+                task["delivery_summary"]["next_action"] = "按最新 Plane 状态继续跟进"
+        task["delivery_summary"].update(
+            {
+                "title": task.get("title"),
+                "issue_key": task.get("issue_key"),
+                "owner": task.get("owner"),
+                "state": task.get("state"),
+                "progress": task.get("progress"),
+                "date_range": f"{task.get('start_date') or 'n/a'} - {task.get('target_date') or 'n/a'}",
+            }
+        )
+
+    public_tasks = []
+    for task in ordered:
+        public_tasks.append(
+            {
+                key: task.get(key)
+                for key in (
+                    "id",
+                    "issue_id",
+                    "issue_key",
+                    "title",
+                    "compact_label",
+                    "parent_id",
+                    "children",
+                    "depth",
+                    "order",
+                    "project",
+                    "state",
+                    "progress",
+                    "owner",
+                    "labels",
+                    "modules",
+                    "start_date",
+                    "target_date",
+                    "completed_at",
+                    "source_refs",
+                    "delivery_summary",
+                )
+            }
+        )
+
+    event_list = sorted(events.values(), key=lambda event: (event.get("date") or "", event.get("task_id") or "", event.get("type") or ""))
+    return {
+        "generated_at": now.isoformat(),
+        "sources": {
+            "timeline_rows": len(timeline),
+            "progress_audits": len(audits),
+        },
+        "summary": {
+            "tasks": len(public_tasks),
+            "events": len(event_list),
+            "parent_links": sum(1 for task in public_tasks if task.get("parent_id")),
+            "blocked": sum(1 for event in event_list if event["type"] == "blocked"),
+            "completed": sum(1 for event in event_list if event["type"] == "completed"),
+            "milestones": sum(1 for event in event_list if event["type"] == "milestone"),
+        },
+        "tasks": public_tasks,
+        "events": event_list,
+    }
+
+
 def write_json(data: dict[str, Any], output_dir: Path) -> Path:
     path = output_dir / "dashboard.json"
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+    return path
+
+
+def write_gantt_json(data: dict[str, Any], output_dir: Path) -> Path:
+    path = output_dir / "gantt.json"
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
     return path
 
@@ -381,6 +769,394 @@ def write_html(data: dict[str, Any], output_dir: Path) -> Path:
 </body>
 </html>
 """
+    path.write_text(html_text, encoding="utf-8")
+    return path
+
+
+def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
+    path = output_dir / "gantt.html"
+    data_json = json.dumps(data, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
+    html_text = """<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plane Demand Hub Gantt</title>
+  <style>
+    :root { color-scheme: light; --ink:#20242a; --muted:#657282; --line:#d9dee7; --bg:#f7f8fa; --panel:#ffffff; --blue:#2f6fed; --green:#1b8a5a; --amber:#b26b00; --red:#c43d3d; --row-h:30px; --bar-h:18px; --day-w:28px; --table-w:380px; --font-body:13px; --font-label:12px; }
+    body[data-density="present"] { --row-h:52px; --bar-h:28px; --day-w:38px; --table-w:440px; --font-body:15px; --font-label:13px; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--bg); font-size:var(--font-body); letter-spacing:0; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:16px 24px; border-bottom:1px solid var(--line); background:var(--panel); }
+    h1 { margin:0; font-size:22px; line-height:1.2; font-weight:700; letter-spacing:0; }
+    button { font:inherit; letter-spacing:0; }
+    .meta { color:var(--muted); font-size:12px; margin-top:4px; }
+    .toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .tool-button { min-width:36px; min-height:32px; border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:6px; padding:0 10px; cursor:pointer; }
+    .tool-button[aria-pressed="true"] { border-color:var(--blue); color:var(--blue); box-shadow:0 0 0 2px rgba(47,111,237,.12); }
+    main { padding:16px 24px 32px; }
+    .summary { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; color:var(--muted); }
+    .summary span { background:#fff; border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
+    .gantt-layout { display:grid; grid-template-columns:minmax(280px,var(--table-w)) minmax(560px,1fr); border:1px solid var(--line); background:var(--panel); min-height:520px; overflow:hidden; }
+    .task-pane { border-right:1px solid var(--line); background:#fff; z-index:2; }
+    .pane-head { height:34px; display:grid; align-items:center; border-bottom:1px solid var(--line); background:#fbfcfd; color:var(--muted); font-weight:600; font-size:12px; }
+    .task-head { grid-template-columns:1.25fr .72fr .72fr .9fr; }
+    .task-head span, .task-row span { padding:0 8px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .task-row { height:var(--row-h); display:grid; grid-template-columns:1.25fr .72fr .72fr .9fr; align-items:center; border-bottom:1px solid var(--line); }
+    .task-main { display:flex; align-items:center; gap:4px; min-width:0; }
+    .row-button { width:100%; min-height:calc(var(--row-h) - 6px); display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--ink); text-align:left; cursor:pointer; padding:0 4px; border-radius:4px; overflow:hidden; }
+    .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+    .chevron { width:14px; flex:0 0 14px; color:var(--muted); text-align:center; }
+    .task-key { color:var(--muted); flex:0 0 auto; }
+    .task-label { font-weight:600; font-size:var(--font-label); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .timeline-pane { overflow:auto; background:#fff; position:relative; }
+    .timeline-content { position:relative; min-height:100%; }
+    .time-head { height:34px; position:sticky; top:0; z-index:3; display:flex; border-bottom:1px solid var(--line); background:#fbfcfd; }
+    .tick { width:var(--day-w); flex:0 0 var(--day-w); border-right:1px solid var(--line); padding:10px 2px 0; color:var(--muted); font-size:11px; text-align:center; }
+    .timeline-row { height:var(--row-h); position:relative; border-bottom:1px solid var(--line); background-image:linear-gradient(to right, rgba(217,222,231,.72) 1px, transparent 1px); background-size:var(--day-w) 100%; }
+    .bar { position:absolute; top:calc((var(--row-h) - var(--bar-h)) / 2); height:var(--bar-h); min-width:18px; border:0; border-radius:5px; background:var(--blue); color:#fff; padding:0 6px; display:flex; align-items:center; justify-content:center; font-weight:650; font-size:var(--font-label); overflow:hidden; white-space:nowrap; cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.18); }
+    .bar-label { position:relative; z-index:1; overflow:hidden; text-overflow:ellipsis; }
+    .bar.parent { background:#2459be; }
+    .bar.blocked { background:var(--red); }
+    .progress { position:absolute; left:0; top:0; bottom:0; background:rgba(255,255,255,.22); pointer-events:none; }
+    .marker { position:absolute; top:calc((var(--row-h) - 22px) / 2); min-width:22px; height:22px; border:1px solid currentColor; background:#fff; border-radius:11px; display:flex; align-items:center; gap:3px; padding:0 5px; cursor:pointer; font-size:12px; font-weight:700; box-shadow:0 1px 2px rgba(32,36,42,.12); }
+    .marker span { max-width:8ch; overflow:hidden; white-space:nowrap; }
+    .marker.blocked { color:var(--red); }
+    .marker.completed { color:var(--green); }
+    .marker.milestone { color:var(--amber); }
+    .connector-layer { position:absolute; left:0; top:34px; pointer-events:none; overflow:visible; z-index:1; }
+    .connector { fill:none; stroke:#aeb8c7; stroke-width:1.5; stroke-linecap:round; stroke-dasharray:4 3; }
+    .empty { padding:24px; color:var(--muted); }
+    .detail { position:fixed; top:0; right:0; width:min(420px,100vw); height:100vh; background:#fff; border-left:1px solid var(--line); box-shadow:-12px 0 24px rgba(32,36,42,.12); transform:translateX(105%); transition:transform .16s ease; z-index:8; display:flex; flex-direction:column; }
+    .detail.open { transform:translateX(0); }
+    .detail header { padding:16px; border-bottom:1px solid var(--line); }
+    .detail h2 { margin:0; font-size:18px; line-height:1.25; letter-spacing:0; }
+    .detail-body { padding:16px; overflow:auto; }
+    .kv { display:grid; grid-template-columns:120px 1fr; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); }
+    .kv b { color:var(--muted); font-weight:600; }
+    .source-list { margin:8px 0 0; padding-left:18px; color:var(--muted); }
+    @media (max-width: 760px) {
+      header, main { padding-left:12px; padding-right:12px; }
+      .gantt-layout { grid-template-columns:minmax(260px,70vw) minmax(520px,1fr); overflow:auto; }
+      .timeline-pane { overflow:visible; }
+    }
+  </style>
+</head>
+<body data-density="dense">
+  <header>
+    <div>
+      <h1>Plane Demand Hub Gantt</h1>
+      <div class="meta" id="generated"></div>
+    </div>
+    <div class="toolbar" aria-label="Gantt controls">
+      <button class="tool-button" id="refresh" type="button">Refresh exports</button>
+      <button class="tool-button" id="expand-all" type="button" title="Expand all">Expand</button>
+      <button class="tool-button" id="collapse-all" type="button" title="Collapse all">Collapse</button>
+      <button class="tool-button" id="density-dense" type="button" aria-pressed="true">Dense</button>
+      <button class="tool-button" id="density-present" type="button" aria-pressed="false">Present</button>
+    </div>
+  </header>
+  <main>
+    <section class="summary" id="summary"></section>
+    <section class="gantt-layout" aria-label="Gantt chart">
+      <div class="task-pane">
+        <div class="pane-head task-head"><span>Task</span><span>Owner</span><span>State</span><span>Range</span></div>
+        <div id="task-rows"></div>
+      </div>
+      <div class="timeline-pane" id="timeline-scroll">
+        <div class="timeline-content" id="timeline-content">
+          <div class="time-head" id="time-head"></div>
+          <svg class="connector-layer" id="connector-layer" aria-hidden="true"></svg>
+          <div id="timeline-rows"></div>
+        </div>
+      </div>
+    </section>
+    <section class="empty" id="empty" hidden>
+      <h2>No Gantt data</h2>
+      <p>Run the timeline and progress export commands, then rebuild the Gantt view.</p>
+    </section>
+  </main>
+  <aside class="detail" id="detail" aria-label="Delivery summary" aria-hidden="true">
+    <header>
+      <button class="tool-button" id="detail-close" type="button">Close</button>
+      <h2 id="detail-title">Delivery summary</h2>
+    </header>
+    <div class="detail-body" id="detail-body"></div>
+  </aside>
+  <script id="gantt-data" type="application/json">__DATA__</script>
+  <script>
+    const gantt = JSON.parse(document.getElementById('gantt-data').textContent);
+    const tasksById = new Map(gantt.tasks.map(task => [task.id, task]));
+    const eventsByTask = new Map();
+    for (const event of gantt.events) {
+      if (!eventsByTask.has(event.task_id)) eventsByTask.set(event.task_id, []);
+      eventsByTask.get(event.task_id).push(event);
+    }
+    const collapsed = new Set();
+    const DAY_MS = 86400000;
+    const symbol = { blocked: '✕', completed: '●', milestone: '★' };
+
+    function dateOrd(value) {
+      if (!value) return null;
+      const parsed = Date.parse(value.length === 10 ? value + 'T00:00:00Z' : value);
+      return Number.isNaN(parsed) ? null : Math.floor(parsed / DAY_MS);
+    }
+    const ords = [];
+    for (const task of gantt.tasks) {
+      const start = dateOrd(task.start_date);
+      const target = dateOrd(task.target_date);
+      if (start !== null) ords.push(start);
+      if (target !== null) ords.push(target);
+    }
+    for (const event of gantt.events) {
+      const ord = dateOrd(event.date);
+      if (ord !== null) ords.push(ord);
+    }
+    const minOrd = ords.length ? Math.min(...ords) - 1 : dateOrd(new Date().toISOString().slice(0, 10));
+    const maxOrd = ords.length ? Math.max(...ords) + 1 : minOrd + 14;
+
+    function hiddenByAncestor(task) {
+      let parentId = task.parent_id;
+      while (parentId) {
+        if (collapsed.has(parentId)) return true;
+        const parent = tasksById.get(parentId);
+        parentId = parent && parent.parent_id;
+      }
+      return false;
+    }
+    function visibleTasks() {
+      return gantt.tasks.filter(task => !hiddenByAncestor(task));
+    }
+    function rowHeight() {
+      return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--row-h')) || 30;
+    }
+    function dayWidth() {
+      return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--day-w')) || 28;
+    }
+    function offsetForDate(value) {
+      const ord = dateOrd(value);
+      return Math.max(0, ((ord ?? minOrd) - minOrd) * dayWidth());
+    }
+    function widthForTask(task) {
+      const start = dateOrd(task.start_date) ?? minOrd;
+      const target = dateOrd(task.target_date) ?? start;
+      return Math.max(dayWidth(), (target - start + 1) * dayWidth());
+    }
+    function text(value) {
+      return value === null || value === undefined || value === '' ? 'n/a' : String(value);
+    }
+    function compact(value) {
+      return text(value).slice(0, 8);
+    }
+    function setDensity(mode) {
+      document.body.dataset.density = mode;
+      document.getElementById('density-dense').setAttribute('aria-pressed', mode === 'dense');
+      document.getElementById('density-present').setAttribute('aria-pressed', mode === 'present');
+      render();
+    }
+    function makeCell(value) {
+      const span = document.createElement('span');
+      span.textContent = text(value);
+      span.title = text(value);
+      return span;
+    }
+    function openDetail(title, rows, refs) {
+      document.getElementById('detail-title').textContent = title || 'Delivery summary';
+      const body = document.getElementById('detail-body');
+      body.replaceChildren();
+      for (const [key, value] of rows) {
+        const row = document.createElement('div');
+        row.className = 'kv';
+        const label = document.createElement('b');
+        label.textContent = key;
+        const content = document.createElement('span');
+        content.textContent = text(value);
+        row.append(label, content);
+        body.append(row);
+      }
+      const heading = document.createElement('h3');
+      heading.textContent = 'Source evidence';
+      body.append(heading);
+      const list = document.createElement('ul');
+      list.className = 'source-list';
+      for (const ref of (refs || []).slice(0, 12)) {
+        const item = document.createElement('li');
+        const source = ref.source || {};
+        item.textContent = `${text(ref.event_time)} · ${text(ref.event_type)} · ${text(source.table)} ${text(source.field || source.id)}`;
+        list.append(item);
+      }
+      body.append(list);
+      const detail = document.getElementById('detail');
+      detail.classList.add('open');
+      detail.setAttribute('aria-hidden', 'false');
+    }
+    function showTask(task) {
+      const summary = task.delivery_summary || {};
+      openDetail(summary.title || task.title, [
+        ['Task', `${text(task.issue_key)} ${text(task.title)}`],
+        ['Owner', task.owner],
+        ['State', task.state],
+        ['Progress', `${text(task.progress)}%`],
+        ['Range', summary.date_range || `${text(task.start_date)} - ${text(task.target_date)}`],
+        ['Blocker', summary.blocker],
+        ['Next action', summary.next_action],
+        ['Labels', (task.labels || []).join(', ')],
+        ['Modules', (task.modules || []).join(', ')]
+      ], task.source_refs);
+    }
+    function showEvent(event) {
+      const task = tasksById.get(event.task_id) || {};
+      openDetail(event.summary || 'Delivery summary', [
+        ['Event', event.type],
+        ['Task', `${text(task.issue_key)} ${text(task.title)}`],
+        ['Date', event.date],
+        ['Summary', event.summary],
+        ['Owner', task.owner],
+        ['State', task.state],
+        ['Next action', (task.delivery_summary || {}).next_action]
+      ], event.source_refs);
+    }
+    function toggleTask(task) {
+      if (!task.children || task.children.length === 0) return;
+      if (collapsed.has(task.id)) collapsed.delete(task.id);
+      else collapsed.add(task.id);
+      render();
+    }
+    function render() {
+      const visible = visibleTasks();
+      const chartWidth = Math.max(720, (maxOrd - minOrd + 1) * dayWidth());
+      document.getElementById('generated').textContent = `Generated ${text(gantt.generated_at)} · ${gantt.sources.timeline_rows} timeline rows · ${gantt.sources.progress_audits} progress audits`;
+      document.getElementById('summary').replaceChildren(...[
+        `Tasks ${gantt.summary.tasks}`,
+        `Links ${gantt.summary.parent_links}`,
+        `Markers ${gantt.summary.events}`,
+        `Blocked ${gantt.summary.blocked}`,
+        `Completed ${gantt.summary.completed}`,
+        `Milestones ${gantt.summary.milestones}`
+      ].map(label => {
+        const span = document.createElement('span');
+        span.textContent = label;
+        return span;
+      }));
+      document.getElementById('empty').hidden = gantt.tasks.length > 0;
+      const head = document.getElementById('time-head');
+      head.style.width = `${chartWidth}px`;
+      head.replaceChildren();
+      for (let ord = minOrd; ord <= maxOrd; ord += 1) {
+        const tick = document.createElement('div');
+        tick.className = 'tick';
+        tick.textContent = new Date(ord * DAY_MS).toISOString().slice(5, 10);
+        head.append(tick);
+      }
+      const taskRows = document.getElementById('task-rows');
+      const timelineRows = document.getElementById('timeline-rows');
+      taskRows.replaceChildren();
+      timelineRows.replaceChildren();
+      const metrics = new Map();
+      visible.forEach((task, index) => {
+        const row = document.createElement('div');
+        row.className = 'task-row';
+        const buttonCell = document.createElement('span');
+        buttonCell.className = 'task-main';
+        const button = document.createElement('button');
+        button.className = 'row-button';
+        button.type = 'button';
+        button.style.paddingLeft = `${4 + task.depth * 14}px`;
+        button.title = task.title;
+        const chevron = document.createElement('span');
+        chevron.className = 'chevron';
+        chevron.textContent = task.children && task.children.length ? (collapsed.has(task.id) ? '▸' : '▾') : '•';
+        const key = document.createElement('span');
+        key.className = 'task-key';
+        key.textContent = text(task.issue_key);
+        const label = document.createElement('span');
+        label.className = 'task-label';
+        label.textContent = task.compact_label;
+        button.append(chevron, key, label);
+        button.addEventListener('click', () => showTask(task));
+        buttonCell.append(button);
+        row.append(buttonCell, makeCell(task.owner), makeCell(task.state), makeCell(`${text(task.start_date)}→${text(task.target_date)}`));
+        taskRows.append(row);
+
+        const track = document.createElement('div');
+        track.className = 'timeline-row';
+        track.style.width = `${chartWidth}px`;
+        const left = offsetForDate(task.start_date);
+        const width = widthForTask(task);
+        metrics.set(task.id, { left, width, y: index * rowHeight() + rowHeight() / 2 });
+        const bar = document.createElement('button');
+        bar.className = `bar ${task.children && task.children.length ? 'parent' : ''} ${(task.labels || []).includes('blocked') || (task.labels || []).includes('needs-help') ? 'blocked' : ''}`;
+        bar.type = 'button';
+        bar.style.left = `${left}px`;
+        bar.style.width = `${width}px`;
+        const progress = document.createElement('span');
+        progress.className = 'progress';
+        progress.style.width = `${Math.min(100, Math.max(0, Number(task.progress) || 0))}%`;
+        const barLabel = document.createElement('span');
+        barLabel.className = 'bar-label';
+        barLabel.textContent = task.compact_label;
+        bar.title = task.title;
+        bar.append(progress, barLabel);
+        bar.addEventListener('click', () => { toggleTask(task); showTask(task); });
+        track.append(bar);
+        for (const event of eventsByTask.get(task.id) || []) {
+          const marker = document.createElement('button');
+          marker.className = `marker ${event.type}`;
+          marker.type = 'button';
+          marker.style.left = `${offsetForDate(event.date)}px`;
+          marker.title = event.summary;
+          const icon = document.createElement('b');
+          icon.textContent = symbol[event.type] || '•';
+          const markerText = document.createElement('span');
+          markerText.textContent = compact(event.compact_label || event.type);
+          marker.append(icon, markerText);
+          marker.addEventListener('click', eventObject => { eventObject.stopPropagation(); showEvent(event); });
+          track.append(marker);
+        }
+        timelineRows.append(track);
+      });
+      const connectorLayer = document.getElementById('connector-layer');
+      connectorLayer.setAttribute('width', chartWidth);
+      connectorLayer.setAttribute('height', Math.max(visible.length * rowHeight(), 1));
+      connectorLayer.style.width = `${chartWidth}px`;
+      connectorLayer.style.height = `${Math.max(visible.length * rowHeight(), 1)}px`;
+      connectorLayer.replaceChildren();
+      const visibleIds = new Set(visible.map(task => task.id));
+      for (const task of visible) {
+        if (!task.parent_id || !visibleIds.has(task.parent_id)) continue;
+        const parentMetric = metrics.get(task.parent_id);
+        const childMetric = metrics.get(task.id);
+        if (!parentMetric || !childMetric) continue;
+        const x1 = parentMetric.left + 8;
+        const x2 = childMetric.left + 8;
+        const y1 = parentMetric.y;
+        const y2 = childMetric.y;
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('class', 'connector');
+        path.setAttribute('d', `M ${x1} ${y1} C ${x1 + 24} ${y1}, ${Math.max(0, x2 - 24)} ${y2}, ${x2} ${y2}`);
+        connectorLayer.append(path);
+      }
+    }
+    document.getElementById('density-dense').addEventListener('click', () => setDensity('dense'));
+    document.getElementById('density-present').addEventListener('click', () => setDensity('present'));
+    document.getElementById('expand-all').addEventListener('click', () => { collapsed.clear(); render(); });
+    document.getElementById('collapse-all').addEventListener('click', () => {
+      collapsed.clear();
+      for (const task of gantt.tasks) if (task.children && task.children.length) collapsed.add(task.id);
+      render();
+    });
+    document.getElementById('refresh').addEventListener('click', () => location.reload());
+    document.getElementById('detail-close').addEventListener('click', () => {
+      const detail = document.getElementById('detail');
+      detail.classList.remove('open');
+      detail.setAttribute('aria-hidden', 'true');
+    });
+    window.addEventListener('resize', render);
+    render();
+  </script>
+</body>
+</html>
+""".replace("__DATA__", data_json)
     path.write_text(html_text, encoding="utf-8")
     return path
 
@@ -474,14 +1250,22 @@ def main() -> int:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    dashboard = build_dashboard(load_jsonl(timeline_path), load_progress_audits(progress_dir), args.stale_days)
+    timeline = load_jsonl(timeline_path)
+    audits = load_progress_audits(progress_dir)
+
+    dashboard = build_dashboard(timeline, audits, args.stale_days)
+    gantt = build_gantt_data(timeline, audits)
     json_path = write_json(dashboard, output_dir)
     html_path = write_html(dashboard, output_dir)
     md_path = write_markdown(dashboard, output_dir)
+    gantt_json_path = write_gantt_json(gantt, output_dir)
+    gantt_html_path = write_gantt_html(gantt, output_dir)
 
     print(f"Wrote {json_path}")
     print(f"Wrote {html_path}")
     print(f"Wrote {md_path}")
+    print(f"Wrote {gantt_json_path}")
+    print(f"Wrote {gantt_html_path}")
     print(json.dumps(dashboard["summary"], ensure_ascii=False, sort_keys=True))
     return 0
 
