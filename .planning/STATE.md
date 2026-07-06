@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Milestone complete
-last_updated: "2026-07-06T13:40:43.531Z"
+status: Phase 6 shipped — PR #1; ready for milestone close
+last_updated: "2026-07-06T13:48:25.672Z"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -19,7 +19,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 **Core value:** Turn natural-language team progress into trustworthy Plane state, visual timelines, and delivery reports without making every contributor do heavy manual bookkeeping.
-**Current focus:** Milestone v1.0 is complete after Phase 06 Gantt sidecar verification.
+**Current focus:** Phase 06 Gantt sidecar is shipped via PR #1; next recommended command is `$gsd-complete-milestone`.
 
 ## Current Status
 
@@ -48,6 +48,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Generated `exports/delivery/gantt.json` and `exports/delivery/gantt.html` from Plane timeline and progress audits.
 - Phase 6 plan summary is ready at `.planning/phases/06-redesign-plane-gantt-visualization/06-01-SUMMARY.md`.
 - Phase 6 verification passed at `.planning/phases/06-redesign-plane-gantt-visualization/06-VERIFICATION.md`.
+- Phase 6 shipped via `codex/phase-06-gantt` PR #1: `https://github.com/Kirrito-k423/DevTracking/pull/1`.
 - Next recommended command: `$gsd-complete-milestone`
 
 ## Phase Status
