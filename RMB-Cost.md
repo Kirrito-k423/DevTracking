@@ -1,22 +1,22 @@
 # RMB Cost
 
-- Generated at: `2026-07-06T13:57:37Z`
+- Generated at: `2026-07-06T13:58:56Z`
 - Confidence: `estimate`
 - USD/CNY: `7.2`
 - Task: GSD Phase 6 ship and v1.0 milestone close
-- Codex effective goal meter: `814,681` tokens (0.814681M)
+- Codex effective goal meter: `849,793` tokens (0.849793M)
 - Session: `/Users/Zhuanz/.codex/sessions/2026/07/06/rollout-2026-07-06T19-21-31-019f3729-7528-75f3-8f1c-af70e4f48792.jsonl`
-- Token window events: `2026-07-06T13:10:37.110Z` -> `2026-07-06T13:56:54.490Z`
+- Token window events: `2026-07-06T13:10:37.110Z` -> `2026-07-06T13:58:38.389Z`
 
 ## Token Usage
 
 | Item | Tokens | M tokens |
 |---|---:|---:|
-| Input total | 23,962,934 | 23.962934 |
-| Cached input | 23,239,168 | 23.239168 |
-| Uncached input | 723,766 | 0.723766 |
-| Output | 99,332 | 0.099332 |
-| Reasoning output, included in output when provider reports it that way | 25,329 | 0.025329 |
+| Input total | 25,369,729 | 25.369729 |
+| Cached input | 24,621,312 | 24.621312 |
+| Uncached input | 748,417 | 0.748417 |
+| Output | 102,621 | 0.102621 |
+| Reasoning output, included in output when provider reports it that way | 26,125 | 0.026125 |
 
 ## Price Assumptions
 
@@ -29,19 +29,19 @@
 
 | Model | Component | Cache status | Tokens | M tokens | USD/M | USD | RMB |
 |---|---|---|---:|---:|---:|---:|---:|
-| gpt-5.5 | Input (cache miss) | not cached | 723,766 | 0.723766 | 5 | 3.62 | 26.06 |
-| gpt-5.5 | Input (cache hit) | cached | 23,239,168 | 23.239168 | 0.5 | 11.62 | 83.66 |
-| gpt-5.5 | Output | not applicable | 99,332 | 0.099332 | 30 | 2.98 | 21.46 |
-| deepseek-v4-pro | Input (cache miss) | not cached | 723,766 | 0.723766 | 0.435 | 0.3148 | 2.27 |
-| deepseek-v4-pro | Input (cache hit) | cached | 23,239,168 | 23.239168 | 0.003625 | 0.0842 | 0.6065 |
-| deepseek-v4-pro | Output | not applicable | 99,332 | 0.099332 | 0.87 | 0.0864 | 0.6222 |
+| gpt-5.5 | Input (cache miss) | not cached | 748,417 | 0.748417 | 5 | 3.74 | 26.94 |
+| gpt-5.5 | Input (cache hit) | cached | 24,621,312 | 24.621312 | 0.5 | 12.31 | 88.64 |
+| gpt-5.5 | Output | not applicable | 102,621 | 0.102621 | 30 | 3.08 | 22.17 |
+| deepseek-v4-pro | Input (cache miss) | not cached | 748,417 | 0.748417 | 0.435 | 0.3256 | 2.34 |
+| deepseek-v4-pro | Input (cache hit) | cached | 24,621,312 | 24.621312 | 0.003625 | 0.0893 | 0.6426 |
+| deepseek-v4-pro | Output | not applicable | 102,621 | 0.102621 | 0.87 | 0.0893 | 0.6428 |
 
 ## Cost Summary
 
 | Model | Input cache miss RMB | Input cache hit RMB | Output RMB | Total RMB | Total USD |
 |---|---:|---:|---:|---:|---:|
-| gpt-5.5 | 26.06 | 83.66 | 21.46 | 131.17 | 18.22 |
-| deepseek-v4-pro | 2.27 | 0.6065 | 0.6222 | 3.50 | 0.4855 |
+| gpt-5.5 | 26.94 | 88.64 | 22.17 | 137.75 | 19.13 |
+| deepseek-v4-pro | 2.34 | 0.6426 | 0.6428 | 3.63 | 0.5041 |
 
 ## Formula
 
