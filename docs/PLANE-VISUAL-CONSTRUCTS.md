@@ -1,6 +1,6 @@
 # Plane 可视化构件
 
-更新时间：2026-07-03
+更新时间：2026-07-06
 
 ## 已构建内容
 
@@ -18,6 +18,14 @@ scripts/bootstrap-plane-visual-constructs.py
 ```
 
 该命令通过 Plane 后端容器运行 Django 业务模型，幂等创建或修正构件，不会读取或打印 `plane.env` 中的 secret。
+
+日报写入使用项目 skill：
+
+```bash
+scripts/apply-plane-daily-record.py --date YYYY-MM-DD --source-id daily-YYYYMMDD --raw-text "..." --events-json '[...]'
+```
+
+触发和分类规则见：`.codex/skills/plane-daily-record/SKILL.md`。
 
 ## 标签
 
@@ -84,6 +92,18 @@ scripts/bootstrap-plane-visual-constructs.py
   - 父任务：`InternS2 SFT`
   - 标签：`daily-event`, `blocked`, `needs-help`, `owner:于家硕`
   - 模块：`SFT 交付`
+- `1-6 2026-07-06 SFT：保存权重 2000 步卡住并单机复现`
+  - 父任务：`InternS2 SFT`
+  - 标签：`daily-event`, `blocked`, `needs-help`, `owner:于家硕`
+  - 模块：`SFT 交付`
+- `1-7 2026-07-06 chunkmoe：功能完成并取得显存收益`
+  - 父任务：`chunkmoe 性能优化`
+  - 标签：`daily-event`, `breakthrough`, `milestone`, `owner:侯玉峰`
+  - 模块：`SFT 交付`, `chunkmoe`
+- `1-8 2026-07-06 chunkmoe：消融验证精度和性能`
+  - 父任务：`chunkmoe 性能优化`
+  - 标签：`daily-event`, `milestone`, `owner:侯玉峰`
+  - 模块：`chunkmoe`, `评测`
 
 ## 后续录入规则
 

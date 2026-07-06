@@ -1,0 +1,6 @@
+interface:
+  display_name: "Plane Daily Record"
+  short_description: "把自然语言日报写入 Plane 看板与报告"
+  default_prompt: "Use $plane-daily-record to turn today's team progress into Plane work items."
+policy:
+  allow_implicit_invocation: true

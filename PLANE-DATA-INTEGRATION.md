@@ -2,6 +2,7 @@
 
 图文入门教程见：`docs/PLANE-QUICKSTART.md`。
 Plane 可视化构件说明见：`docs/PLANE-VISUAL-CONSTRUCTS.md`。
+自然语言日报写入流程见：`.codex/skills/plane-daily-record/SKILL.md`，执行脚本为 `scripts/apply-plane-daily-record.py`。
 
 ## 判断
 
