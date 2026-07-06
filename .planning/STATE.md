@@ -1,9 +1,10 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: Phase 6 shipped — PR #1; ready for milestone close
-last_updated: "2026-07-06T13:48:25.672Z"
+milestone_name: MVP
+status: Awaiting next milestone
+last_updated: "2026-07-06T13:52:21.235Z"
+last_activity: 2026-07-06 — Milestone v1.0 completed and archived
 progress:
   total_phases: 6
   completed_phases: 6
@@ -19,7 +20,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 **Core value:** Turn natural-language team progress into trustworthy Plane state, visual timelines, and delivery reports without making every contributor do heavy manual bookkeeping.
-**Current focus:** Phase 06 Gantt sidecar is shipped via PR #1; next recommended command is `$gsd-complete-milestone`.
+**Current focus:** Milestone v1.0 MVP is archived; next recommended command is `$gsd-new-milestone`.
 
 ## Current Status
 
@@ -49,7 +50,8 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Phase 6 plan summary is ready at `.planning/phases/06-redesign-plane-gantt-visualization/06-01-SUMMARY.md`.
 - Phase 6 verification passed at `.planning/phases/06-redesign-plane-gantt-visualization/06-VERIFICATION.md`.
 - Phase 6 shipped via `codex/phase-06-gantt` PR #1: `https://github.com/Kirrito-k423/DevTracking/pull/1`.
-- Next recommended command: `$gsd-complete-milestone`
+- Milestone v1.0 MVP archived to `.planning/milestones/`.
+- Next recommended command: `$gsd-new-milestone`
 
 ## Phase Status
 
@@ -91,3 +93,14 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 | Phase | Plan | Duration | Notes |
 |-------|------|----------|-------|
 | Phase 06 P01 | 9 min | 4 tasks | 5 files |
+
+## Current Position
+
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-06 — Milestone v1.0 completed and archived
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
