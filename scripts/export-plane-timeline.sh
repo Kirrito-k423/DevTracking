@@ -77,11 +77,22 @@ copy (
       p.name as project_name,
       p.identifier || '-' || i.sequence_id::text as issue_key,
       i.name as issue_title,
+      i.parent_id,
+      i.start_date,
+      i.target_date,
       i.priority,
       s.name as state_name,
       i.created_at,
       i.updated_at,
-      i.completed_at
+      i.completed_at,
+      jsonb_build_object(
+        'parent_id', i.parent_id,
+        'start_date', i.start_date,
+        'target_date', i.target_date,
+        'completed_at', i.completed_at,
+        'priority', i.priority,
+        'state', s.name
+      ) as current_issue
     from issues i
     join workspaces w on w.id = i.workspace_id
     join projects p on p.id = i.project_id
@@ -107,10 +118,7 @@ copy (
         'id', ib.issue_id,
         'field', 'created_at'
       ) as source,
-      jsonb_build_object(
-        'priority', ib.priority,
-        'state', ib.state_name
-      ) as payload
+      ib.current_issue as payload
     from issue_base ib
 
     union all
@@ -132,10 +140,7 @@ copy (
         'id', ib.issue_id,
         'field', 'completed_at'
       ) as source,
-      jsonb_build_object(
-        'priority', ib.priority,
-        'state', ib.state_name
-      ) as payload
+      ib.current_issue as payload
     from issue_base ib
     where ib.completed_at is not null
 
@@ -163,7 +168,8 @@ copy (
         'field', ia.field,
         'old_value', ia.old_value,
         'new_value', ia.new_value,
-        'comment', ia.comment
+        'comment', ia.comment,
+        'current_issue', ib.current_issue
       ) as payload
     from issue_activities ia
     join issue_base ib on ib.issue_id = ia.issue_id
@@ -190,7 +196,8 @@ copy (
       ) as source,
       jsonb_build_object(
         'comment', ic.comment_stripped,
-        'access', ic.access
+        'access', ic.access,
+        'current_issue', ib.current_issue
       ) as payload
     from issue_comments ic
     join issue_base ib on ib.issue_id = ic.issue_id
@@ -217,7 +224,8 @@ copy (
       ) as source,
       jsonb_build_object(
         'assignee_id', au.id,
-        'assignee', coalesce(nullif(au.display_name, ''), nullif(au.email, ''), au.username)
+        'assignee', coalesce(nullif(au.display_name, ''), nullif(au.email, ''), au.username),
+        'current_issue', ib.current_issue
       ) as payload
     from issue_assignees ias
     join issue_base ib on ib.issue_id = ias.issue_id
@@ -247,7 +255,8 @@ copy (
         'cycle_id', c.id,
         'cycle', c.name,
         'start_date', c.start_date,
-        'end_date', c.end_date
+        'end_date', c.end_date,
+        'current_issue', ib.current_issue
       ) as payload
     from cycle_issues ci
     join issue_base ib on ib.issue_id = ci.issue_id
@@ -279,7 +288,8 @@ copy (
         'module', m.name,
         'status', m.status,
         'start_date', m.start_date,
-        'target_date', m.target_date
+        'target_date', m.target_date,
+        'current_issue', ib.current_issue
       ) as payload
     from module_issues mi
     join issue_base ib on ib.issue_id = mi.issue_id
@@ -309,7 +319,8 @@ copy (
       jsonb_build_object(
         'label_id', l.id,
         'label', l.name,
-        'color', l.color
+        'color', l.color,
+        'current_issue', ib.current_issue
       ) as payload
     from issue_labels il
     join issue_base ib on ib.issue_id = il.issue_id
