@@ -13,6 +13,7 @@
 | 3 | Delivery Plan And Visualization | Maintain delivery state and show project/person/blocker/timeline views | DELV-01..DELV-05, VIS-01..VIS-04 |
 | 4 | Reports, AI Context, And Backup | Generate daily/weekly/risk/retro reports and back up timeline/report artifacts | REPT-01..REPT-05, BACK-01..BACK-04 |
 | 5 | Demand Triage And Capability Matching | Add requirement filtering, prioritization, and delivery-relevant capability matching | DEMD-01..DEMD-04, CAPA-01..CAPA-02 |
+| 6 | Redesign Plane Gantt Visualization | Replace weak Plane visualization with a Gantt-first delivery view for hierarchy, dependencies, events, and compact task labels | GANTT-01..GANTT-06 |
 
 ## Phases
 
@@ -82,10 +83,28 @@
 5. Capability matrix supports skills, history, load, and preferred task types.
 6. Task recommendations include visible reasoning and confidence.
 
+### Phase 6: Redesign Plane Gantt Visualization
+**Goal:** Replace the current weak Plane visualization with a Gantt-first delivery view that makes multi-level task structure, parent-child relationships, blockers, completions, milestones, and short task summaries directly inspectable.
+**Mode:** mvp
+**Requirements:** GANTT-01, GANTT-02, GANTT-03, GANTT-04, GANTT-05, GANTT-06
+**Depends on:** Phase 5
+**UI hint:** yes
+
+**Success Criteria**:
+1. Gantt data supports multi-level tasks with parent IDs, depth, order, dates, progress, status, and source references from Plane or Demand Hub artifacts.
+2. Parent task bars can be clicked to expand or collapse child tasks, and collapsed parents preserve rolled-up timing/progress.
+3. Parent and child task bars are connected with readable relationship lines that survive expand/collapse and scrolling.
+4. Task bars support event markers: blocked as a red circled cross, completed as a green dot, and milestone as a yellow star.
+5. Clicking an event marker opens detailed event information with source links, owner/status/context, and the original Plane or timeline evidence.
+6. Task bars and event markers show compact default summaries capped at 8 characters, with full text available through click or hover detail.
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 6 to break down)
+
 ## Requirement Coverage
 
-All 34 v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
+All 40 v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
 ---
 *Roadmap created: 2026-07-02*
-

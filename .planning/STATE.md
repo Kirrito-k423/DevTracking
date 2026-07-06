@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phase 05 complete
-last_updated: "2026-07-02T12:48:30.000Z"
+status: Phase 06 added
+last_updated: "2026-07-06T13:10:00.265Z"
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
   total_plans: 5
   completed_plans: 5
-  percent: 100
+  percent: 83
 ---
 
 # State: Plane Demand Hub
@@ -19,7 +19,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-02)
 
 **Core value:** Turn natural-language team progress into trustworthy Plane state, visual timelines, and delivery reports without making every contributor do heavy manual bookkeeping.
-**Current focus:** Milestone v1.0 complete — conversational progress, delivery visualization, reports, and demand triage are locally shipped.
+**Current focus:** Milestone v1.0 extended with Phase 6 — redesign the weak Plane visualization as a Gantt-first sidecar view.
 
 ## Current Status
 
@@ -44,17 +44,19 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 - Clear demand now produces ranked draft Plane changes and assignee recommendation; unclear demand is bounced back.
 - Phase 5 verification passed.
 - Phase 5 local ship recorded; PR creation skipped because no git remote is configured.
-- Next recommended command: `$gsd-progress`
+- Phase 6 Gantt visualization redesign has been added to the roadmap.
+- Next recommended command: `$gsd-plan-phase 6`
 
 ## Phase Status
 
-| Phase | Status | Progress |
-|-------|--------|----------|
-| 1 | Complete | 20% |
-| 2 | Complete | 40% |
-| 3 | Complete | 60% |
-| 4 | Complete | 80% |
-| 5 | Complete | 100% |
+| Phase | Status | Milestone Progress |
+|-------|--------|--------------------|
+| 1 | Complete | 17% |
+| 2 | Complete | 33% |
+| 3 | Complete | 50% |
+| 4 | Complete | 67% |
+| 5 | Complete | 83% |
+| 6 | Not planned | 83% |
 
 ## Active Decisions
 
@@ -62,6 +64,13 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 - Build Demand Hub as a sidecar, not a Plane fork.
 - Read Plane DB for analytics; write through API-level paths.
 - Start with conversation-to-Plane daily progress loop.
+- Improve visualization through a Demand Hub Gantt sidecar view rather than forking Plane.
+
+## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 6 added: Redesign Plane Gantt Visualization — Gantt-first collapsible hierarchy, parent-child connector lines, clickable event markers, and 8-character default summaries.
 
 ## Quick Tasks Completed
 

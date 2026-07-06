@@ -36,6 +36,15 @@
 - [ ] **VIS-03**: User can view a people dashboard showing recent contributions, current load, blockers owned, and help needed.
 - [ ] **VIS-04**: Visualizations link back to Plane issues or source events.
 
+### Gantt Visualization Redesign
+
+- [ ] **GANTT-01**: User can view delivery work in a Gantt chart with task dates, progress, status, owner, and source references.
+- [ ] **GANTT-02**: Gantt tasks support multiple hierarchy levels and can be expanded or collapsed by clicking a parent task bar.
+- [ ] **GANTT-03**: Parent and child task bars have visible connector lines that remain readable during expand/collapse and scrolling.
+- [ ] **GANTT-04**: Task bars support event markers for blockers, completions, and milestones using a red circled cross, green dot, and yellow star.
+- [ ] **GANTT-05**: Clicking an event marker opens detailed event information with owner, status, context, and Plane or timeline source evidence.
+- [ ] **GANTT-06**: Task bars and event markers show compact default summaries capped at 8 characters, with full text available through click or hover detail.
+
 ### Reports And AI Context
 
 - [ ] **REPT-01**: System can generate a daily report from the latest progress events and Plane timeline.
@@ -82,6 +91,7 @@
 - As the operator, I can ask for "今天的日报" and receive a source-backed summary from Plane history.
 - As the operator, I can ask for "这个项目的复盘" and get key nodes, blockers, breakthroughs, contributors, and next actions.
 - As the operator, I can open a dashboard and see project state, person load, blockers, and timeline without manually assembling spreadsheets.
+- As the operator, I can open a Gantt view, collapse parent tasks, inspect dependency lines, and click blocker/completion/milestone markers for details.
 
 ## Acceptance Criteria
 
@@ -96,13 +106,13 @@
 - Plane local deployment remains reachable at `http://localhost:8090`.
 - Extractor, parser, writer, reports, dashboard, and backup flows are documented and verified.
 - v1 requirements are mapped to roadmap phases.
-- The first end-to-end demo can process a daily update, write to Plane, export timeline data, and generate a report.
+- The first end-to-end demo can process a daily update, write to Plane, export timeline data, generate a report, and open the Gantt view with collapsible tasks and event details.
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Rebuilding Plane UI | Plane already solves attractive project/task UX |
+| Full Plane UI fork/rebuild | Keep Plane as the task system; build the improved Gantt view in the Demand Hub sidecar |
 | Direct Plane DB writes | Unsafe for activity logs, permissions, notifications, and upgrades |
 | Full HR system | v1 only needs delivery-relevant capability and load signals |
 | Public SaaS deployment | Local-first single workspace is the initial target |
@@ -131,6 +141,12 @@
 | VIS-02 | Phase 3 | Pending |
 | VIS-03 | Phase 3 | Pending |
 | VIS-04 | Phase 3 | Pending |
+| GANTT-01 | Phase 6 | Pending |
+| GANTT-02 | Phase 6 | Pending |
+| GANTT-03 | Phase 6 | Pending |
+| GANTT-04 | Phase 6 | Pending |
+| GANTT-05 | Phase 6 | Pending |
+| GANTT-06 | Phase 6 | Pending |
 | REPT-01 | Phase 4 | Pending |
 | REPT-02 | Phase 4 | Pending |
 | REPT-03 | Phase 4 | Pending |
@@ -148,11 +164,10 @@
 | CAPA-02 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 34 total
-- Mapped to phases: 34
+- v1 requirements: 40 total
+- Mapped to phases: 40
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-02*
-*Last updated: 2026-07-02 after initialization*
-
+*Last updated: 2026-07-06 after adding Gantt visualization redesign*
