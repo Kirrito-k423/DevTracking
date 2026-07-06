@@ -67,6 +67,13 @@ standard_labels = {{
     'milestone': ('#2563EB', '关键达成节点：阶段交付、验收点、里程碑。'),
     'breakthrough': ('#16A34A', '关键突破：技术、性能、流程上有实质突破。'),
     'daily-event': ('#64748B', '每日事件：用于把口头日报落到 Plane view。'),
+    'quarterly-demand': ('#7C3AED', '季度需求：按季度持续跟踪的需求集合。'),
+    'special-project': ('#0F766E', '专项：跨任务、跨阶段的重点工作。'),
+    'performance': ('#22C55E', '性能优化：吞吐、耗时、显存、SMA 等性能相关进展。'),
+    'risk': ('#DC2626', '风险：可能影响验收或交付质量的事项。'),
+    'validation': ('#2563EB', '验证：评测、稳定性、精度或功能验收。'),
+    'community': ('#0891B2', '社区跟踪：紧跟社区问题、上游修复或外部需求。'),
+    'demand': ('#9333EA', '需求：业务、客户或项目需求条目。'),
     'owner:于家硕': ('#A855F7', '临时人员标记：于家硕。正式成员接入后可替换为 assignee。'),
     'owner:侯玉峰': ('#0EA5E9', '临时人员标记：侯玉峰。正式成员接入后可替换为 assignee。'),
 }}
@@ -74,6 +81,9 @@ standard_modules = {{
     'SFT 交付': ('InternS2 SFT 交付主线。', 'in-progress'),
     'chunkmoe': ('chunkmoe 性能优化与相关实现。', 'in-progress'),
     '评测': ('评测、验收与效果回归。', 'backlog'),
+    'Q3 需求': ('Q3 季度需求、子需求和跟踪事项。', 'in-progress'),
+    '字节猛犸系列模型训练专项': ('字节猛犸系列模型训练专项。', 'in-progress'),
+    '字节 veomni 专项': ('字节 veomni 专项与社区性能问题跟踪。', 'in-progress'),
 }}
 
 
@@ -149,6 +159,7 @@ parent_aliases = {{
     'chunk-moe': {chunkmoe_issue_id!r},
     'chunk moe': {chunkmoe_issue_id!r},
 }}
+local_issue_by_external_id = {{}}
 
 
 def get_state(value):
@@ -168,6 +179,16 @@ def resolve_parent(value):
     if not value:
         return None
     raw = str(value).strip()
+    if raw in local_issue_by_external_id:
+        return local_issue_by_external_id[raw]
+    linked_issue = Issue.all_objects.filter(
+        workspace=workspace,
+        project=project,
+        external_source='codex-daily-record',
+        external_id=raw,
+    ).first()
+    if linked_issue is not None:
+        return linked_issue
     alias = raw.lower()
     if alias in parent_aliases:
         return Issue.all_objects.get(id=parent_aliases[alias])
@@ -215,6 +236,7 @@ def upsert_issue(spec):
     issue.is_draft = False
     issue.updated_by = owner
     issue.save()
+    local_issue_by_external_id[issue.external_id] = issue
 
     for label_name in spec.get('labels', []):
         label = get_label(label_name)
@@ -394,10 +416,18 @@ def main() -> int:
 
     events = load_events(args)
     source_id = args.source_id or f"daily-{args.date.replace('-', '')}"
+    local_external_ids = {}
     for index, event in enumerate(events, start=1):
         event.setdefault("start_date", args.date)
         event.setdefault("target_date", args.date)
-        event["external_id"] = f"{source_id}:{event.get('external_id') or f'segment:{index}'}"
+        raw_external_id = str(event.get("external_id") or f"segment:{index}")
+        prefixed_external_id = f"{source_id}:{raw_external_id}"
+        local_external_ids[raw_external_id] = prefixed_external_id
+        event["external_id"] = prefixed_external_id
+    for event in events:
+        parent = event.get("parent")
+        if parent in local_external_ids:
+            event["parent"] = local_external_ids[parent]
 
     generated_at = datetime.now(ZoneInfo("Asia/Shanghai")).isoformat()
 

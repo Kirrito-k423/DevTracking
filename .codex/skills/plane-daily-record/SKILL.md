@@ -5,16 +5,31 @@ description: Turn natural-language team daily progress into structured Plane wor
 
 # Plane Daily Record
 
+## Installation
+
+The repository copy is the source of truth:
+
+```text
+/Users/Zhuanz/Documents/DevTracking/.codex/skills/plane-daily-record
+```
+
+The global Codex skill path should be a symlink to the repository copy:
+
+```bash
+ln -s /Users/Zhuanz/Documents/DevTracking/.codex/skills/plane-daily-record /Users/Zhuanz/.codex/skills/plane-daily-record
+```
+
 ## Workflow
 
 Use this skill to convert a daily update into real Plane state for the local Plane Demand Hub project.
 
 1. Normalize the record date. Use Asia/Shanghai today unless the text gives a date.
 2. Split the update into atomic events by project/workstream: one blocked event, one completed milestone, one breakthrough, or one follow-up validation task per Plane work item.
-3. Infer the parent work item:
+3. Infer or create the parent work item:
    - SFT, InternS2, 保存权重, 权重保存 -> `sft`
    - chunkmoe, chunk moe, 显存收益, 首步 NaN -> `chunkmoe`
    - 评测, 消融, 精度, 性能验证 -> parent `chunkmoe`, module `评测` when the validation is for chunkmoe
+   - Quarterly or program-level headings can become parent work items. Use stable local keys such as `q3-demand`, then let child events reference `parent: "q3-demand"` in the same apply call.
 4. Infer temporary owner labels when no person is supplied:
    - SFT-related -> `owner:于家硕`
    - chunkmoe-related -> `owner:侯玉峰`
@@ -23,6 +38,7 @@ Use this skill to convert a daily update into real Plane state for the local Pla
    - Add `blocked` and `needs-help` for 卡住, 阻塞, 等待, 排队, 失败, or unknown external dependency.
    - Add `breakthrough` for 收益, 突破, 修复, NaN fixed, 性能/显存 improvement.
    - Add `milestone` for 完成, 交付, 验收点, or validation gates that decide readiness.
+   - Add domain labels when useful, such as `quarterly-demand`, `special-project`, `performance`, `risk`, `validation`, or `community`.
 6. Choose state and priority:
    - Blocked/waiting event -> `todo`, priority `high`.
    - In-progress reproduction/debugging -> `in_progress`, priority `high` when it blocks delivery.
@@ -62,6 +78,30 @@ Use these real Plane constructs:
 | `评测` module | ablation, accuracy, performance, validation |
 
 Keep daily evidence as Plane work items, not only comments, whenever the user wants visualization on views.
+
+## Recommended Input Format
+
+Free-form Chinese is accepted. When the update is complex or has parent/child structure, prefer this format:
+
+```text
+日期：YYYY-MM-DD（可选，默认今天）
+专项：父任务名称；周期：YYYY-QN 或 YYYY-MM-DD..YYYY-MM-DD；目标：一句话
+子任务：
+1. 名称：...
+   日期：YYYY-MM-DD（可选）
+   状态：todo / in_progress / done / blocked
+   进展：...
+   证据：指标、耗时、版本、功能现象
+   风险/阻塞：...
+   下一步：...
+```
+
+Rules for ambiguous input:
+
+- If the text says "两个事件" but lists three numbered groups, treat each numbered group as one program unless the user corrects it.
+- If a numbered group has "下面有多个子任务", create a parent work item plus child work items.
+- If a child contains multiple independent facts, split only when this improves visualization: completed milestone, breakthrough, and blocker should be separate work items.
+- For ranges such as Q3, set `start_date` to quarter start and `target_date` to quarter end.
 
 ## Output Back To User
 
