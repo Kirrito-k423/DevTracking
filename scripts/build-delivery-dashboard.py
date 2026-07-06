@@ -452,7 +452,7 @@ def build_gantt_data(timeline: list[dict[str, Any]], audits: list[dict[str, Any]
             if current.get(field):
                 task[field] = current.get(field)
         if current.get("completed_at"):
-            task["completed_at"] = row.get("event_time") or current.get("completed_at")
+            task["completed_at"] = current.get("completed_at")
         if current.get("parent_id"):
             task["parent_id"] = str(current.get("parent_id"))
         if current.get("start_date"):
