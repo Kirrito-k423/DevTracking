@@ -67,7 +67,7 @@ completed: 2026-07-06
 ## Task Commits
 
 1. **Task 1: Expose Gantt-ready Plane fields in timeline export** - `31ef008`
-2. **Task 2: Generate Gantt JSON and static interactive HTML** - `7fff787`
+2. **Task 2: Generate Gantt JSON and static interactive HTML** - `7fff787`, review fix `32bbff3`
 3. **Task 3: Document the Gantt sidecar workflow** - `d04e623`
 4. **Task 4: Capture Phase 6 execution evidence** - this summary
 
@@ -107,7 +107,20 @@ Playwright visual loading was not run because the local Node environment does no
 
 ## Deviations from Plan
 
-None - plan executed as written.
+### Auto-fixed Issues
+
+**1. [Rule 1 - Bug] Preserve current `completed_at` instead of overwriting it with later event time**
+- **Found during:** Code review after Task 4
+- **Issue:** New timeline rows can carry `current_issue.completed_at` on later label/module events. The Gantt builder used the row event time when current completion data was present, which could shift completion marker dates later than the real Plane `completed_at`.
+- **Fix:** Prefer `current_issue.completed_at` directly when available; keep `issue_completed` rows as the event source for completion markers.
+- **Files modified:** `scripts/build-delivery-dashboard.py`
+- **Verification:** Re-ran Python compile, dashboard/Gantt generation, compact-label assertions, parent-link assertion, and marker type assertions.
+- **Committed in:** `32bbff3`
+
+---
+
+**Total deviations:** 1 auto-fixed bug.
+**Impact on plan:** Improves marker correctness without changing scope.
 
 ## Issues Encountered
 
