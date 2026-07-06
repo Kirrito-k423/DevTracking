@@ -67,6 +67,35 @@ scripts/apply-plane-daily-record.py --date YYYY-MM-DD --source-id daily-YYYYMMDD
 - `docs/assets/plane-daily-events-real-view.png`
 - `docs/assets/local-delivery-dashboard-latest.png`
 
+## Demand Hub Gantt Sidecar
+
+Phase 6 新增本地 Gantt sidecar，而不是 fork Plane UI。它由交付仪表盘生成命令产出：
+
+```bash
+cd /Users/Zhuanz/Documents/DevTracking
+scripts/build-delivery-dashboard.py \
+  --timeline exports/plane/timeline.jsonl \
+  --progress-dir exports/progress \
+  --output-dir exports/delivery
+```
+
+新增输出：
+
+- `exports/delivery/gantt.json`：Gantt 数据模型，包含 `tasks[]` 和 `events[]`。
+- `exports/delivery/gantt.html`：可直接打开的静态 Gantt 视图。
+
+Gantt 层级以 Plane `parent_id` 为权威；旧 timeline 中只有 parent activity 时，会用 issue key 解析成父任务。视图支持高密度表格模式和演示汇报模式，父任务可折叠，父子任务之间绘制 connector line。
+
+事件 marker 语义固定为：
+
+| Marker | 视觉 | Plane 来源 |
+|---|---|---|
+| blocked | 红色圆叉 | `blocked` / `needs-help` 标签，或阻塞/等待状态 |
+| completed | 绿色圆点 | 完成状态或 `completed_at` |
+| milestone | 黄色星标 | `milestone` 标签 |
+
+任务条和事件 marker 的默认简述最多 8 个字符。完整标题、交付摘要、下一步和 source evidence 通过点击任务条或 marker 查看。Progress audit 只补充详情，不覆盖 Plane labels/state/`completed_at` 的 marker 分类。
+
 ## 模块
 
 | 模块 | 状态 | 范围 |

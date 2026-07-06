@@ -110,8 +110,14 @@ scripts/build-delivery-dashboard.py \
 - `exports/delivery/dashboard.html`: 可直接在浏览器打开的静态仪表盘。
 - `exports/delivery/dashboard.json`: 仪表盘结构化数据。
 - `exports/delivery/delivery-plan.md`: 按项目分组的交付方案。
+- `exports/delivery/gantt.html`: 新的 Demand Hub Gantt sidecar 视图，可直接在浏览器打开。
+- `exports/delivery/gantt.json`: Gantt 结构化数据，包含 `tasks[]` 和 `events[]`。
 
 该仪表盘读取 Plane timeline 和 progress audit，不读取 secret，不写 Plane。它会展示项目、工作项、人员进展证据、阻塞、未绑定草稿、stale work 和近期时间线。
+
+`gantt.html` 是新的本地 sidecar 视图，不 fork Plane，也不修改 Plane 原生 UI。它使用 Plane 作为来源：任务层级优先来自 Plane `parent_id` 或 parent activity，阻塞标记来自 Plane `blocked` / `needs-help` 标签或阻塞状态，完成标记来自 Plane 完成状态 / `completed_at`，里程碑标记来自 Plane `milestone` 标签。任务条和事件标记的默认简述由 `gantt.json` 数据层截断到最多 8 个字符；完整标题、交付摘要和 source evidence 通过点击任务条或 marker 查看。
+
+Phase 6 之后，同一条命令会同时刷新旧 dashboard 和新的 Gantt sidecar；`exports/` 仍是本地产物目录，不提交到仓库。
 
 ### 报告、AI 上下文和备份清单
 
