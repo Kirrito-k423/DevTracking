@@ -100,7 +100,7 @@
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 6 to break down)
+- [x] 06-01 Gantt sidecar implementation (completed 2026-07-06)
 
 ## Requirement Coverage
 

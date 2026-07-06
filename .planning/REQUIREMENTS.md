@@ -38,12 +38,12 @@
 
 ### Gantt Visualization Redesign
 
-- [ ] **GANTT-01**: User can view delivery work in a Gantt chart with task dates, progress, status, owner, and source references.
-- [ ] **GANTT-02**: Gantt tasks support multiple hierarchy levels and can be expanded or collapsed by clicking a parent task bar.
-- [ ] **GANTT-03**: Parent and child task bars have visible connector lines that remain readable during expand/collapse and scrolling.
-- [ ] **GANTT-04**: Task bars support event markers for blockers, completions, and milestones using a red circled cross, green dot, and yellow star.
-- [ ] **GANTT-05**: Clicking an event marker opens detailed event information with owner, status, context, and Plane or timeline source evidence.
-- [ ] **GANTT-06**: Task bars and event markers show compact default summaries capped at 8 characters, with full text available through click or hover detail.
+- [x] **GANTT-01**: User can view delivery work in a Gantt chart with task dates, progress, status, owner, and source references.
+- [x] **GANTT-02**: Gantt tasks support multiple hierarchy levels and can be expanded or collapsed by clicking a parent task bar.
+- [x] **GANTT-03**: Parent and child task bars have visible connector lines that remain readable during expand/collapse and scrolling.
+- [x] **GANTT-04**: Task bars support event markers for blockers, completions, and milestones using a red circled cross, green dot, and yellow star.
+- [x] **GANTT-05**: Clicking an event marker opens detailed event information with owner, status, context, and Plane or timeline source evidence.
+- [x] **GANTT-06**: Task bars and event markers show compact default summaries capped at 8 characters, with full text available through click or hover detail.
 
 ### Reports And AI Context
 
@@ -141,12 +141,12 @@
 | VIS-02 | Phase 3 | Pending |
 | VIS-03 | Phase 3 | Pending |
 | VIS-04 | Phase 3 | Pending |
-| GANTT-01 | Phase 6 | Pending |
-| GANTT-02 | Phase 6 | Pending |
-| GANTT-03 | Phase 6 | Pending |
-| GANTT-04 | Phase 6 | Pending |
-| GANTT-05 | Phase 6 | Pending |
-| GANTT-06 | Phase 6 | Pending |
+| GANTT-01 | Phase 6 | Complete |
+| GANTT-02 | Phase 6 | Complete |
+| GANTT-03 | Phase 6 | Complete |
+| GANTT-04 | Phase 6 | Complete |
+| GANTT-05 | Phase 6 | Complete |
+| GANTT-06 | Phase 6 | Complete |
 | REPT-01 | Phase 4 | Pending |
 | REPT-02 | Phase 4 | Pending |
 | REPT-03 | Phase 4 | Pending |
