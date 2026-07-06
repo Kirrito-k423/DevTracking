@@ -63,5 +63,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 - Read Plane DB for analytics; write through API-level paths.
 - Start with conversation-to-Plane daily progress loop.
 
+## Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260706-pdr | Plane daily record skill and July 6 daily update | 2026-07-06 | 501a728 | [260706-pdr-plane-daily-record](./quick/260706-pdr-plane-daily-record/) |
+
 ---
 *State initialized: 2026-07-02*
