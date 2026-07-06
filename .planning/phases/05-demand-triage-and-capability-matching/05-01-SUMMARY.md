@@ -15,6 +15,13 @@ metrics:
   bounced_examples: 1
   planned_changes: 1
   capability_people: 2
+requirements-completed:
+  - DEMD-01
+  - DEMD-02
+  - DEMD-03
+  - DEMD-04
+  - CAPA-01
+  - CAPA-02
 ---
 
 # Phase 5 Plan 1 Summary

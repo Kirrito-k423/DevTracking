@@ -17,6 +17,16 @@ metrics:
   blockers: 1
   unresolved_drafts: 1
   stale_issues: 0
+requirements-completed:
+  - DELV-01
+  - DELV-02
+  - DELV-03
+  - DELV-04
+  - DELV-05
+  - VIS-01
+  - VIS-02
+  - VIS-03
+  - VIS-04
 ---
 
 # Phase 3 Plan 1 Summary
@@ -76,4 +86,3 @@ None - plan executed as written.
 ## Self-Check: PASSED
 
 All Phase 3 verification commands passed, and generated artifacts remain under ignored `exports/`.
-

@@ -14,6 +14,16 @@ metrics:
   ai_context_rows: 3
   backup_manifest_files: 6
   remote_available: false
+requirements-completed:
+  - REPT-01
+  - REPT-02
+  - REPT-03
+  - REPT-04
+  - REPT-05
+  - BACK-01
+  - BACK-02
+  - BACK-03
+  - BACK-04
 ---
 
 # Phase 4 Plan 1 Summary

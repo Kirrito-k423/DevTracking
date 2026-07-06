@@ -7,34 +7,34 @@
 
 ### Plane Integration
 
-- [ ] **PLANE-01**: Operator can verify the local Plane instance is reachable and see its configured URL/version.
-- [ ] **PLANE-02**: System can read Plane projects, issues, states, comments, activities, assignees, cycles, and modules from PostgreSQL without mutating Plane tables.
-- [ ] **PLANE-03**: System can export a normalized JSONL timeline from Plane history with event time, event type, project, issue key, title, actor, and payload.
-- [ ] **PLANE-04**: System can create or update Plane work items and comments through an API-level connector rather than direct SQL writes.
-- [ ] **PLANE-05**: System records enough source references for each generated report claim to trace back to Plane issues, comments, or activities.
+- [x] **PLANE-01**: Operator can verify the local Plane instance is reachable and see its configured URL/version.
+- [x] **PLANE-02**: System can read Plane projects, issues, states, comments, activities, assignees, cycles, and modules from PostgreSQL without mutating Plane tables.
+- [x] **PLANE-03**: System can export a normalized JSONL timeline from Plane history with event time, event type, project, issue key, title, actor, and payload.
+- [x] **PLANE-04**: System can create or update Plane work items and comments through an API-level connector rather than direct SQL writes.
+- [x] **PLANE-05**: System records enough source references for each generated report claim to trace back to Plane issues, comments, or activities.
 
 ### Conversation Progress Loop
 
-- [ ] **CONV-01**: User can provide a natural-language daily update describing multiple people, projects, completed work, blockers, risks, and next actions.
-- [ ] **CONV-02**: System parses the update into structured progress events grouped by person, project, issue, blocker, and next action.
-- [ ] **CONV-03**: System detects ambiguous updates and asks for clarification or produces a draft instead of silently writing uncertain changes.
-- [ ] **CONV-04**: System can convert confirmed progress events into Plane comments, status updates, new follow-up tasks, or blocker markers.
-- [ ] **CONV-05**: System keeps an audit trail of the original user message, parsed events, planned Plane changes, and applied Plane changes.
+- [x] **CONV-01**: User can provide a natural-language daily update describing multiple people, projects, completed work, blockers, risks, and next actions.
+- [x] **CONV-02**: System parses the update into structured progress events grouped by person, project, issue, blocker, and next action.
+- [x] **CONV-03**: System detects ambiguous updates and asks for clarification or produces a draft instead of silently writing uncertain changes.
+- [x] **CONV-04**: System can convert confirmed progress events into Plane comments, status updates, new follow-up tasks, or blocker markers.
+- [x] **CONV-05**: System keeps an audit trail of the original user message, parsed events, planned Plane changes, and applied Plane changes.
 
 ### Delivery Maintenance
 
-- [ ] **DELV-01**: System maintains a delivery plan that maps active projects to milestones, key tasks, owners, blockers, and next review dates.
-- [ ] **DELV-02**: System identifies stale work items with no recent activity.
-- [ ] **DELV-03**: System identifies unowned blockers or risks that need help.
-- [ ] **DELV-04**: System can suggest next actions for blocked or drifting projects.
-- [ ] **DELV-05**: System can show per-person workload and contribution evidence using Plane assignments and activity history.
+- [x] **DELV-01**: System maintains a delivery plan that maps active projects to milestones, key tasks, owners, blockers, and next review dates.
+- [x] **DELV-02**: System identifies stale work items with no recent activity.
+- [x] **DELV-03**: System identifies unowned blockers or risks that need help.
+- [x] **DELV-04**: System can suggest next actions for blocked or drifting projects.
+- [x] **DELV-05**: System can show per-person workload and contribution evidence using Plane assignments and activity history.
 
 ### Visualization
 
-- [ ] **VIS-01**: User can view project progress by state, owner, blocker, risk, and recent activity.
-- [ ] **VIS-02**: User can view a project timeline built from issue creation, updates, comments, state changes, and completions.
-- [ ] **VIS-03**: User can view a people dashboard showing recent contributions, current load, blockers owned, and help needed.
-- [ ] **VIS-04**: Visualizations link back to Plane issues or source events.
+- [x] **VIS-01**: User can view project progress by state, owner, blocker, risk, and recent activity.
+- [x] **VIS-02**: User can view a project timeline built from issue creation, updates, comments, state changes, and completions.
+- [x] **VIS-03**: User can view a people dashboard showing recent contributions, current load, blockers owned, and help needed.
+- [x] **VIS-04**: Visualizations link back to Plane issues or source events.
 
 ### Gantt Visualization Redesign
 
@@ -47,27 +47,27 @@
 
 ### Reports And AI Context
 
-- [ ] **REPT-01**: System can generate a daily report from the latest progress events and Plane timeline.
-- [ ] **REPT-02**: System can generate a weekly report grouped by project, person, shipped work, blockers, risks, and next actions.
-- [ ] **REPT-03**: System can generate risk-help summaries with owner, blocker, needed help, urgency, and suggested escalation path.
-- [ ] **REPT-04**: System can generate project retrospectives covering key nodes, blockers, breakthroughs, contributors, and follow-up actions.
-- [ ] **REPT-05**: System can provide AI with bounded historical context for a project/person/time window without exposing secrets.
+- [x] **REPT-01**: System can generate a daily report from the latest progress events and Plane timeline.
+- [x] **REPT-02**: System can generate a weekly report grouped by project, person, shipped work, blockers, risks, and next actions.
+- [x] **REPT-03**: System can generate risk-help summaries with owner, blocker, needed help, urgency, and suggested escalation path.
+- [x] **REPT-04**: System can generate project retrospectives covering key nodes, blockers, breakthroughs, contributors, and follow-up actions.
+- [x] **REPT-05**: System can provide AI with bounded historical context for a project/person/time window without exposing secrets.
 
 ### Backup And Recovery
 
-- [ ] **BACK-01**: System can export timeline JSONL and generated Markdown reports to local files.
-- [ ] **BACK-02**: System can commit or push selected exports to a GitHub backup repository.
-- [ ] **BACK-03**: System excludes Plane secrets, tokens, and raw `plane.env` from backups.
-- [ ] **BACK-04**: System documents how to restore or rehydrate reports from exported timeline data.
+- [x] **BACK-01**: System can export timeline JSONL and generated Markdown reports to local files.
+- [x] **BACK-02**: System can commit or push selected exports to a GitHub backup repository.
+- [x] **BACK-03**: System excludes Plane secrets, tokens, and raw `plane.env` from backups.
+- [x] **BACK-04**: System documents how to restore or rehydrate reports from exported timeline data.
 
 ### Demand And Capability Expansion
 
-- [ ] **DEMD-01**: System can store imported requirements with source, customer/context, category, priority, status, and decision notes.
-- [ ] **DEMD-02**: System can filter and bounce back unclear or low-value requirements with a reason and requested clarification.
-- [ ] **DEMD-03**: System can rank requirements by value, urgency, cost, risk, dependency, and strategic fit.
-- [ ] **DEMD-04**: System can turn approved requirements into Plane projects or work items.
-- [ ] **CAPA-01**: System can maintain a lightweight capability matrix for people, including skills, project history, current load, and preferred task types.
-- [ ] **CAPA-02**: System can recommend task assignees with visible reasoning and confidence.
+- [x] **DEMD-01**: System can store imported requirements with source, customer/context, category, priority, status, and decision notes.
+- [x] **DEMD-02**: System can filter and bounce back unclear or low-value requirements with a reason and requested clarification.
+- [x] **DEMD-03**: System can rank requirements by value, urgency, cost, risk, dependency, and strategic fit.
+- [x] **DEMD-04**: System can turn approved requirements into Plane projects or work items.
+- [x] **CAPA-01**: System can maintain a lightweight capability matrix for people, including skills, project history, current load, and preferred task types.
+- [x] **CAPA-02**: System can recommend task assignees with visible reasoning and confidence.
 
 ## v2 Requirements
 
@@ -122,46 +122,46 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PLANE-01 | Phase 1 | Pending |
-| PLANE-02 | Phase 1 | Pending |
-| PLANE-03 | Phase 1 | Pending |
-| PLANE-04 | Phase 1 | Pending |
-| PLANE-05 | Phase 1 | Pending |
-| CONV-01 | Phase 2 | Pending |
-| CONV-02 | Phase 2 | Pending |
-| CONV-03 | Phase 2 | Pending |
-| CONV-04 | Phase 2 | Pending |
-| CONV-05 | Phase 2 | Pending |
-| DELV-01 | Phase 3 | Pending |
-| DELV-02 | Phase 3 | Pending |
-| DELV-03 | Phase 3 | Pending |
-| DELV-04 | Phase 3 | Pending |
-| DELV-05 | Phase 3 | Pending |
-| VIS-01 | Phase 3 | Pending |
-| VIS-02 | Phase 3 | Pending |
-| VIS-03 | Phase 3 | Pending |
-| VIS-04 | Phase 3 | Pending |
+| PLANE-01 | Phase 1 | Complete |
+| PLANE-02 | Phase 1 | Complete |
+| PLANE-03 | Phase 1 | Complete |
+| PLANE-04 | Phase 1 | Complete |
+| PLANE-05 | Phase 1 | Complete |
+| CONV-01 | Phase 2 | Complete |
+| CONV-02 | Phase 2 | Complete |
+| CONV-03 | Phase 2 | Complete |
+| CONV-04 | Phase 2 | Complete |
+| CONV-05 | Phase 2 | Complete |
+| DELV-01 | Phase 3 | Complete |
+| DELV-02 | Phase 3 | Complete |
+| DELV-03 | Phase 3 | Complete |
+| DELV-04 | Phase 3 | Complete |
+| DELV-05 | Phase 3 | Complete |
+| VIS-01 | Phase 3 | Complete |
+| VIS-02 | Phase 3 | Complete |
+| VIS-03 | Phase 3 | Complete |
+| VIS-04 | Phase 3 | Complete |
 | GANTT-01 | Phase 6 | Complete |
 | GANTT-02 | Phase 6 | Complete |
 | GANTT-03 | Phase 6 | Complete |
 | GANTT-04 | Phase 6 | Complete |
 | GANTT-05 | Phase 6 | Complete |
 | GANTT-06 | Phase 6 | Complete |
-| REPT-01 | Phase 4 | Pending |
-| REPT-02 | Phase 4 | Pending |
-| REPT-03 | Phase 4 | Pending |
-| REPT-04 | Phase 4 | Pending |
-| REPT-05 | Phase 4 | Pending |
-| BACK-01 | Phase 4 | Pending |
-| BACK-02 | Phase 4 | Pending |
-| BACK-03 | Phase 4 | Pending |
-| BACK-04 | Phase 4 | Pending |
-| DEMD-01 | Phase 5 | Pending |
-| DEMD-02 | Phase 5 | Pending |
-| DEMD-03 | Phase 5 | Pending |
-| DEMD-04 | Phase 5 | Pending |
-| CAPA-01 | Phase 5 | Pending |
-| CAPA-02 | Phase 5 | Pending |
+| REPT-01 | Phase 4 | Complete |
+| REPT-02 | Phase 4 | Complete |
+| REPT-03 | Phase 4 | Complete |
+| REPT-04 | Phase 4 | Complete |
+| REPT-05 | Phase 4 | Complete |
+| BACK-01 | Phase 4 | Complete |
+| BACK-02 | Phase 4 | Complete |
+| BACK-03 | Phase 4 | Complete |
+| BACK-04 | Phase 4 | Complete |
+| DEMD-01 | Phase 5 | Complete |
+| DEMD-02 | Phase 5 | Complete |
+| DEMD-03 | Phase 5 | Complete |
+| DEMD-04 | Phase 5 | Complete |
+| CAPA-01 | Phase 5 | Complete |
+| CAPA-02 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 40 total
@@ -170,4 +170,4 @@
 
 ---
 *Requirements defined: 2026-07-02*
-*Last updated: 2026-07-06 after adding Gantt visualization redesign*
+*Last updated: 2026-07-06 after milestone audit consistency update*
