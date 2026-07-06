@@ -14,7 +14,8 @@ Turn natural-language team progress into trustworthy Plane state, visual timelin
 
 ### Validated
 
-(None yet - ship to validate)
+- Phase 6 validated that Demand Hub can add a local static Gantt sidecar without forking Plane UI.
+- The Gantt sidecar can render Plane task hierarchy, connector lines, blocker/completion/milestone markers, delivery-summary details, and dense/presentation modes from local exports.
 
 ### Active
 
@@ -44,6 +45,8 @@ Current local state:
 - Deployment files live under `plane-selfhost/`.
 - The local Plane PostgreSQL schema has been inspected. It includes key reporting tables such as `projects`, `issues`, `states`, `issue_assignees`, `issue_comments`, `issue_activities`, `cycles`, `modules`, and GitHub sync tables.
 - A read-only timeline exporter exists at `scripts/export-plane-timeline.sh`; it writes JSONL timeline events under `exports/plane/`.
+- The timeline exporter now carries current Gantt issue fields such as `parent_id`, `start_date`, `target_date`, and `completed_at`.
+- A static Gantt sidecar is generated at `exports/delivery/gantt.html` with data at `exports/delivery/gantt.json`.
 - Existing docs:
   - `LOCAL-PLANE-SOLUTION.md`
   - `PLANE-DATA-INTEGRATION.md`
@@ -71,7 +74,7 @@ Product framing from the user:
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Use Plane as the visual delivery source of truth | Plane already provides attractive, mature project/task/cycle/module/kanban UX | - Pending |
-| Build a custom Demand Hub sidecar instead of forking Plane | The differentiator is conversational progress capture, demand triage, reporting, and capability matching, not rebuilding task UI | - Pending |
+| Build a custom Demand Hub sidecar instead of forking Plane | The differentiator is conversational progress capture, demand triage, reporting, and capability matching, not rebuilding task UI | - Validated in Phase 6 for Gantt visualization |
 | Read Plane PostgreSQL for analytics and AI context | Reporting needs complete historical data and timeline extraction | - Pending |
 | Write to Plane through API-level paths | Preserves Plane business logic, activity logs, permissions, notifications, and upgrade safety | - Pending |
 | Start with conversation-to-Plane daily progress loop | This matches the user's preferred operating mode and creates immediate value | - Pending |
@@ -95,5 +98,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-02 after initialization*
-
+*Last updated: 2026-07-06 after Phase 6 verification*
