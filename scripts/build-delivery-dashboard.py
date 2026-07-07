@@ -834,6 +834,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .task-row.drop-parent { background:#eef5ff; box-shadow:inset 0 0 0 2px rgba(47,111,237,.2); }
     .task-main { display:flex; align-items:center; gap:4px; min-width:0; }
     .row-button { width:100%; min-height:calc(var(--row-h) - 6px); display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--ink); text-align:left; cursor:pointer; padding:0 4px; border-radius:4px; overflow:hidden; }
+    .task-row span:not(.task-main):not(.editable-cell) { cursor:pointer; }
+    .editable-cell { cursor:text; }
     .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible, .action-button:focus-visible, .danger-button:focus-visible, .palette-swatch:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
     .chevron { width:14px; flex:0 0 14px; color:var(--muted); text-align:center; }
     .task-key { color:var(--muted); flex:0 0 34px; width:34px; padding:0; font-size:11px; text-align:right; overflow:hidden; text-overflow:ellipsis; }
@@ -844,7 +846,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .tick { width:var(--day-w); flex:0 0 var(--day-w); border-right:1px solid var(--line); padding:10px 1px 0; color:var(--muted); font-size:10px; text-align:center; white-space:nowrap; overflow:hidden; }
     .timeline-row { height:var(--row-h); position:relative; border-bottom:1px solid var(--line); background-image:linear-gradient(to right, rgba(217,222,231,.72) 1px, transparent 1px); background-size:var(--day-w) 100%; }
     .bar { position:absolute; top:calc((var(--row-h) - var(--bar-h)) / 2); height:var(--bar-h); min-width:18px; border:0; border-radius:5px; background:var(--task-color,var(--blue)); color:#fff; padding:0 8px; display:flex; align-items:center; justify-content:flex-start; font-weight:650; font-size:var(--font-label); overflow:hidden; white-space:nowrap; cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.18); }
-    .bar-label { position:relative; z-index:1; overflow:hidden; text-overflow:ellipsis; }
+    .bar-label { position:sticky; left:8px; max-width:calc(100% - 16px); z-index:1; overflow:hidden; text-overflow:ellipsis; pointer-events:none; }
     .bar.drop-parent { transform:scaleY(1.28); transform-origin:center; box-shadow:0 0 0 2px rgba(47,111,237,.22), inset 0 -1px 0 rgba(0,0,0,.18); }
     .bar-handle { position:absolute; top:0; bottom:0; width:10px; z-index:2; cursor:ew-resize; }
     .bar-handle.start { left:0; }
@@ -1393,6 +1395,24 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       span.title = text(title ?? value);
       return span;
     }
+    function makeOwnerCell(task) {
+      const span = makeCell(task.owner);
+      span.classList.add('editable-cell');
+      span.title = `双击修改 Owner：${text(task.owner)}`;
+      span.addEventListener('dblclick', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        editTaskOwner(task);
+      });
+      return span;
+    }
+    function handleTaskRowClick(event, task) {
+      if (shouldSuppressClick(event)) return;
+      if (event.target?.closest?.('.editable-cell')) return;
+      event.stopPropagation();
+      toggleTask(task);
+      showTask(task);
+    }
     function subtreeIds(taskId, ids = new Set()) {
       if (!taskId || ids.has(taskId)) return ids;
       ids.add(taskId);
@@ -1550,6 +1570,14 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       task.delivery_summary.title = title;
       persistEdits();
       render();
+    }
+    function editTaskOwner(task) {
+      const next = prompt('修改 Owner', task.owner || '');
+      if (next === null) return;
+      task.owner = next.trim() || null;
+      persistEdits();
+      render();
+      showTask(task);
     }
     function parseList(value) {
       return String(value || '')
@@ -2028,6 +2056,26 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       }
       return items;
     }
+    function updateBarLabelPositions() {
+      const pane = document.getElementById('timeline-scroll');
+      if (!pane) return;
+      const viewportStart = pane.scrollLeft;
+      const viewportEnd = viewportStart + pane.clientWidth;
+      for (const bar of document.querySelectorAll('.bar')) {
+        const label = bar.querySelector('.bar-label');
+        if (!label) continue;
+        const left = Number.parseFloat(bar.style.left) || 0;
+        const width = Number.parseFloat(bar.style.width) || bar.offsetWidth || 0;
+        const visibleLeft = Math.max(left, viewportStart);
+        const visibleRight = Math.min(left + width, viewportEnd);
+        const labelWidth = Math.min(label.scrollWidth || 0, Math.max(12, width - 16));
+        const minOffset = 8;
+        const maxOffset = Math.max(minOffset, width - labelWidth - 8);
+        const nextLeft = visibleRight > visibleLeft ? Math.min(Math.max(visibleLeft - left + 8, minOffset), maxOffset) : minOffset;
+        label.style.left = `${nextLeft}px`;
+        label.style.maxWidth = `${Math.max(12, width - nextLeft - 8)}px`;
+      }
+    }
     function render() {
       rebuildTaskIndex();
       updateBounds();
@@ -2104,11 +2152,15 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         label.className = 'task-label';
         label.textContent = task.title;
         button.append(chevron, key, label);
-        button.addEventListener('click', () => showTask(task));
+        button.addEventListener('click', event => handleTaskRowClick(event, task));
         button.addEventListener('dblclick', event => { event.stopPropagation(); editTaskName(task); });
         button.addEventListener('pointerdown', event => armRowDrag(event, task));
         buttonCell.append(button);
-        row.append(buttonCell, makeCell(task.owner), makeCell(stateText(task.state), task.state), makeCell(monthRange(task), `${text(task.start_date)}→${text(task.target_date)}`));
+        const ownerCell = makeOwnerCell(task);
+        const stateCell = makeCell(stateText(task.state), task.state);
+        const rangeCell = makeCell(monthRange(task), `${text(task.start_date)}→${text(task.target_date)}`);
+        row.append(buttonCell, ownerCell, stateCell, rangeCell);
+        row.addEventListener('click', event => handleTaskRowClick(event, task));
         taskRows.append(row);
 
         const track = document.createElement('div');
@@ -2239,6 +2291,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         path.setAttribute('d', parts.join(' '));
         connectorLayer.append(path);
       }
+      updateBarLabelPositions();
     }
     document.getElementById('density-dense').addEventListener('click', () => setDensity('dense'));
     document.getElementById('density-present').addEventListener('click', () => setDensity('present'));
@@ -2265,6 +2318,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     document.getElementById('detail-close').addEventListener('click', () => {
       closeDetail();
     });
+    document.getElementById('timeline-scroll').addEventListener('scroll', updateBarLabelPositions);
     window.addEventListener('resize', render);
     render();
   </script>
