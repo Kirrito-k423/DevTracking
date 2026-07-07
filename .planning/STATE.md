@@ -82,6 +82,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260707-dwc | Gantt readability fixes | 2026-07-07 | d3d8453 | [260707-dwc-gantt](./quick/260707-dwc-gantt/) |
 | 260706-pdr | Plane daily record skill and July 6 daily update | 2026-07-06 | 501a728 | [260706-pdr-plane-daily-record](./quick/260706-pdr-plane-daily-record/) |
 | 260706-q3p | Plane daily nested Q3 and ByteDance specials | 2026-07-06 | 9c184c6 | [260706-q3p-plane-daily-q3-specials](./quick/260706-q3p-plane-daily-q3-specials/) |
 
