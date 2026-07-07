@@ -853,8 +853,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .bar.parent { background:var(--blue); }
     .bar.blocked { background:var(--red); }
     .event-stack { position:absolute; top:calc((var(--row-h) - var(--marker-size) - 4px) / 2); min-height:calc(var(--marker-size) + 4px); display:flex; align-items:center; gap:2px; padding:1px; border:1px solid var(--line); border-radius:999px; background:#fff; box-shadow:0 1px 3px rgba(32,36,42,.16); z-index:5; }
-    .event-stack.multi { gap:3px; box-shadow:0 2px 6px rgba(32,36,42,.2); }
-    .marker { width:var(--marker-size); height:var(--marker-size); border:1px solid var(--marker-color); background:var(--marker-color); color:#fff; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; font-size:12px; font-weight:800; line-height:1; box-shadow:inset 0 -1px 0 rgba(0,0,0,.16); }
+    .event-stack.multi { box-shadow:0 2px 6px rgba(32,36,42,.2); }
+    .event-stack.collapsed { overflow:hidden; }
+    .event-stack.expanded { gap:4px; padding:4px 6px 4px 18px; border-color:var(--blue); border-radius:8px; box-shadow:0 0 0 2px rgba(47,111,237,.16), 0 6px 16px rgba(32,36,42,.16); z-index:7; }
+    .stack-collapse { position:absolute; left:2px; top:2px; width:14px; height:14px; border:1px solid var(--line); background:#fff; color:var(--muted); border-radius:999px; padding:0; display:flex; align-items:center; justify-content:center; font-size:10px; line-height:1; cursor:pointer; }
+    .marker { width:var(--stack-marker-size, var(--marker-size)); height:var(--stack-marker-size, var(--marker-size)); border:1px solid var(--marker-color); background:var(--marker-color); color:#fff; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; font-size:calc(var(--stack-marker-size, var(--marker-size)) * .58); font-weight:800; line-height:1; box-shadow:inset 0 -1px 0 rgba(0,0,0,.16); }
+    .event-stack.collapsed .marker { position:absolute; top:50%; transform:translateY(-50%); }
+    .event-stack.expanded .marker { position:relative; flex:0 0 auto; }
     .marker.blocked { --marker-color:var(--red); }
     .marker.completed { --marker-color:var(--green); }
     .marker.milestone { --marker-color:var(--amber); }
@@ -889,6 +894,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     <div class="toolbar" aria-label="Gantt controls">
       <button class="tool-button" id="refresh" type="button">Refresh exports</button>
       <button class="tool-button" id="reset-edits" type="button">Reset local edits</button>
+      <button class="tool-button" id="push-edits" type="button">Push changes</button>
       <button class="tool-button" id="marker-demo" type="button">Demo markers</button>
       <button class="tool-button" id="expand-all" type="button" title="Expand all">Expand</button>
       <button class="tool-button" id="collapse-all" type="button" title="Collapse all">Collapse</button>
@@ -939,6 +945,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     let tasksById = new Map();
     let dragState = null;
     let suppressNextClick = false;
+    const expandedEventStacks = new Set();
     let activeMinOrd = 0;
     let activeMaxOrd = 0;
 
@@ -994,6 +1001,99 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         })),
         events
       }));
+    }
+    function baseTaskMap() {
+      return new Map(gantt.tasks.map(task => [task.id, task]));
+    }
+    function baseEventMap() {
+      return new Map(gantt.events.map(event => [event.id, event]));
+    }
+    function changedTaskRecords() {
+      const base = baseTaskMap();
+      return tasks
+        .map(task => {
+          const original = base.get(task.id) || {};
+          const changes = {};
+          for (const key of ['title', 'compact_label', 'parent_id', 'start_date', 'target_date']) {
+            if (text(task[key]) !== text(original[key])) changes[key] = task[key] ?? null;
+          }
+          return Object.keys(changes).length ? {
+            id: task.id,
+            issue_id: task.issue_id,
+            issue_key: task.issue_key,
+            changes
+          } : null;
+        })
+        .filter(Boolean);
+    }
+    function changedEventRecords() {
+      const base = baseEventMap();
+      return events
+        .filter(event => !base.has(event.id))
+        .map(event => ({
+          id: event.id,
+          task_id: event.task_id,
+          type: event.type,
+          date: event.date,
+          summary: event.summary,
+          compact_label: event.compact_label,
+          source_refs: event.source_refs || []
+        }));
+    }
+    function buildChangeset() {
+      return {
+        schema: 'plane-demand-hub.gantt-edits.v1',
+        generated_at: new Date().toISOString(),
+        source_gantt_generated_at: gantt.generated_at,
+        note: 'Static Gantt edits are persisted as an auditable changeset. Applying to Plane requires a controlled API writer; no direct Plane database writes.',
+        task_changes: changedTaskRecords(),
+        new_events: changedEventRecords(),
+        snapshot: {
+          tasks: tasks.map(task => ({
+            id: task.id,
+            issue_id: task.issue_id,
+            issue_key: task.issue_key,
+            title: task.title,
+            compact_label: task.compact_label,
+            parent_id: task.parent_id,
+            start_date: task.start_date,
+            target_date: task.target_date
+          })),
+          events
+        }
+      };
+    }
+    function downloadJson(filename, payload) {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    }
+    async function pushEdits() {
+      persistEdits();
+      const changeset = buildChangeset();
+      if (!changeset.task_changes.length && !changeset.new_events.length) {
+        alert('没有可 Push 的本地修改。');
+        return;
+      }
+      const filename = `gantt-changeset-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      try {
+        const response = await fetch('/api/gantt-edits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename, changeset })
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json();
+        alert(`已保存 changeset：${result.path || filename}\\n注意：这还不是 Plane API 写回。`);
+      } catch (error) {
+        downloadJson(filename, changeset);
+        alert('当前服务器不支持直接写文件，已下载 changeset JSON。真正写回 Plane 仍需受控 API writer。');
+      }
     }
     function rebuildTaskIndex() {
       tasksById = new Map(tasks.map(task => [task.id, task]));
@@ -1089,6 +1189,12 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       event.stopPropagation();
       return true;
     }
+    function eventStackKey(taskId, eventDate) {
+      return `${taskId}:${eventDate || 'n/a'}`;
+    }
+    function markerSize() {
+      return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--marker-size')) || 20;
+    }
     function dateObj(value) {
       const ord = dateOrd(value);
       return ord === null ? null : new Date(ord * DAY_MS);
@@ -1122,6 +1228,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       document.body.dataset.density = mode;
       document.getElementById('density-dense').setAttribute('aria-pressed', mode === 'dense');
       document.getElementById('density-present').setAttribute('aria-pressed', mode === 'present');
+      expandedEventStacks.clear();
       render();
     }
     function makeCell(value, title) {
@@ -1274,6 +1381,36 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       });
       persistEdits();
       render();
+    }
+    function expandEventStack(key) {
+      expandedEventStacks.add(key);
+      render();
+    }
+    function collapseEventStack(key) {
+      expandedEventStacks.delete(key);
+      render();
+    }
+    function createMarker(event, stackKey, expandFirst) {
+      const marker = document.createElement('button');
+      marker.className = `marker ${event.type}`;
+      marker.type = 'button';
+      marker.title = event.summary;
+      marker.setAttribute('aria-label', `${eventLabel(event.type)} · ${text(event.summary)}`);
+      const icon = document.createElement('b');
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = symbol[event.type] || '•';
+      marker.append(icon);
+      marker.addEventListener('click', eventObject => {
+        if (shouldSuppressClick(eventObject)) return;
+        eventObject.preventDefault();
+        eventObject.stopPropagation();
+        if (expandFirst && !expandedEventStacks.has(stackKey)) {
+          expandEventStack(stackKey);
+          return;
+        }
+        showEvent(event);
+      });
+      return marker;
     }
     function moveTask(taskId, drop) {
       if (!drop || !tasksById.has(taskId) || !tasksById.has(drop.targetId)) return;
@@ -1568,25 +1705,49 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         }
         for (const [eventDate, dateEvents] of groupedEvents) {
           const stack = document.createElement('div');
-          stack.className = `event-stack ${dateEvents.length > 1 ? 'multi' : ''}`;
-          stack.style.left = `${offsetForDate(eventDate) + 2}px`;
+          const stackKey = eventStackKey(task.id, eventDate);
+          const isMulti = dateEvents.length > 1;
+          const isExpanded = isMulti && expandedEventStacks.has(stackKey);
+          stack.className = `event-stack ${isMulti ? 'multi' : ''} ${isMulti ? (isExpanded ? 'expanded' : 'collapsed') : ''}`;
+          stack.dataset.stackKey = stackKey;
+          stack.style.left = `${offsetForDate(eventDate) + (isMulti && !isExpanded ? 1 : 2)}px`;
           stack.title = `${shortDate(eventDate)} · ${dateEvents.length} event${dateEvents.length > 1 ? 's' : ''}`;
-          for (const event of dateEvents) {
-            const marker = document.createElement('button');
-            marker.className = `marker ${event.type}`;
-            marker.type = 'button';
-            marker.title = event.summary;
-            marker.setAttribute('aria-label', `${eventLabel(event.type)} · ${text(event.summary)}`);
-            const icon = document.createElement('b');
-            icon.setAttribute('aria-hidden', 'true');
-            icon.textContent = symbol[event.type] || '•';
-            marker.append(icon);
-            marker.addEventListener('click', eventObject => {
-              if (shouldSuppressClick(eventObject)) return;
-              eventObject.stopPropagation();
-              showEvent(event);
+          if (isMulti && !isExpanded) {
+            const collapsedWidth = Math.max(16, Math.min(dayWidth() - 2, markerSize() * 1.4));
+            const visualSize = Math.max(12, Math.min(markerSize(), collapsedWidth / Math.max(1.4, 1 + (dateEvents.length - 1) * 0.22)));
+            const step = dateEvents.length <= 1 ? 0 : (collapsedWidth - visualSize) / (dateEvents.length - 1);
+            stack.style.width = `${collapsedWidth}px`;
+            stack.style.height = `${Math.max(visualSize + 4, 16)}px`;
+            stack.style.setProperty('--stack-marker-size', `${visualSize}px`);
+            dateEvents.forEach((event, markerIndex) => {
+              const marker = createMarker(event, stackKey, true);
+              marker.style.left = `${step * markerIndex}px`;
+              marker.style.zIndex = String(markerIndex + 1);
+              stack.append(marker);
             });
-            stack.append(marker);
+            stack.addEventListener('click', eventObject => {
+              if (shouldSuppressClick(eventObject)) return;
+              eventObject.preventDefault();
+              eventObject.stopPropagation();
+              expandEventStack(stackKey);
+            });
+          } else {
+            stack.style.removeProperty('--stack-marker-size');
+            if (isMulti) {
+              const collapse = document.createElement('button');
+              collapse.className = 'stack-collapse';
+              collapse.type = 'button';
+              collapse.title = '折叠';
+              collapse.setAttribute('aria-label', '折叠同日事件');
+              collapse.textContent = '‹';
+              collapse.addEventListener('click', eventObject => {
+                eventObject.preventDefault();
+                eventObject.stopPropagation();
+                collapseEventStack(stackKey);
+              });
+              stack.append(collapse);
+            }
+            for (const event of dateEvents) stack.append(createMarker(event, stackKey, false));
           }
           track.append(stack);
         }
@@ -1639,6 +1800,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       render();
     });
     document.getElementById('refresh').addEventListener('click', () => location.reload());
+    document.getElementById('push-edits').addEventListener('click', pushEdits);
     document.getElementById('marker-demo').addEventListener('click', addDemoEvents);
     document.getElementById('reset-edits').addEventListener('click', () => {
       if (!confirm('清除本页本地修改？不会影响 Plane 数据。')) return;
