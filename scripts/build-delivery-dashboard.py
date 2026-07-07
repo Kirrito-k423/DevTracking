@@ -908,6 +908,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       <button class="tool-button" id="refresh" type="button">Refresh exports</button>
       <button class="tool-button" id="reset-edits" type="button">Reset local edits</button>
       <button class="tool-button" id="push-edits" type="button">Push changes</button>
+      <button class="tool-button" id="export-report" type="button">输出报告</button>
       <button class="tool-button" id="add-task" type="button">新增任务条</button>
       <button class="tool-button" id="add-event" type="button">新增事件</button>
       <button class="tool-button" id="marker-demo" type="button">Demo markers</button>
@@ -965,6 +966,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     let activeMinOrd = 0;
     let activeMaxOrd = 0;
     let selectedTaskId = null;
+    let didCenterToday = false;
 
     restoreEdits();
     rebuildTaskIndex();
@@ -1221,6 +1223,150 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       link.click();
       link.remove();
       URL.revokeObjectURL(link.href);
+    }
+    function downloadText(filename, content, type = 'text/markdown') {
+      const blob = new Blob([content], { type: `${type};charset=utf-8` });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    }
+    function addDays(value, days) {
+      return isoFromOrd((dateOrd(value) ?? todayOrd()) + days);
+    }
+    function reportKindFromInput(value) {
+      const raw = String(value || '').trim().toLowerCase();
+      if (raw.includes('周') || raw.includes('week')) return 'weekly';
+      if (raw.includes('月') || raw.includes('month')) return 'monthly';
+      return 'daily';
+    }
+    function reportKindLabel(kind) {
+      return { daily: '日报', weekly: '周报', monthly: '月报' }[kind] || '日报';
+    }
+    function defaultReportPeriod(kind) {
+      const today = todayOrd();
+      if (kind === 'weekly') {
+        const date = new Date(today * DAY_MS);
+        const day = date.getUTCDay() || 7;
+        const start = today - day + 1;
+        return { start: isoFromOrd(start), end: isoFromOrd(start + 6) };
+      }
+      if (kind === 'monthly') {
+        const date = new Date(today * DAY_MS);
+        const start = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1) / DAY_MS;
+        const end = Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0) / DAY_MS;
+        return { start: isoFromOrd(start), end: isoFromOrd(end) };
+      }
+      const day = isoFromOrd(today);
+      return { start: day, end: day };
+    }
+    function dateInRange(value, startDate, endDate) {
+      const ord = dateOrd(value);
+      return ord !== null && ord >= dateOrd(startDate) && ord <= dateOrd(endDate);
+    }
+    function taskOverlapsPeriod(task, startDate, endDate, periodEvents) {
+      const start = dateOrd(task.start_date);
+      const target = dateOrd(task.target_date) ?? start;
+      const periodStart = dateOrd(startDate);
+      const periodEnd = dateOrd(endDate);
+      const rangeOverlaps = start !== null && target !== null && start <= periodEnd && target >= periodStart;
+      return rangeOverlaps || periodEvents.some(event => event.task_id === task.id);
+    }
+    function cleanReportText(value) {
+      const raw = text(value);
+      return raw === 'n/a' ? '' : raw.replace(/\\s+/g, ' ').trim();
+    }
+    function taskName(task) {
+      return `${cleanReportText(task.issue_key)} ${cleanReportText(task.title)}`.trim();
+    }
+    function pushLine(lines, value) {
+      if (value) lines.push(value);
+    }
+    function buildReportMarkdown(kind, startDate, endDate) {
+      const label = reportKindLabel(kind);
+      const periodEvents = sortedEvents(events.filter(event => dateInRange(event.date, startDate, endDate)));
+      const reportTasks = tasks.filter(task => taskOverlapsPeriod(task, startDate, endDate, periodEvents));
+      const lines = [
+        `# Plane Demand Hub ${label}`,
+        '',
+        `周期：${startDate} 至 ${endDate}`,
+        `生成时间：${new Date().toISOString()}`,
+        `数据来源：当前 Gantt 页面状态（含本地编辑）`,
+        '',
+        '## 进展'
+      ];
+      if (!reportTasks.length) {
+        lines.push('- 本周期没有匹配任务。');
+      } else {
+        for (const task of reportTasks) {
+          const taskEvents = periodEvents.filter(event => event.task_id === task.id);
+          const eventText = taskEvents.map(event => `${eventLabel(event.type)} ${shortDate(event.date)} ${cleanReportText(event.summary)}`).join('；');
+          const range = `${cleanReportText(task.start_date)}→${cleanReportText(task.target_date)}`;
+          const owner = cleanReportText(task.owner) || '未分配';
+          const progress = `${text(task.progress)}%`;
+          lines.push(`- ${taskName(task)}：${stateText(task.state)}，进度 ${progress}，Owner ${owner}，周期 ${range}${eventText ? `；事件：${eventText}` : ''}`);
+        }
+      }
+      lines.push('', '## 下一步');
+      const nextLines = reportTasks
+        .map(task => ({ task, next: cleanReportText((task.delivery_summary || {}).next_action) }))
+        .filter(item => item.next);
+      if (!nextLines.length) lines.push('- 暂无明确下一步。');
+      for (const item of nextLines) lines.push(`- ${taskName(item.task)}：${item.next}`);
+
+      lines.push('', '## 阻塞');
+      const blockerLines = [];
+      for (const task of reportTasks) {
+        const summary = task.delivery_summary || {};
+        const blocker = cleanReportText(summary.blocker);
+        const isBlocked = stateText(task.state) === '阻塞' || (task.labels || []).some(label => ['blocked', 'needs-help', 'blocker'].includes(String(label).toLowerCase()));
+        if (blocker || isBlocked) blockerLines.push(`- ${taskName(task)}：${blocker || '状态或标签显示阻塞'}`);
+      }
+      if (!blockerLines.length) lines.push('- 暂无阻塞。');
+      else lines.push(...blockerLines);
+
+      lines.push('', '## 求助点');
+      const helpEvents = periodEvents.filter(event => event.type === 'blocked');
+      if (!helpEvents.length) {
+        lines.push('- 暂无求助点。');
+      } else {
+        for (const event of helpEvents) {
+          const task = tasksById.get(event.task_id) || {};
+          lines.push(`- ${taskName(task)}：${shortDate(event.date)} ${cleanReportText(event.summary) || '需要协助'}`);
+        }
+      }
+      lines.push('', '## 事件明细');
+      if (!periodEvents.length) {
+        lines.push('- 本周期没有事件标记。');
+      } else {
+        for (const event of periodEvents) {
+          const task = tasksById.get(event.task_id) || {};
+          lines.push(`- ${shortDate(event.date)} · ${eventLabel(event.type)} · ${taskName(task)} · ${cleanReportText(event.summary)}`);
+        }
+      }
+      return lines.join('\\n') + '\\n';
+    }
+    function exportReport() {
+      persistEdits();
+      rebuildTaskIndex();
+      const rawKind = prompt('报告类型：日报 / 周报 / 月报', '日报');
+      if (rawKind === null) return;
+      const kind = reportKindFromInput(rawKind);
+      const defaults = defaultReportPeriod(kind);
+      const startDate = promptDate('开始日期 YYYY-MM-DD', defaults.start);
+      if (!startDate) return;
+      const endDate = promptDate('结束日期 YYYY-MM-DD', defaults.end);
+      if (!endDate) return;
+      const startOrd = dateOrd(startDate) ?? todayOrd();
+      const endOrd = dateOrd(endDate) ?? startOrd;
+      const normalizedStart = isoFromOrd(Math.min(startOrd, endOrd));
+      const normalizedEnd = isoFromOrd(Math.max(startOrd, endOrd));
+      const markdown = buildReportMarkdown(kind, normalizedStart, normalizedEnd);
+      const filename = `gantt-${kind}-report-${normalizedStart}-to-${normalizedEnd}.md`;
+      downloadText(filename, markdown);
     }
     async function pushEdits() {
       persistEdits();
@@ -2056,11 +2202,25 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       }
       return items;
     }
-    function updateBarLabelPositions() {
+    function timelineScroller() {
       const pane = document.getElementById('timeline-scroll');
-      if (!pane) return;
-      const viewportStart = pane.scrollLeft;
-      const viewportEnd = viewportStart + pane.clientWidth;
+      const paneStyle = pane ? getComputedStyle(pane) : null;
+      if (pane && pane.scrollWidth > pane.clientWidth && paneStyle?.overflowX !== 'visible') return pane;
+      const layout = document.querySelector('.gantt-layout');
+      if (layout && layout.scrollWidth > layout.clientWidth) return layout;
+      return pane || document.scrollingElement;
+    }
+    function timelineContentOffset(scroller) {
+      const content = document.getElementById('timeline-content');
+      if (!content || !scroller) return 0;
+      return content.getBoundingClientRect().left - scroller.getBoundingClientRect().left + scroller.scrollLeft;
+    }
+    function updateBarLabelPositions() {
+      const scroller = timelineScroller();
+      if (!scroller) return;
+      const contentOffset = timelineContentOffset(scroller);
+      const viewportStart = scroller.scrollLeft - contentOffset;
+      const viewportEnd = viewportStart + scroller.clientWidth;
       for (const bar of document.querySelectorAll('.bar')) {
         const label = bar.querySelector('.bar-label');
         if (!label) continue;
@@ -2075,6 +2235,26 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         label.style.left = `${nextLeft}px`;
         label.style.maxWidth = `${Math.max(12, width - nextLeft - 8)}px`;
       }
+    }
+    function centerToday() {
+      const scroller = timelineScroller();
+      if (!scroller) return;
+      const today = todayOrd();
+      if (today < activeMinOrd || today > activeMaxOrd) return;
+      const todayCenter = timelineContentOffset(scroller) + (today - activeMinOrd) * dayWidth() + dayWidth() / 2;
+      const target = todayCenter - scroller.clientWidth / 2;
+      const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+      scroller.scrollLeft = Math.max(0, Math.min(maxScroll, target));
+      updateBarLabelPositions();
+    }
+    function centerTodayOnce() {
+      if (didCenterToday) return;
+      didCenterToday = true;
+      requestAnimationFrame(() => {
+        centerToday();
+        setTimeout(centerToday, 80);
+        setTimeout(centerToday, 250);
+      });
     }
     function render() {
       rebuildTaskIndex();
@@ -2292,6 +2472,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         connectorLayer.append(path);
       }
       updateBarLabelPositions();
+      centerTodayOnce();
     }
     document.getElementById('density-dense').addEventListener('click', () => setDensity('dense'));
     document.getElementById('density-present').addEventListener('click', () => setDensity('present'));
@@ -2303,6 +2484,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     });
     document.getElementById('refresh').addEventListener('click', () => location.reload());
     document.getElementById('push-edits').addEventListener('click', pushEdits);
+    document.getElementById('export-report').addEventListener('click', exportReport);
     document.getElementById('add-task').addEventListener('click', addTaskBar);
     document.getElementById('add-event').addEventListener('click', addEventFromButton);
     document.getElementById('marker-demo').addEventListener('click', addDemoEvents);
@@ -2319,6 +2501,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       closeDetail();
     });
     document.getElementById('timeline-scroll').addEventListener('scroll', updateBarLabelPositions);
+    document.querySelector('.gantt-layout').addEventListener('scroll', updateBarLabelPositions);
     window.addEventListener('resize', render);
     render();
   </script>
