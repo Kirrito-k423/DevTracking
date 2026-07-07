@@ -810,7 +810,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Plane Demand Hub Gantt</title>
   <style>
-    :root { color-scheme: light; --ink:#20242a; --muted:#657282; --line:#d9dee7; --bg:#f7f8fa; --panel:#ffffff; --blue:#2f6fed; --green:#1b8a5a; --amber:#b26b00; --red:#c43d3d; --row-h:30px; --bar-h:18px; --day-w:30px; --table-w:520px; --font-body:13px; --font-label:12px; }
+    :root { color-scheme: light; --ink:#20242a; --muted:#657282; --line:#d9dee7; --bg:#f7f8fa; --panel:#ffffff; --blue:#2f6fed; --green:#1b8a5a; --amber:#b26b00; --red:#c43d3d; --row-h:30px; --bar-h:18px; --day-w:30px; --table-w:520px; --font-body:13px; --font-label:12px; --marker-size:20px; }
     body[data-density="present"] { --row-h:52px; --bar-h:28px; --day-w:40px; --table-w:620px; --font-body:15px; --font-label:13px; }
     * { box-sizing:border-box; }
     body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--bg); font-size:var(--font-body); letter-spacing:0; }
@@ -837,7 +837,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
     .chevron { width:14px; flex:0 0 14px; color:var(--muted); text-align:center; }
     .task-key { color:var(--muted); flex:0 0 34px; width:34px; padding:0; font-size:11px; text-align:right; overflow:hidden; text-overflow:ellipsis; }
-    .task-label { font-weight:600; font-size:var(--font-label); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .task-label { flex:1 1 auto; min-width:0; font-weight:600; font-size:var(--font-label); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .timeline-pane { overflow:auto; background:#fff; position:relative; }
     .timeline-content { position:relative; min-height:100%; }
     .time-head { height:34px; position:sticky; top:0; z-index:3; display:flex; border-bottom:1px solid var(--line); background:#fbfcfd; }
@@ -852,11 +852,12 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .bar-handle:hover { background:rgba(255,255,255,.28); }
     .bar.parent { background:var(--blue); }
     .bar.blocked { background:var(--red); }
-    .marker { position:absolute; top:calc((var(--row-h) - 22px) / 2); min-width:22px; height:22px; border:1px solid currentColor; background:#fff; border-radius:11px; display:flex; align-items:center; gap:3px; padding:0 5px; cursor:pointer; font-size:12px; font-weight:700; box-shadow:0 1px 2px rgba(32,36,42,.12); }
-    .marker span { max-width:8ch; overflow:hidden; white-space:nowrap; }
-    .marker.blocked { color:var(--red); }
-    .marker.completed { color:var(--green); }
-    .marker.milestone { color:var(--amber); }
+    .event-stack { position:absolute; top:calc((var(--row-h) - var(--marker-size) - 4px) / 2); min-height:calc(var(--marker-size) + 4px); display:flex; align-items:center; gap:2px; padding:1px; border:1px solid var(--line); border-radius:999px; background:#fff; box-shadow:0 1px 3px rgba(32,36,42,.16); z-index:5; }
+    .event-stack.multi { gap:3px; box-shadow:0 2px 6px rgba(32,36,42,.2); }
+    .marker { width:var(--marker-size); height:var(--marker-size); border:1px solid var(--marker-color); background:var(--marker-color); color:#fff; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; font-size:12px; font-weight:800; line-height:1; box-shadow:inset 0 -1px 0 rgba(0,0,0,.16); }
+    .marker.blocked { --marker-color:var(--red); }
+    .marker.completed { --marker-color:var(--green); }
+    .marker.milestone { --marker-color:var(--amber); }
     .connector-layer { position:absolute; left:0; top:34px; pointer-events:none; overflow:visible; z-index:1; }
     .connector { fill:none; stroke:#9aa5b4; stroke-width:1.35; stroke-linecap:square; stroke-linejoin:miter; stroke-dasharray:5 4; opacity:.9; vector-effect:non-scaling-stroke; shape-rendering:geometricPrecision; mix-blend-mode:normal; }
     .timeline-row.placeholder { background:#eef1f6; border:1px dashed #aeb8c7; transition:height .16s ease, background .16s ease; }
@@ -888,6 +889,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     <div class="toolbar" aria-label="Gantt controls">
       <button class="tool-button" id="refresh" type="button">Refresh exports</button>
       <button class="tool-button" id="reset-edits" type="button">Reset local edits</button>
+      <button class="tool-button" id="marker-demo" type="button">Demo markers</button>
       <button class="tool-button" id="expand-all" type="button" title="Expand all">Expand</button>
       <button class="tool-button" id="collapse-all" type="button" title="Collapse all">Collapse</button>
       <button class="tool-button" id="density-dense" type="button" aria-pressed="true">Dense</button>
@@ -929,11 +931,14 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     const DAY_MS = 86400000;
     const PAD_DAYS = 30;
     const symbol = { blocked: '✕', completed: '●', milestone: '★' };
+    const eventTypeLabel = { blocked: '求助', completed: '完成', milestone: '里程碑' };
+    const eventTypeOrder = { blocked: 0, completed: 1, milestone: 2 };
     const clone = value => JSON.parse(JSON.stringify(value));
     let tasks = clone(gantt.tasks);
     let events = clone(gantt.events);
     let tasksById = new Map();
     let dragState = null;
+    let suppressNextClick = false;
     let activeMinOrd = 0;
     let activeMaxOrd = 0;
 
@@ -1067,6 +1072,23 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       else if (label.includes(': ')) label = label.split(': ').slice(1).join(': ').trim() || label;
       return compact(label);
     }
+    function eventLabel(type) {
+      return eventTypeLabel[type] || type || '事件';
+    }
+    function sortedEvents(eventList) {
+      return [...eventList].sort((left, right) => (
+        text(left.date).localeCompare(text(right.date)) ||
+        ((eventTypeOrder[left.type] ?? 9) - (eventTypeOrder[right.type] ?? 9)) ||
+        text(left.id).localeCompare(text(right.id))
+      ));
+    }
+    function shouldSuppressClick(event) {
+      if (!suppressNextClick) return false;
+      suppressNextClick = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return true;
+    }
     function dateObj(value) {
       const ord = dateOrd(value);
       return ord === null ? null : new Date(ord * DAY_MS);
@@ -1181,7 +1203,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     function showEvent(event) {
       const task = tasksById.get(event.task_id) || {};
       openDetail(event.summary || 'Delivery summary', [
-        ['Event', event.type],
+        ['Event', eventLabel(event.type)],
         ['Task', `${text(task.issue_key)} ${text(task.title)}`],
         ['Date', shortDate(event.date)],
         ['Summary', event.summary],
@@ -1209,15 +1231,15 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       render();
     }
     function addEventAt(task, date) {
-      const raw = prompt('添加事件类型：阻塞 / 完成 / 里程碑', '里程碑');
+      const raw = prompt('添加事件类型：求助 / 完成 / 里程碑', '里程碑');
       if (raw === null) return;
       const normalized = raw.trim().toLowerCase();
       let type = 'milestone';
-      if (normalized.includes('阻') || normalized.includes('block')) type = 'blocked';
+      if (normalized.includes('求') || normalized.includes('助') || normalized.includes('阻') || normalized.includes('block') || normalized.includes('help')) type = 'blocked';
       else if (normalized.includes('完') || normalized.includes('done') || normalized.includes('complete')) type = 'completed';
-      const summary = prompt('事件简述', type === 'blocked' ? '阻塞' : type === 'completed' ? '完成' : '里程碑');
+      const summary = prompt('事件简述', eventLabel(type));
       if (summary === null) return;
-      const label = summary.trim() || (type === 'blocked' ? '阻塞' : type === 'completed' ? '完成' : '里程碑');
+      const label = summary.trim() || eventLabel(type);
       events.push({
         id: `local:${task.id}:${type}:${date}:${Date.now()}`,
         task_id: task.id,
@@ -1226,6 +1248,29 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         date,
         summary: `${label}: ${task.title}`,
         source_refs: [{ event_time: new Date().toISOString(), event_type: 'local_edit', source: { table: 'localStorage', id: task.id } }]
+      });
+      persistEdits();
+      render();
+    }
+    function addDemoEvents() {
+      const task = visibleTasks()[0] || tasks[0];
+      if (!task) return;
+      const date = task.start_date || task.target_date || isoFromOrd(todayOrd());
+      const stamp = Date.now();
+      [
+        ['blocked', '求助', '求助: 同日多事件测试'],
+        ['completed', '完成', '完成: 同日多事件测试'],
+        ['milestone', '里程碑', '里程碑: 同日多事件测试']
+      ].forEach(([type, label, summary], index) => {
+        events.push({
+          id: `local-demo:${task.id}:${date}:${stamp}:${index}`,
+          task_id: task.id,
+          type,
+          compact_label: label,
+          date,
+          summary: `${summary}: ${task.title}`,
+          source_refs: [{ event_time: new Date().toISOString(), event_type: 'local_demo', source: { table: 'localStorage', id: task.id } }]
+        });
       });
       persistEdits();
       render();
@@ -1370,8 +1415,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     }
     function armEventCreate(event, task) {
       if (event.button !== 0) return;
+      if (event.target?.closest?.('.bar-handle')) return;
       const date = isoFromOrd(ordFromPointer(event));
-      const timer = setTimeout(() => addEventAt(task, date), 520);
+      const timer = setTimeout(() => {
+        suppressNextClick = true;
+        addEventAt(task, date);
+        setTimeout(() => { suppressNextClick = false; }, 500);
+      }, 520);
       const cleanup = () => clearTimeout(timer);
       window.addEventListener('pointerup', cleanup, { once: true });
       window.addEventListener('pointermove', cleanup, { once: true });
@@ -1467,7 +1517,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         key.textContent = text(task.issue_key);
         const label = document.createElement('span');
         label.className = 'task-label';
-        label.textContent = task.compact_label;
+        label.textContent = task.title;
         button.append(chevron, key, label);
         button.addEventListener('click', () => showTask(task));
         button.addEventListener('dblclick', event => { event.stopPropagation(); editTaskName(task); });
@@ -1500,26 +1550,45 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         endHandle.addEventListener('pointerdown', event => beginBarResize(event, task, 'end'));
         barLabel.addEventListener('dblclick', event => { event.stopPropagation(); editTaskName(task); });
         bar.append(startHandle, barLabel, endHandle);
-        bar.addEventListener('click', () => { toggleTask(task); showTask(task); });
+        bar.addEventListener('click', event => {
+          if (shouldSuppressClick(event)) return;
+          toggleTask(task);
+          showTask(task);
+        });
         bar.addEventListener('dblclick', event => { event.stopPropagation(); editTaskName(task); });
         track.append(bar);
         track.addEventListener('pointerdown', event => {
-          if (event.target !== track) return;
           armEventCreate(event, task);
         });
-        for (const event of byTask.get(task.id) || []) {
-          const marker = document.createElement('button');
-          marker.className = `marker ${event.type}`;
-          marker.type = 'button';
-          marker.style.left = `${offsetForDate(event.date)}px`;
-          marker.title = event.summary;
-          const icon = document.createElement('b');
-          icon.textContent = symbol[event.type] || '•';
-          const markerText = document.createElement('span');
-          markerText.textContent = compact(event.compact_label || event.type);
-          marker.append(icon, markerText);
-          marker.addEventListener('click', eventObject => { eventObject.stopPropagation(); showEvent(event); });
-          track.append(marker);
+        const groupedEvents = new Map();
+        for (const event of sortedEvents(byTask.get(task.id) || [])) {
+          const eventDate = event.date || task.target_date || task.start_date || isoFromOrd(activeMinOrd);
+          if (!groupedEvents.has(eventDate)) groupedEvents.set(eventDate, []);
+          groupedEvents.get(eventDate).push(event);
+        }
+        for (const [eventDate, dateEvents] of groupedEvents) {
+          const stack = document.createElement('div');
+          stack.className = `event-stack ${dateEvents.length > 1 ? 'multi' : ''}`;
+          stack.style.left = `${offsetForDate(eventDate) + 2}px`;
+          stack.title = `${shortDate(eventDate)} · ${dateEvents.length} event${dateEvents.length > 1 ? 's' : ''}`;
+          for (const event of dateEvents) {
+            const marker = document.createElement('button');
+            marker.className = `marker ${event.type}`;
+            marker.type = 'button';
+            marker.title = event.summary;
+            marker.setAttribute('aria-label', `${eventLabel(event.type)} · ${text(event.summary)}`);
+            const icon = document.createElement('b');
+            icon.setAttribute('aria-hidden', 'true');
+            icon.textContent = symbol[event.type] || '•';
+            marker.append(icon);
+            marker.addEventListener('click', eventObject => {
+              if (shouldSuppressClick(eventObject)) return;
+              eventObject.stopPropagation();
+              showEvent(event);
+            });
+            stack.append(marker);
+          }
+          track.append(stack);
         }
         timelineRows.append(track);
         taskIndex += 1;
@@ -1570,6 +1639,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       render();
     });
     document.getElementById('refresh').addEventListener('click', () => location.reload());
+    document.getElementById('marker-demo').addEventListener('click', addDemoEvents);
     document.getElementById('reset-edits').addEventListener('click', () => {
       if (!confirm('清除本页本地修改？不会影响 Plane 数据。')) return;
       localStorage.removeItem(STORAGE_KEY);
