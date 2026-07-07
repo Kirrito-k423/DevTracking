@@ -899,6 +899,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       <button class="tool-button" id="refresh" type="button">Refresh exports</button>
       <button class="tool-button" id="reset-edits" type="button">Reset local edits</button>
       <button class="tool-button" id="push-edits" type="button">Push changes</button>
+      <button class="tool-button" id="add-task" type="button">新增任务条</button>
+      <button class="tool-button" id="add-event" type="button">新增事件</button>
       <button class="tool-button" id="marker-demo" type="button">Demo markers</button>
       <button class="tool-button" id="expand-all" type="button" title="Expand all">Expand</button>
       <button class="tool-button" id="collapse-all" type="button" title="Collapse all">Collapse</button>
@@ -952,6 +954,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     const expandedEventStacks = new Set();
     let activeMinOrd = 0;
     let activeMaxOrd = 0;
+    let selectedTaskId = null;
 
     restoreEdits();
     rebuildTaskIndex();
@@ -985,9 +988,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         if (!saved) return;
         const deletedTaskIds = new Set(saved.deleted_task_ids || []);
         const deletedEventIds = new Set(saved.deleted_event_ids || []);
+        const baseTaskIds = new Set(tasks.map(task => task.id));
         tasks = tasks.filter(task => !deletedTaskIds.has(task.id));
         const savedTasks = new Map((saved.tasks || []).map(task => [task.id, task]));
         tasks = tasks.map(task => Object.assign(task, savedTasks.get(task.id) || {}));
+        for (const task of saved.tasks || []) {
+          if (!baseTaskIds.has(task.id) && !deletedTaskIds.has(task.id)) tasks.push(task);
+        }
         const baseEvents = new Map(events.filter(event => !deletedEventIds.has(event.id)).map(event => [event.id, event]));
         for (const event of saved.events || []) {
           if (!deletedEventIds.has(event.id)) baseEvents.set(event.id, event);
@@ -999,19 +1006,36 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     }
     function persistEdits() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        tasks: tasks.map(task => ({
-          id: task.id,
-          title: task.title,
-          compact_label: task.compact_label,
-          parent_id: task.parent_id,
-          start_date: task.start_date,
-          target_date: task.target_date,
-          children: task.children || []
-        })),
+        tasks: tasks.map(task => taskStorageRecord(task)),
         events,
         deleted_task_ids: deletedTaskIds(),
         deleted_event_ids: deletedEventIds()
       }));
+    }
+    function taskStorageRecord(task) {
+      return {
+        id: task.id,
+        issue_id: task.issue_id || null,
+        issue_key: task.issue_key || null,
+        title: task.title,
+        compact_label: task.compact_label,
+        parent_id: task.parent_id || null,
+        children: task.children || [],
+        depth: task.depth || 0,
+        order: task.order || 0,
+        project: task.project || null,
+        state: task.state || null,
+        priority: task.priority || null,
+        progress: task.progress || 0,
+        owner: task.owner || null,
+        labels: task.labels || [],
+        modules: task.modules || [],
+        start_date: task.start_date || null,
+        target_date: task.target_date || null,
+        completed_at: task.completed_at || null,
+        source_refs: task.source_refs || [],
+        delivery_summary: task.delivery_summary || {}
+      };
     }
     function baseTaskMap() {
       return new Map(gantt.tasks.map(task => [task.id, task]));
@@ -1023,7 +1047,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const base = baseTaskMap();
       return tasks
         .map(task => {
-          const original = base.get(task.id) || {};
+          const original = base.get(task.id);
+          if (!original) return null;
           const changes = {};
           for (const key of ['title', 'compact_label', 'parent_id', 'start_date', 'target_date']) {
             if (text(task[key]) !== text(original[key])) changes[key] = task[key] ?? null;
@@ -1036,6 +1061,29 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           } : null;
         })
         .filter(Boolean);
+    }
+    function newTaskRecords() {
+      const base = baseTaskMap();
+      return tasks
+        .filter(task => !base.has(task.id))
+        .map(task => ({
+          id: task.id,
+          issue_id: task.issue_id || null,
+          issue_key: task.issue_key || null,
+          title: task.title,
+          compact_label: task.compact_label,
+          parent_id: task.parent_id || null,
+          project: task.project || null,
+          state: task.state || null,
+          progress: task.progress || 0,
+          owner: task.owner || null,
+          labels: task.labels || [],
+          modules: task.modules || [],
+          start_date: task.start_date || null,
+          target_date: task.target_date || null,
+          delivery_summary: task.delivery_summary || {},
+          source_refs: task.source_refs || []
+        }));
     }
     function changedEventRecords() {
       const base = baseEventMap();
@@ -1088,6 +1136,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         generated_at: new Date().toISOString(),
         source_gantt_generated_at: gantt.generated_at,
         note: 'Static Gantt edits are persisted as an auditable changeset. Applying to Plane requires a controlled API writer; no direct Plane database writes.',
+        new_tasks: newTaskRecords(),
         task_changes: changedTaskRecords(),
         new_events: changedEventRecords(),
         deleted_tasks: deletedTaskRecords(),
@@ -1120,7 +1169,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     async function pushEdits() {
       persistEdits();
       const changeset = buildChangeset();
-      if (!changeset.task_changes.length && !changeset.new_events.length && !changeset.deleted_tasks.length && !changeset.deleted_events.length) {
+      if (!changeset.new_tasks.length && !changeset.task_changes.length && !changeset.new_events.length && !changeset.deleted_tasks.length && !changeset.deleted_events.length) {
         alert('没有可 Push 的本地修改。');
         return;
       }
@@ -1354,6 +1403,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       detail.setAttribute('aria-hidden', 'false');
     }
     function showTask(task) {
+      selectedTaskId = task.id;
       const summary = task.delivery_summary || {};
       openDetail(summary.title || task.title, [
         ['Task', `${text(task.issue_key)} ${text(task.title)}`],
@@ -1369,6 +1419,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     }
     function showEvent(event) {
       const task = tasksById.get(event.task_id) || {};
+      selectedTaskId = event.task_id;
       openDetail(event.summary || 'Delivery summary', [
         ['Event', eventLabel(event.type)],
         ['Task', `${text(task.issue_key)} ${text(task.title)}`],
@@ -1396,6 +1447,121 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       task.delivery_summary.title = title;
       persistEdits();
       render();
+    }
+    function taskSearchParts(task) {
+      return [task.id, task.issue_id, task.issue_key, task.title, task.compact_label]
+        .filter(Boolean)
+        .map(value => String(value).trim())
+        .filter(Boolean);
+    }
+    function findTaskFromInput(value, fallbackTask = null) {
+      const query = String(value || '').trim().toLowerCase();
+      if (!query) return fallbackTask;
+      const exact = tasks.find(task => taskSearchParts(task).some(part => part.toLowerCase() === query));
+      if (exact) return exact;
+      return tasks.find(task => taskSearchParts(task).some(part => part.toLowerCase().includes(query))) || null;
+    }
+    function promptDate(label, fallback) {
+      const raw = prompt(label, fallback);
+      if (raw === null) return null;
+      const value = raw.trim() || fallback;
+      const ord = dateOrd(value);
+      if (ord === null) {
+        alert('日期格式需要是 YYYY-MM-DD。');
+        return null;
+      }
+      return isoFromOrd(ord);
+    }
+    function insertTask(task, parent) {
+      if (!parent) {
+        tasks.push(task);
+        return;
+      }
+      const childIds = subtreeIds(parent.id);
+      const lastChildIndex = Math.max(...tasks.map((item, index) => childIds.has(item.id) ? index : -1));
+      const insertAt = Math.max(0, lastChildIndex + 1);
+      tasks = [...tasks.slice(0, insertAt), task, ...tasks.slice(insertAt)];
+      collapsed.delete(parent.id);
+    }
+    function addTaskBar() {
+      rebuildTaskIndex();
+      const rawTitle = prompt('新增任务条名称', '新任务');
+      if (rawTitle === null) return;
+      const title = rawTitle.trim();
+      if (!title) {
+        alert('任务名称不能为空。');
+        return;
+      }
+      const rawParent = prompt('父任务（可空；输入任务 KEY / 名称关键字）', '');
+      if (rawParent === null) return;
+      const parent = findTaskFromInput(rawParent, null);
+      if (rawParent.trim() && !parent) {
+        alert('没有找到匹配的父任务。');
+        return;
+      }
+      const today = isoFromOrd(todayOrd());
+      const startDefault = parent?.start_date || today;
+      const targetDefault = parent?.target_date || isoFromOrd((dateOrd(startDefault) ?? todayOrd()) + 6);
+      const startDate = promptDate('开始日期 YYYY-MM-DD', startDefault);
+      if (!startDate) return;
+      const targetDate = promptDate('结束日期 YYYY-MM-DD', targetDefault);
+      if (!targetDate) return;
+      const startOrd = dateOrd(startDate) ?? todayOrd();
+      const targetOrd = dateOrd(targetDate) ?? startOrd;
+      const taskId = `local-task:${Date.now()}`;
+      const normalizedStart = isoFromOrd(Math.min(startOrd, targetOrd));
+      const normalizedTarget = isoFromOrd(Math.max(startOrd, targetOrd));
+      const task = {
+        id: taskId,
+        issue_id: null,
+        issue_key: 'NEW',
+        title,
+        compact_label: compactTaskLabel(title),
+        parent_id: parent?.id || null,
+        children: [],
+        depth: 0,
+        order: tasks.length,
+        project: parent?.project || '本地新增',
+        state: 'draft',
+        priority: null,
+        progress: 0,
+        owner: null,
+        labels: ['local'],
+        modules: [],
+        start_date: normalizedStart,
+        target_date: normalizedTarget,
+        completed_at: null,
+        source_refs: [{ event_time: new Date().toISOString(), event_type: 'local_task_created', source: { table: 'localStorage', id: taskId } }],
+        delivery_summary: {
+          title,
+          next_action: '本地新增任务条，Push changes 后由受控写回流程处理。'
+        }
+      };
+      insertTask(task, parent);
+      selectedTaskId = task.id;
+      persistEdits();
+      rebuildTaskIndex();
+      render();
+      showTask(task);
+    }
+    function addEventFromButton() {
+      rebuildTaskIndex();
+      const fallbackTask = (selectedTaskId && tasksById.get(selectedTaskId)) || visibleTasks()[0] || tasks[0];
+      if (!fallbackTask) {
+        alert('当前没有任务条。请先新增任务条。');
+        return;
+      }
+      const rawTask = prompt('给哪个任务添加事件？输入任务 KEY / 名称关键字', fallbackTask.issue_key || fallbackTask.title || fallbackTask.id);
+      if (rawTask === null) return;
+      const task = findTaskFromInput(rawTask, fallbackTask);
+      if (!task) {
+        alert('没有找到匹配的任务。');
+        return;
+      }
+      const date = promptDate('事件日期 YYYY-MM-DD', task.target_date || task.start_date || isoFromOrd(todayOrd()));
+      if (!date) return;
+      selectedTaskId = task.id;
+      addEventAt(task, date);
     }
     function addEventAt(task, date) {
       const raw = prompt('添加事件类型：求助 / 完成 / 里程碑', '里程碑');
@@ -1450,6 +1616,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         .filter(item => item.id !== task.id)
         .map(item => item.parent_id === task.id ? Object.assign(item, { parent_id: parentId }) : item);
       events = events.filter(event => event.task_id !== task.id);
+      if (selectedTaskId === task.id) selectedTaskId = null;
       collapsed.delete(task.id);
       for (const key of [...expandedEventStacks]) {
         if (key.startsWith(`${task.id}:`)) expandedEventStacks.delete(key);
@@ -1886,12 +2053,15 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     });
     document.getElementById('refresh').addEventListener('click', () => location.reload());
     document.getElementById('push-edits').addEventListener('click', pushEdits);
+    document.getElementById('add-task').addEventListener('click', addTaskBar);
+    document.getElementById('add-event').addEventListener('click', addEventFromButton);
     document.getElementById('marker-demo').addEventListener('click', addDemoEvents);
     document.getElementById('reset-edits').addEventListener('click', () => {
       if (!confirm('清除本页本地修改？不会影响 Plane 数据。')) return;
       localStorage.removeItem(STORAGE_KEY);
       tasks = clone(gantt.tasks);
       events = clone(gantt.events);
+      selectedTaskId = null;
       collapsed.clear();
       render();
     });
