@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-07T13:23:49Z"
-last_activity: 2026-07-07 — Gantt stale task bar fading completed
+last_updated: "2026-07-07T13:33:07Z"
+last_activity: 2026-07-07 — Gantt fade thresholds and holiday headers completed
 progress:
   total_phases: 6
   completed_phases: 6
@@ -60,6 +60,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Gantt row interaction polish completed: left-side rows can collapse/expand, task bar labels stay visible while scrolling the timeline, and Owner cells support double-click editing.
 - Gantt report export and today centering completed: toolbar reports export daily/weekly/monthly Markdown by date range, and refresh centers today's date in the timeline.
 - Gantt stale task bar fading completed: task bars begin fading after 6 days without a task event and clamp to 0.1 opacity for very stale tasks.
+- Gantt fade thresholds and holiday headers completed: task bars keep original color for 0-1 day recent events, fade from day 2, clamp at 0.1 by day 6, and timeline headers mark weekends/holidays grey.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -92,6 +93,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260707-tuf | Gantt fade thresholds and holiday headers | 2026-07-07 | 54e8cf1 | [260707-tuf-adjust-gantt-stale-fade-thresholds-and-g](./quick/260707-tuf-adjust-gantt-stale-fade-thresholds-and-g/) |
 | 260707-tn0 | Gantt stale task bar fading | 2026-07-07 | 55e5e03 | [260707-tn0-fade-stale-gantt-task-bars-based-on-days](./quick/260707-tn0-fade-stale-gantt-task-bars-based-on-days/) |
 | 260707-ono | Gantt report export and today centering | 2026-07-07 | e50c83a | [260707-ono-add-gantt-report-export-button-with-date](./quick/260707-ono-add-gantt-report-export-button-with-date/) |
 | 260707-ogc | Gantt row interaction polish | 2026-07-07 | 22647f5 | [260707-ogc-polish-gantt-row-toggle-sticky-bar-label](./quick/260707-ogc-polish-gantt-row-toggle-sticky-bar-label/) |
@@ -120,7 +122,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-07 — Gantt stale task bar fading completed
+Last activity: 2026-07-07 — Gantt fade thresholds and holiday headers completed
 
 ## Operator Next Steps
 
