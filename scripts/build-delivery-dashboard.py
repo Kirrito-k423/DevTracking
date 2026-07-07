@@ -830,6 +830,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .task-head { grid-template-columns:minmax(240px,1fr) 62px 64px 74px; }
     .task-head span, .task-row span { padding:0 6px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .task-row { height:var(--row-h); display:grid; grid-template-columns:minmax(240px,1fr) 62px 64px 74px; align-items:center; border-bottom:1px solid var(--line); }
+    .task-row.placeholder { background:#eef1f6; color:var(--muted); border:1px dashed #aeb8c7; transition:height .16s ease, background .16s ease; }
+    .task-row.drop-parent { background:#eef5ff; box-shadow:inset 0 0 0 2px rgba(47,111,237,.2); }
     .task-main { display:flex; align-items:center; gap:4px; min-width:0; }
     .row-button { width:100%; min-height:calc(var(--row-h) - 6px); display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--ink); text-align:left; cursor:pointer; padding:0 4px; border-radius:4px; overflow:hidden; }
     .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
@@ -843,6 +845,11 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .timeline-row { height:var(--row-h); position:relative; border-bottom:1px solid var(--line); background-image:linear-gradient(to right, rgba(217,222,231,.72) 1px, transparent 1px); background-size:var(--day-w) 100%; }
     .bar { position:absolute; top:calc((var(--row-h) - var(--bar-h)) / 2); height:var(--bar-h); min-width:18px; border:0; border-radius:5px; background:var(--blue); color:#fff; padding:0 8px; display:flex; align-items:center; justify-content:flex-start; font-weight:650; font-size:var(--font-label); overflow:hidden; white-space:nowrap; cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.18); }
     .bar-label { position:relative; z-index:1; overflow:hidden; text-overflow:ellipsis; }
+    .bar.drop-parent { transform:scaleY(1.28); transform-origin:center; box-shadow:0 0 0 2px rgba(47,111,237,.22), inset 0 -1px 0 rgba(0,0,0,.18); }
+    .bar-handle { position:absolute; top:0; bottom:0; width:10px; z-index:2; cursor:ew-resize; }
+    .bar-handle.start { left:0; }
+    .bar-handle.end { right:0; }
+    .bar-handle:hover { background:rgba(255,255,255,.28); }
     .bar.parent { background:var(--blue); }
     .bar.blocked { background:var(--red); }
     .marker { position:absolute; top:calc((var(--row-h) - 22px) / 2); min-width:22px; height:22px; border:1px solid currentColor; background:#fff; border-radius:11px; display:flex; align-items:center; gap:3px; padding:0 5px; cursor:pointer; font-size:12px; font-weight:700; box-shadow:0 1px 2px rgba(32,36,42,.12); }
@@ -852,6 +859,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .marker.milestone { color:var(--amber); }
     .connector-layer { position:absolute; left:0; top:34px; pointer-events:none; overflow:visible; z-index:1; }
     .connector { fill:none; stroke:#9aa5b4; stroke-width:1.35; stroke-linecap:square; stroke-linejoin:miter; stroke-dasharray:5 4; opacity:.9; vector-effect:non-scaling-stroke; shape-rendering:geometricPrecision; mix-blend-mode:normal; }
+    .timeline-row.placeholder { background:#eef1f6; border:1px dashed #aeb8c7; transition:height .16s ease, background .16s ease; }
+    .timeline-row.drop-parent { background:#f0f6ff; }
+    .drag-ghost { position:fixed; left:0; top:0; z-index:20; pointer-events:none; min-width:240px; max-width:420px; padding:8px 10px; background:#fff; border:1px solid #aeb8c7; border-radius:6px; box-shadow:0 12px 30px rgba(32,36,42,.22); font-weight:700; opacity:.96; transform:translate(-9999px,-9999px); }
+    body.dragging-row { user-select:none; cursor:grabbing; }
     .empty { padding:24px; color:var(--muted); }
     .detail { position:fixed; top:0; right:0; width:min(420px,100vw); height:100vh; background:#fff; border-left:1px solid var(--line); box-shadow:-12px 0 24px rgba(32,36,42,.12); transform:translateX(105%); transition:transform .16s ease; z-index:8; display:flex; flex-direction:column; }
     .detail.open { transform:translateX(0); }
@@ -876,6 +887,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     </div>
     <div class="toolbar" aria-label="Gantt controls">
       <button class="tool-button" id="refresh" type="button">Refresh exports</button>
+      <button class="tool-button" id="reset-edits" type="button">Reset local edits</button>
       <button class="tool-button" id="expand-all" type="button" title="Expand all">Expand</button>
       <button class="tool-button" id="collapse-all" type="button" title="Collapse all">Collapse</button>
       <button class="tool-button" id="density-dense" type="button" aria-pressed="true">Dense</button>
@@ -912,34 +924,108 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
   <script id="gantt-data" type="application/json">__DATA__</script>
   <script>
     const gantt = JSON.parse(document.getElementById('gantt-data').textContent);
-    const tasksById = new Map(gantt.tasks.map(task => [task.id, task]));
-    const eventsByTask = new Map();
-    for (const event of gantt.events) {
-      if (!eventsByTask.has(event.task_id)) eventsByTask.set(event.task_id, []);
-      eventsByTask.get(event.task_id).push(event);
-    }
+    const STORAGE_KEY = 'plane-demand-hub-gantt-local-edits-v1';
     const collapsed = new Set();
     const DAY_MS = 86400000;
+    const PAD_DAYS = 30;
     const symbol = { blocked: '✕', completed: '●', milestone: '★' };
+    const clone = value => JSON.parse(JSON.stringify(value));
+    let tasks = clone(gantt.tasks);
+    let events = clone(gantt.events);
+    let tasksById = new Map();
+    let dragState = null;
+    let activeMinOrd = 0;
+    let activeMaxOrd = 0;
+
+    restoreEdits();
+    rebuildTaskIndex();
 
     function dateOrd(value) {
       if (!value) return null;
       const parsed = Date.parse(value.length === 10 ? value + 'T00:00:00Z' : value);
       return Number.isNaN(parsed) ? null : Math.floor(parsed / DAY_MS);
     }
-    const ords = [];
-    for (const task of gantt.tasks) {
-      const start = dateOrd(task.start_date);
-      const target = dateOrd(task.target_date);
-      if (start !== null) ords.push(start);
-      if (target !== null) ords.push(target);
+    function isoFromOrd(ord) {
+      return new Date(ord * DAY_MS).toISOString().slice(0, 10);
     }
-    for (const event of gantt.events) {
-      const ord = dateOrd(event.date);
-      if (ord !== null) ords.push(ord);
+    function todayOrd() {
+      return dateOrd(new Date().toISOString().slice(0, 10));
     }
-    const minOrd = ords.length ? Math.min(...ords) - 1 : dateOrd(new Date().toISOString().slice(0, 10));
-    const maxOrd = ords.length ? Math.max(...ords) + 1 : minOrd + 14;
+    function updateBounds() {
+      const ords = [];
+      for (const task of tasks) {
+        const start = dateOrd(task.start_date);
+        const target = dateOrd(task.target_date);
+        if (start !== null) ords.push(start);
+        if (target !== null) ords.push(target);
+      }
+      const fallback = todayOrd();
+      activeMinOrd = (ords.length ? Math.min(...ords) : fallback) - PAD_DAYS;
+      activeMaxOrd = (ords.length ? Math.max(...ords) : fallback) + PAD_DAYS;
+    }
+    function restoreEdits() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        if (!saved) return;
+        const savedTasks = new Map((saved.tasks || []).map(task => [task.id, task]));
+        tasks = tasks.map(task => Object.assign(task, savedTasks.get(task.id) || {}));
+        const baseEvents = new Map(events.map(event => [event.id, event]));
+        for (const event of saved.events || []) baseEvents.set(event.id, event);
+        events = [...baseEvents.values()];
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+    function persistEdits() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        tasks: tasks.map(task => ({
+          id: task.id,
+          title: task.title,
+          compact_label: task.compact_label,
+          parent_id: task.parent_id,
+          start_date: task.start_date,
+          target_date: task.target_date,
+          children: task.children || []
+        })),
+        events
+      }));
+    }
+    function rebuildTaskIndex() {
+      tasksById = new Map(tasks.map(task => [task.id, task]));
+      for (const task of tasks) task.children = [];
+      for (const task of tasks) {
+        if (task.parent_id && tasksById.has(task.parent_id) && task.parent_id !== task.id) {
+          tasksById.get(task.parent_id).children.push(task.id);
+        } else if (task.parent_id && !tasksById.has(task.parent_id)) {
+          task.parent_id = null;
+        }
+      }
+      const assignDepth = (task, depth, seen = new Set()) => {
+        if (!task || seen.has(task.id)) return;
+        seen.add(task.id);
+        task.depth = depth;
+        for (const childId of task.children || []) assignDepth(tasksById.get(childId), depth + 1, seen);
+      };
+      for (const task of tasks) if (!task.parent_id) assignDepth(task, 0);
+    }
+    function eventsByTask() {
+      const map = new Map();
+      for (const event of events) {
+        if (!map.has(event.task_id)) map.set(event.task_id, []);
+        map.get(event.task_id).push(event);
+      }
+      return map;
+    }
+    function summarize() {
+      return {
+        tasks: tasks.length,
+        parent_links: tasks.filter(task => task.parent_id).length,
+        events: events.length,
+        blocked: events.filter(event => event.type === 'blocked').length,
+        completed: events.filter(event => event.type === 'completed').length,
+        milestones: events.filter(event => event.type === 'milestone').length
+      };
+    }
 
     function hiddenByAncestor(task) {
       let parentId = task.parent_id;
@@ -951,7 +1037,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       return false;
     }
     function visibleTasks() {
-      return gantt.tasks.filter(task => !hiddenByAncestor(task));
+      rebuildTaskIndex();
+      return tasks.filter(task => !hiddenByAncestor(task));
     }
     function rowHeight() {
       return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--row-h')) || 30;
@@ -961,10 +1048,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     }
     function offsetForDate(value) {
       const ord = dateOrd(value);
-      return Math.max(0, ((ord ?? minOrd) - minOrd) * dayWidth());
+      return Math.max(0, ((ord ?? activeMinOrd) - activeMinOrd) * dayWidth());
     }
     function widthForTask(task) {
-      const start = dateOrd(task.start_date) ?? minOrd;
+      const start = dateOrd(task.start_date) ?? activeMinOrd;
       const target = dateOrd(task.target_date) ?? start;
       return Math.max(dayWidth(), (target - start + 1) * dayWidth());
     }
@@ -973,6 +1060,12 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     }
     function compact(value) {
       return text(value).slice(0, 8);
+    }
+    function compactTaskLabel(value) {
+      let label = text(value).replace(/^\\s*(?:\\d{4}[-/.]\\d{1,2}[-/.]\\d{1,2}|\\d{4}\\s+Q\\d)\\s*/, '').trim();
+      if (label.includes('：')) label = label.split('：').slice(1).join('：').trim() || label;
+      else if (label.includes(': ')) label = label.split(': ').slice(1).join(': ').trim() || label;
+      return compact(label);
     }
     function dateObj(value) {
       const ord = dateOrd(value);
@@ -1014,6 +1107,32 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       span.textContent = text(value);
       span.title = text(title ?? value);
       return span;
+    }
+    function subtreeIds(taskId, ids = new Set()) {
+      if (!taskId || ids.has(taskId)) return ids;
+      ids.add(taskId);
+      const task = tasksById.get(taskId);
+      for (const childId of task?.children || []) subtreeIds(childId, ids);
+      return ids;
+    }
+    function ordFromPointer(event) {
+      const pane = document.getElementById('timeline-scroll');
+      const rect = pane.getBoundingClientRect();
+      const x = event.clientX - rect.left + pane.scrollLeft;
+      return activeMinOrd + Math.round(x / dayWidth());
+    }
+    function setTaskDate(task, edge, ord) {
+      const start = dateOrd(task.start_date) ?? ord;
+      const target = dateOrd(task.target_date) ?? start;
+      if (edge === 'start') {
+        const next = Math.min(ord, target);
+        task.start_date = isoFromOrd(next);
+      } else {
+        const next = Math.max(ord, start);
+        task.target_date = isoFromOrd(next);
+      }
+      task.delivery_summary = task.delivery_summary || {};
+      task.delivery_summary.date_range = `${text(task.start_date)} - ${text(task.target_date)}`;
     }
     function openDetail(title, rows, refs) {
       document.getElementById('detail-title').textContent = title || 'Delivery summary';
@@ -1077,27 +1196,230 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       else collapsed.add(task.id);
       render();
     }
+    function editTaskName(task) {
+      const next = prompt('修改任务名称', task.title || '');
+      if (next === null) return;
+      const title = next.trim();
+      if (!title) return;
+      task.title = title;
+      task.compact_label = compactTaskLabel(title);
+      task.delivery_summary = task.delivery_summary || {};
+      task.delivery_summary.title = title;
+      persistEdits();
+      render();
+    }
+    function addEventAt(task, date) {
+      const raw = prompt('添加事件类型：阻塞 / 完成 / 里程碑', '里程碑');
+      if (raw === null) return;
+      const normalized = raw.trim().toLowerCase();
+      let type = 'milestone';
+      if (normalized.includes('阻') || normalized.includes('block')) type = 'blocked';
+      else if (normalized.includes('完') || normalized.includes('done') || normalized.includes('complete')) type = 'completed';
+      const summary = prompt('事件简述', type === 'blocked' ? '阻塞' : type === 'completed' ? '完成' : '里程碑');
+      if (summary === null) return;
+      const label = summary.trim() || (type === 'blocked' ? '阻塞' : type === 'completed' ? '完成' : '里程碑');
+      events.push({
+        id: `local:${task.id}:${type}:${date}:${Date.now()}`,
+        task_id: task.id,
+        type,
+        compact_label: compact(label),
+        date,
+        summary: `${label}: ${task.title}`,
+        source_refs: [{ event_time: new Date().toISOString(), event_type: 'local_edit', source: { table: 'localStorage', id: task.id } }]
+      });
+      persistEdits();
+      render();
+    }
+    function moveTask(taskId, drop) {
+      if (!drop || !tasksById.has(taskId) || !tasksById.has(drop.targetId)) return;
+      const movingIds = subtreeIds(taskId);
+      if (movingIds.has(drop.targetId)) return;
+      const movingGroup = tasks.filter(task => movingIds.has(task.id));
+      const remaining = tasks.filter(task => !movingIds.has(task.id));
+      const movingRoot = movingGroup.find(task => task.id === taskId);
+      const target = remaining.find(task => task.id === drop.targetId);
+      if (!movingRoot || !target) return;
+      if (drop.mode === 'child') {
+        movingRoot.parent_id = target.id;
+        collapsed.delete(target.id);
+      } else {
+        movingRoot.parent_id = target.parent_id || null;
+      }
+      const targetIndex = remaining.findIndex(task => task.id === target.id);
+      const insertAt = drop.mode === 'before' ? targetIndex : targetIndex + 1;
+      tasks = [...remaining.slice(0, insertAt), ...movingGroup, ...remaining.slice(insertAt)];
+      rebuildTaskIndex();
+      persistEdits();
+      render();
+    }
+    function createGhost(task, event) {
+      const ghost = document.createElement('div');
+      ghost.className = 'drag-ghost';
+      ghost.textContent = `${text(task.issue_key)} ${text(task.compact_label || task.title)}`;
+      document.body.append(ghost);
+      moveGhost(ghost, event);
+      return ghost;
+    }
+    function moveGhost(ghost, event) {
+      ghost.style.transform = `translate(${event.clientX + 12}px, ${event.clientY + 12}px)`;
+    }
+    function sameDrop(a, b) {
+      return !!a === !!b && (!a || (a.mode === b.mode && a.targetId === b.targetId));
+    }
+    function updateDragDrop(event) {
+      if (!dragState) return;
+      moveGhost(dragState.ghost, event);
+      const element = document.elementFromPoint(event.clientX, event.clientY);
+      const row = element?.closest?.('[data-task-id]');
+      const targetId = row?.dataset.taskId;
+      const moving = subtreeIds(dragState.task.id);
+      let nextDrop = null;
+      if (targetId && !moving.has(targetId)) {
+        const rect = row.getBoundingClientRect();
+        const ratio = (event.clientY - rect.top) / Math.max(1, rect.height);
+        if (ratio < 0.28) {
+          clearTimeout(dragState.hoverTimer);
+          dragState.hoverId = null;
+          dragState.childReady = false;
+          nextDrop = { mode: 'before', targetId };
+        } else if (ratio > 0.72) {
+          clearTimeout(dragState.hoverTimer);
+          dragState.hoverId = null;
+          dragState.childReady = false;
+          nextDrop = { mode: 'after', targetId };
+        }
+        else {
+          nextDrop = dragState.childReady && dragState.hoverId === targetId ? { mode: 'child', targetId } : { mode: 'after', targetId };
+          if (dragState.hoverId !== targetId) {
+            clearTimeout(dragState.hoverTimer);
+            dragState.hoverId = targetId;
+            dragState.childReady = false;
+            dragState.hoverTimer = setTimeout(() => {
+              if (!dragState || dragState.hoverId !== targetId) return;
+              dragState.childReady = true;
+              dragState.drop = { mode: 'child', targetId };
+              collapsed.delete(targetId);
+              render();
+            }, 420);
+          }
+        }
+      } else {
+        clearTimeout(dragState.hoverTimer);
+        dragState.hoverId = null;
+        dragState.childReady = false;
+      }
+      if (!sameDrop(dragState.drop, nextDrop)) {
+        dragState.drop = nextDrop;
+        render();
+      }
+    }
+    function beginRowDrag(event, task) {
+      event.preventDefault();
+      clearTimeout(dragState?.hoverTimer);
+      dragState = { task, drop: null, hoverId: null, childReady: false, hoverTimer: null, ghost: createGhost(task, event) };
+      document.body.classList.add('dragging-row');
+      window.addEventListener('pointermove', updateDragDrop);
+      window.addEventListener('pointerup', finishRowDrag, { once: true });
+      render();
+    }
+    function finishRowDrag(event) {
+      window.removeEventListener('pointermove', updateDragDrop);
+      const state = dragState;
+      dragState = null;
+      document.body.classList.remove('dragging-row');
+      clearTimeout(state?.hoverTimer);
+      state?.ghost?.remove();
+      if (state?.drop) moveTask(state.task.id, state.drop);
+      else render();
+    }
+    function armRowDrag(event, task) {
+      if (event.button !== 0) return;
+      const startX = event.clientX;
+      const startY = event.clientY;
+      let started = false;
+      const timer = setTimeout(() => {
+        started = true;
+        cleanup();
+        beginRowDrag(event, task);
+      }, 360);
+      const cleanup = () => {
+        clearTimeout(timer);
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      };
+      const onMove = moveEvent => {
+        if (Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY) > 6 && !started) cleanup();
+      };
+      const onUp = () => cleanup();
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp, { once: true });
+    }
+    function beginBarResize(event, task, edge) {
+      event.preventDefault();
+      event.stopPropagation();
+      const onMove = moveEvent => {
+        setTaskDate(task, edge, ordFromPointer(moveEvent));
+        render();
+      };
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        persistEdits();
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp, { once: true });
+    }
+    function armEventCreate(event, task) {
+      if (event.button !== 0) return;
+      const date = isoFromOrd(ordFromPointer(event));
+      const timer = setTimeout(() => addEventAt(task, date), 520);
+      const cleanup = () => clearTimeout(timer);
+      window.addEventListener('pointerup', cleanup, { once: true });
+      window.addEventListener('pointermove', cleanup, { once: true });
+    }
+    function buildRenderItems(baseVisible) {
+      const moving = dragState ? subtreeIds(dragState.task.id) : new Set();
+      const filtered = baseVisible.filter(task => !moving.has(task.id));
+      const items = [];
+      for (const task of filtered) {
+        if (dragState?.drop?.mode === 'before' && dragState.drop.targetId === task.id) {
+          items.push({ kind: 'placeholder', depth: task.depth, mode: 'between' });
+        }
+        items.push({ kind: 'task', task });
+        if (dragState?.drop?.mode === 'after' && dragState.drop.targetId === task.id) {
+          items.push({ kind: 'placeholder', depth: task.depth, mode: 'between' });
+        }
+        if (dragState?.drop?.mode === 'child' && dragState.drop.targetId === task.id) {
+          items.push({ kind: 'placeholder', depth: task.depth + 1, mode: 'child' });
+        }
+      }
+      return items;
+    }
     function render() {
+      rebuildTaskIndex();
+      updateBounds();
       const visible = visibleTasks();
-      const chartWidth = Math.max(720, (maxOrd - minOrd + 1) * dayWidth());
+      const renderItems = buildRenderItems(visible);
+      const chartWidth = Math.max(720, (activeMaxOrd - activeMinOrd + 1) * dayWidth());
+      const summary = summarize();
+      const byTask = eventsByTask();
       document.getElementById('generated').textContent = `Generated ${text(gantt.generated_at)} · ${gantt.sources.timeline_rows} timeline rows · ${gantt.sources.progress_audits} progress audits`;
       document.getElementById('summary').replaceChildren(...[
-        `Tasks ${gantt.summary.tasks}`,
-        `Links ${gantt.summary.parent_links}`,
-        `Markers ${gantt.summary.events}`,
-        `Blocked ${gantt.summary.blocked}`,
-        `Completed ${gantt.summary.completed}`,
-        `Milestones ${gantt.summary.milestones}`
+        `Tasks ${summary.tasks}`,
+        `Links ${summary.parent_links}`,
+        `Markers ${summary.events}`,
+        `Blocked ${summary.blocked}`,
+        `Completed ${summary.completed}`,
+        `Milestones ${summary.milestones}`
       ].map(label => {
         const span = document.createElement('span');
         span.textContent = label;
         return span;
       }));
-      document.getElementById('empty').hidden = gantt.tasks.length > 0;
+      document.getElementById('empty').hidden = tasks.length > 0;
       const head = document.getElementById('time-head');
       head.style.width = `${chartWidth}px`;
       head.replaceChildren();
-      for (let ord = minOrd; ord <= maxOrd; ord += 1) {
+      for (let ord = activeMinOrd; ord <= activeMaxOrd; ord += 1) {
         const tick = document.createElement('div');
         tick.className = 'tick';
         tick.textContent = shortDate(new Date(ord * DAY_MS).toISOString().slice(0, 10));
@@ -1108,9 +1430,28 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       taskRows.replaceChildren();
       timelineRows.replaceChildren();
       const metrics = new Map();
-      visible.forEach((task, index) => {
+      let taskIndex = 0;
+      renderItems.forEach((item, index) => {
+        if (item.kind === 'placeholder') {
+          const row = document.createElement('div');
+          row.className = 'task-row placeholder';
+          const cell = document.createElement('span');
+          cell.className = 'task-main';
+          cell.style.paddingLeft = `${28 + item.depth * 14}px`;
+          cell.textContent = item.mode === 'child' ? '作为子任务放到这里' : '放到这里';
+          row.append(cell, makeCell(''), makeCell(''), makeCell(''));
+          taskRows.append(row);
+          const track = document.createElement('div');
+          track.className = 'timeline-row placeholder';
+          track.style.width = `${chartWidth}px`;
+          timelineRows.append(track);
+          return;
+        }
+        const task = item.task;
+        const isDropParent = dragState?.drop?.mode === 'child' && dragState.drop.targetId === task.id;
         const row = document.createElement('div');
-        row.className = 'task-row';
+        row.className = `task-row ${isDropParent ? 'drop-parent' : ''}`;
+        row.dataset.taskId = task.id;
         const buttonCell = document.createElement('span');
         buttonCell.className = 'task-main';
         const button = document.createElement('button');
@@ -1129,18 +1470,21 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         label.textContent = task.compact_label;
         button.append(chevron, key, label);
         button.addEventListener('click', () => showTask(task));
+        button.addEventListener('dblclick', event => { event.stopPropagation(); editTaskName(task); });
+        button.addEventListener('pointerdown', event => armRowDrag(event, task));
         buttonCell.append(button);
         row.append(buttonCell, makeCell(task.owner), makeCell(stateText(task.state), task.state), makeCell(monthRange(task), `${text(task.start_date)}→${text(task.target_date)}`));
         taskRows.append(row);
 
         const track = document.createElement('div');
-        track.className = 'timeline-row';
+        track.className = `timeline-row ${isDropParent ? 'drop-parent' : ''}`;
+        track.dataset.taskId = task.id;
         track.style.width = `${chartWidth}px`;
         const left = offsetForDate(task.start_date);
         const width = widthForTask(task);
         metrics.set(task.id, { left, width, y: index * rowHeight() + rowHeight() / 2 });
         const bar = document.createElement('button');
-        bar.className = `bar ${task.children && task.children.length ? 'parent' : ''} ${(task.labels || []).includes('blocked') || (task.labels || []).includes('needs-help') ? 'blocked' : ''}`;
+        bar.className = `bar ${task.children && task.children.length ? 'parent' : ''} ${(task.labels || []).includes('blocked') || (task.labels || []).includes('needs-help') ? 'blocked' : ''} ${isDropParent ? 'drop-parent' : ''}`;
         bar.type = 'button';
         bar.style.left = `${left}px`;
         bar.style.width = `${width}px`;
@@ -1148,10 +1492,22 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         barLabel.className = 'bar-label';
         barLabel.textContent = task.compact_label;
         bar.title = task.title;
-        bar.append(barLabel);
+        const startHandle = document.createElement('span');
+        startHandle.className = 'bar-handle start';
+        const endHandle = document.createElement('span');
+        endHandle.className = 'bar-handle end';
+        startHandle.addEventListener('pointerdown', event => beginBarResize(event, task, 'start'));
+        endHandle.addEventListener('pointerdown', event => beginBarResize(event, task, 'end'));
+        barLabel.addEventListener('dblclick', event => { event.stopPropagation(); editTaskName(task); });
+        bar.append(startHandle, barLabel, endHandle);
         bar.addEventListener('click', () => { toggleTask(task); showTask(task); });
+        bar.addEventListener('dblclick', event => { event.stopPropagation(); editTaskName(task); });
         track.append(bar);
-        for (const event of eventsByTask.get(task.id) || []) {
+        track.addEventListener('pointerdown', event => {
+          if (event.target !== track) return;
+          armEventCreate(event, task);
+        });
+        for (const event of byTask.get(task.id) || []) {
           const marker = document.createElement('button');
           marker.className = `marker ${event.type}`;
           marker.type = 'button';
@@ -1166,12 +1522,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           track.append(marker);
         }
         timelineRows.append(track);
+        taskIndex += 1;
       });
       const connectorLayer = document.getElementById('connector-layer');
       connectorLayer.setAttribute('width', chartWidth);
-      connectorLayer.setAttribute('height', Math.max(visible.length * rowHeight(), 1));
+      connectorLayer.setAttribute('height', Math.max(renderItems.length * rowHeight(), 1));
       connectorLayer.style.width = `${chartWidth}px`;
-      connectorLayer.style.height = `${Math.max(visible.length * rowHeight(), 1)}px`;
+      connectorLayer.style.height = `${Math.max(renderItems.length * rowHeight(), 1)}px`;
       connectorLayer.replaceChildren();
       const visibleIds = new Set(visible.map(task => task.id));
       const childrenByParent = new Map();
@@ -1209,10 +1566,18 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     document.getElementById('expand-all').addEventListener('click', () => { collapsed.clear(); render(); });
     document.getElementById('collapse-all').addEventListener('click', () => {
       collapsed.clear();
-      for (const task of gantt.tasks) if (task.children && task.children.length) collapsed.add(task.id);
+      for (const task of tasks) if (task.children && task.children.length) collapsed.add(task.id);
       render();
     });
     document.getElementById('refresh').addEventListener('click', () => location.reload());
+    document.getElementById('reset-edits').addEventListener('click', () => {
+      if (!confirm('清除本页本地修改？不会影响 Plane 数据。')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      tasks = clone(gantt.tasks);
+      events = clone(gantt.events);
+      collapsed.clear();
+      render();
+    });
     document.getElementById('detail-close').addEventListener('click', () => {
       const detail = document.getElementById('detail');
       detail.classList.remove('open');
