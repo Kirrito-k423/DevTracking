@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-07T02:24:18Z"
-last_activity: 2026-07-07 — Gantt local interaction editing completed
+last_updated: "2026-07-07T02:44:42Z"
+last_activity: 2026-07-07 — Gantt event marker refinement completed
 progress:
   total_phases: 6
   completed_phases: 6
@@ -51,6 +51,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Phase 6 verification passed at `.planning/phases/06-redesign-plane-gantt-visualization/06-VERIFICATION.md`.
 - Phase 6 shipped via `codex/phase-06-gantt` PR #1: `https://github.com/Kirrito-k423/DevTracking/pull/1`.
 - Gantt sidecar local interaction editing quick task completed: row drag hierarchy/order, bar resize, rename, event creation, and 30-day task-date padding.
+- Gantt event marker refinement completed: long-press event creation works on bars and markers, same-day events render as opaque icon groups, and task table names use full titles.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -83,6 +84,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260707-esq | Gantt event marker refinements | 2026-07-07 | b9054e4 | [260707-esq-gantt-event-creation-and-marker-visualiz](./quick/260707-esq-gantt-event-creation-and-marker-visualiz/) |
 | 260707-ea2 | Gantt local interaction editing | 2026-07-07 | ba17415 | [260707-ea2-gantt-sidecar-local-interaction-editing-](./quick/260707-ea2-gantt-sidecar-local-interaction-editing-/) |
 | 260707-dwc | Gantt readability fixes | 2026-07-07 | d3d8453 | [260707-dwc-gantt](./quick/260707-dwc-gantt/) |
 | 260706-pdr | Plane daily record skill and July 6 daily update | 2026-07-06 | 501a728 | [260706-pdr-plane-daily-record](./quick/260706-pdr-plane-daily-record/) |
