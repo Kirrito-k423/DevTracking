@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-07T03:39:12Z"
-last_activity: 2026-07-07 — Gantt detail drawer delete actions completed
+last_updated: "2026-07-07T07:06:54Z"
+last_activity: 2026-07-07 — Gantt visible add buttons completed
 progress:
   total_phases: 6
   completed_phases: 6
@@ -55,6 +55,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Gantt persistence and multi-event overlap completed: `Push changes` writes local auditable changesets, and collapsed same-day event stacks stay within one date cell before expansion.
 - Gantt event stack visual polish completed: same-day event stack backgrounds, icons, collapse control, and expanded frame are vertically centered and visually balanced.
 - Gantt detail drawer delete actions completed: task and event detail drawers include red delete buttons, and changesets record deleted tasks/events.
+- Gantt visible add buttons completed: toolbar buttons now create task bars and events, and changesets record new task bars separately from task edits.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -87,6 +88,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260707-kua | Gantt visible add buttons | 2026-07-07 | 8add2bf | [260707-kua-add-visible-gantt-add-buttons-for-new-ta](./quick/260707-kua-add-visible-gantt-add-buttons-for-new-ta/) |
 | 260707-g32 | Gantt detail drawer delete actions | 2026-07-07 | 0cdc1ad | [260707-g32-gantt-detail-drawer-delete-actions-for-t](./quick/260707-g32-gantt-detail-drawer-delete-actions-for-t/) |
 | 260707-frp | Gantt event stack visual polish | 2026-07-07 | 2f16280 | [260707-frp-polish-gantt-same-day-event-stack-visual](./quick/260707-frp-polish-gantt-same-day-event-stack-visual/) |
 | 260707-fho | Gantt persistence and multi-event overlap | 2026-07-07 | 734cbd6 | [260707-fho-gantt-persistence-and-multi-event-overla](./quick/260707-fho-gantt-persistence-and-multi-event-overla/) |
@@ -110,7 +112,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-07 — Gantt detail drawer delete actions completed
+Last activity: 2026-07-07 — Gantt visible add buttons completed
 
 ## Operator Next Steps
 
