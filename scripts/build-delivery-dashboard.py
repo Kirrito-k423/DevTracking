@@ -956,6 +956,11 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     const eventTypeLabel = { blocked: '求助', in_progress: '进行中', completed: '完成', milestone: '里程碑' };
     const eventTypeOrder = { blocked: 0, in_progress: 1, completed: 2, milestone: 3 };
     const taskColorPalette = ['#458A74', '#018B38', '#D9A421', '#F5A216', '#57AF37', '#41B9C1', '#008B8B', '#4E5689', '#6A8EC9', '#652884', '#652884', '#8A7355', '#CC5B45', '#848484', '#E42320', '#B46DA9'];
+    const defaultTaskColor = '#2f6fed';
+    const blockedTaskColor = '#c43d3d';
+    const staleStartDays = 6;
+    const staleMinimumOpacity = 0.1;
+    const staleFullFadeDays = 30;
     const clone = value => JSON.parse(JSON.stringify(value));
     let tasks = clone(gantt.tasks);
     let events = clone(gantt.events);
@@ -1415,6 +1420,51 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         map.get(event.task_id).push(event);
       }
       return map;
+    }
+    function latestTaskEventOrd(task, taskEvents = []) {
+      const ords = [];
+      for (const event of taskEvents) {
+        const ord = dateOrd(event.date);
+        if (ord !== null) ords.push(ord);
+      }
+      for (const ref of task.source_refs || []) {
+        const ord = dateOrd(ref.event_time);
+        if (ord !== null) ords.push(ord);
+      }
+      return ords.length ? Math.max(...ords) : null;
+    }
+    function taskLastEventAgeDays(task, taskEvents = []) {
+      const last = latestTaskEventOrd(task, taskEvents);
+      return last === null ? null : Math.max(0, todayOrd() - last);
+    }
+    function taskFreshnessOpacity(task, taskEvents = []) {
+      const age = taskLastEventAgeDays(task, taskEvents);
+      if (age === null || age < staleStartDays) return 1;
+      const span = Math.max(1, staleFullFadeDays - staleStartDays);
+      const ratio = Math.min(1, (age - staleStartDays + 1) / span);
+      return Math.max(staleMinimumOpacity, 1 - ratio * (1 - staleMinimumOpacity));
+    }
+    function taskBaseColor(task) {
+      const labels = task.labels || [];
+      if (task.color) return task.color;
+      if (labels.includes('blocked') || labels.includes('needs-help')) return blockedTaskColor;
+      return defaultTaskColor;
+    }
+    function hexToRgba(hex, alpha) {
+      const raw = String(hex || '').trim().replace('#', '');
+      const normalized = raw.length === 3 ? raw.split('').map(char => char + char).join('') : raw;
+      if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return hex;
+      const value = Number.parseInt(normalized, 16);
+      const red = (value >> 16) & 255;
+      const green = (value >> 8) & 255;
+      const blue = value & 255;
+      return `rgba(${red}, ${green}, ${blue}, ${alpha.toFixed(3)})`;
+    }
+    function taskStaleTitle(task, taskEvents = []) {
+      const age = taskLastEventAgeDays(task, taskEvents);
+      if (age === null) return '暂无事件记录';
+      if (age < staleStartDays) return `最近事件 ${age} 天前`;
+      return `最近事件 ${age} 天前，颜色已淡化提醒关注`;
     }
     function summarize() {
       return {
@@ -2349,6 +2399,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         track.style.width = `${chartWidth}px`;
         const left = offsetForDate(task.start_date);
         const width = widthForTask(task);
+        const taskEvents = sortedEvents(byTask.get(task.id) || []);
+        const freshnessOpacity = taskFreshnessOpacity(task, taskEvents);
         metrics.set(task.id, { left, width, y: index * rowHeight() + rowHeight() / 2 });
         const bar = document.createElement('button');
         bar.className = `bar ${task.children && task.children.length ? 'parent' : ''} ${(task.labels || []).includes('blocked') || (task.labels || []).includes('needs-help') ? 'blocked' : ''} ${isDropParent ? 'drop-parent' : ''}`;
@@ -2356,10 +2408,11 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         bar.style.left = `${left}px`;
         bar.style.width = `${width}px`;
         if (task.color) bar.style.setProperty('--task-color', task.color);
+        bar.style.backgroundColor = hexToRgba(taskBaseColor(task), freshnessOpacity);
         const barLabel = document.createElement('span');
         barLabel.className = 'bar-label';
         barLabel.textContent = task.compact_label;
-        bar.title = task.title;
+        bar.title = `${task.title} · ${taskStaleTitle(task, taskEvents)}`;
         const startHandle = document.createElement('span');
         startHandle.className = 'bar-handle start';
         const endHandle = document.createElement('span');
@@ -2379,7 +2432,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           armEventCreate(event, task);
         });
         const groupedEvents = new Map();
-        for (const event of sortedEvents(byTask.get(task.id) || [])) {
+        for (const event of taskEvents) {
           const eventDate = event.date || task.target_date || task.start_date || isoFromOrd(activeMinOrd);
           if (!groupedEvents.has(eventDate)) groupedEvents.set(eventDate, []);
           groupedEvents.get(eventDate).push(event);
