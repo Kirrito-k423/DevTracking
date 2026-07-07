@@ -834,7 +834,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .task-row.drop-parent { background:#eef5ff; box-shadow:inset 0 0 0 2px rgba(47,111,237,.2); }
     .task-main { display:flex; align-items:center; gap:4px; min-width:0; }
     .row-button { width:100%; min-height:calc(var(--row-h) - 6px); display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--ink); text-align:left; cursor:pointer; padding:0 4px; border-radius:4px; overflow:hidden; }
-    .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible, .danger-button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+    .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible, .action-button:focus-visible, .danger-button:focus-visible, .palette-swatch:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
     .chevron { width:14px; flex:0 0 14px; color:var(--muted); text-align:center; }
     .task-key { color:var(--muted); flex:0 0 34px; width:34px; padding:0; font-size:11px; text-align:right; overflow:hidden; text-overflow:ellipsis; }
     .task-label { flex:1 1 auto; min-width:0; font-weight:600; font-size:var(--font-label); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -843,15 +843,15 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .time-head { height:34px; position:sticky; top:0; z-index:3; display:flex; border-bottom:1px solid var(--line); background:#fbfcfd; }
     .tick { width:var(--day-w); flex:0 0 var(--day-w); border-right:1px solid var(--line); padding:10px 1px 0; color:var(--muted); font-size:10px; text-align:center; white-space:nowrap; overflow:hidden; }
     .timeline-row { height:var(--row-h); position:relative; border-bottom:1px solid var(--line); background-image:linear-gradient(to right, rgba(217,222,231,.72) 1px, transparent 1px); background-size:var(--day-w) 100%; }
-    .bar { position:absolute; top:calc((var(--row-h) - var(--bar-h)) / 2); height:var(--bar-h); min-width:18px; border:0; border-radius:5px; background:var(--blue); color:#fff; padding:0 8px; display:flex; align-items:center; justify-content:flex-start; font-weight:650; font-size:var(--font-label); overflow:hidden; white-space:nowrap; cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.18); }
+    .bar { position:absolute; top:calc((var(--row-h) - var(--bar-h)) / 2); height:var(--bar-h); min-width:18px; border:0; border-radius:5px; background:var(--task-color,var(--blue)); color:#fff; padding:0 8px; display:flex; align-items:center; justify-content:flex-start; font-weight:650; font-size:var(--font-label); overflow:hidden; white-space:nowrap; cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.18); }
     .bar-label { position:relative; z-index:1; overflow:hidden; text-overflow:ellipsis; }
     .bar.drop-parent { transform:scaleY(1.28); transform-origin:center; box-shadow:0 0 0 2px rgba(47,111,237,.22), inset 0 -1px 0 rgba(0,0,0,.18); }
     .bar-handle { position:absolute; top:0; bottom:0; width:10px; z-index:2; cursor:ew-resize; }
     .bar-handle.start { left:0; }
     .bar-handle.end { right:0; }
     .bar-handle:hover { background:rgba(255,255,255,.28); }
-    .bar.parent { background:var(--blue); }
-    .bar.blocked { background:var(--red); }
+    .bar.parent { background:var(--task-color,var(--blue)); }
+    .bar.blocked { background:var(--task-color,var(--red)); }
     .event-stack { position:absolute; top:50%; transform:translateY(-50%); min-height:calc(var(--marker-size) + 4px); display:flex; align-items:center; justify-content:center; gap:2px; padding:1px; border:1px solid rgba(154,165,180,.72); border-radius:999px; background:#fff; box-shadow:0 1px 3px rgba(32,36,42,.14); z-index:5; }
     .event-stack.multi { box-shadow:0 2px 6px rgba(32,36,42,.18); }
     .event-stack.collapsed { overflow:hidden; background:#fff; }
@@ -862,6 +862,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .event-stack.collapsed .marker { position:absolute; top:50%; transform:translateY(-50%); }
     .event-stack.expanded .marker { position:relative; flex:0 0 auto; }
     .marker.blocked { --marker-color:var(--red); }
+    .marker.in_progress { --marker-color:#6A8EC9; }
     .marker.completed { --marker-color:var(--green); }
     .marker.milestone { --marker-color:var(--amber); }
     .connector-layer { position:absolute; left:0; top:34px; pointer-events:none; overflow:visible; z-index:1; }
@@ -879,7 +880,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .kv { display:grid; grid-template-columns:120px 1fr; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); }
     .kv b { color:var(--muted); font-weight:600; }
     .source-list { margin:8px 0 0; padding-left:18px; color:var(--muted); }
-    .detail-actions { margin-top:18px; padding-top:14px; border-top:1px solid var(--line); }
+    .detail-actions { margin-top:18px; padding-top:14px; border-top:1px solid var(--line); display:grid; gap:8px; }
+    .action-button { width:100%; min-height:34px; border:1px solid #bfd0ef; background:#f6f9ff; color:var(--blue); border-radius:6px; padding:0 12px; font-weight:700; cursor:pointer; }
+    .action-button:hover { background:#edf4ff; }
+    .palette-label { color:var(--muted); font-weight:700; margin-top:2px; }
+    .palette-grid { display:grid; grid-template-columns:repeat(8, minmax(26px,1fr)); gap:8px; }
+    .palette-swatch { height:28px; border:1px solid rgba(32,36,42,.14); border-radius:7px; background:var(--swatch); cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.16); }
+    .palette-swatch[aria-pressed="true"] { box-shadow:0 0 0 2px rgba(47,111,237,.26), inset 0 -1px 0 rgba(0,0,0,.16); }
     .danger-button { width:100%; min-height:36px; border:1px solid #e49a9a; background:#fff5f5; color:var(--red); border-radius:6px; padding:0 12px; font-weight:700; cursor:pointer; }
     .danger-button:hover { background:#ffecec; }
     @media (max-width: 760px) {
@@ -942,9 +949,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     const collapsed = new Set();
     const DAY_MS = 86400000;
     const PAD_DAYS = 30;
-    const symbol = { blocked: '✕', completed: '●', milestone: '★' };
-    const eventTypeLabel = { blocked: '求助', completed: '完成', milestone: '里程碑' };
-    const eventTypeOrder = { blocked: 0, completed: 1, milestone: 2 };
+    const symbol = { blocked: '✕', in_progress: '→', completed: '●', milestone: '★' };
+    const eventTypeLabel = { blocked: '求助', in_progress: '进行中', completed: '完成', milestone: '里程碑' };
+    const eventTypeOrder = { blocked: 0, in_progress: 1, completed: 2, milestone: 3 };
+    const taskColorPalette = ['#458A74', '#018B38', '#D9A421', '#F5A216', '#57AF37', '#41B9C1', '#008B8B', '#4E5689', '#6A8EC9', '#652884', '#652884', '#8A7355', '#CC5B45', '#848484', '#E42320', '#B46DA9'];
     const clone = value => JSON.parse(JSON.stringify(value));
     let tasks = clone(gantt.tasks);
     let events = clone(gantt.events);
@@ -988,13 +996,26 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         if (!saved) return;
         const deletedTaskIds = new Set(saved.deleted_task_ids || []);
         const deletedEventIds = new Set(saved.deleted_event_ids || []);
-        const baseTaskIds = new Set(tasks.map(task => task.id));
-        tasks = tasks.filter(task => !deletedTaskIds.has(task.id));
+        const baseTasks = tasks.filter(task => !deletedTaskIds.has(task.id));
+        const baseTaskIds = new Set(baseTasks.map(task => task.id));
         const savedTasks = new Map((saved.tasks || []).map(task => [task.id, task]));
-        tasks = tasks.map(task => Object.assign(task, savedTasks.get(task.id) || {}));
+        const mergedTasks = new Map(baseTasks.map(task => [task.id, Object.assign(task, savedTasks.get(task.id) || {})]));
         for (const task of saved.tasks || []) {
-          if (!baseTaskIds.has(task.id) && !deletedTaskIds.has(task.id)) tasks.push(task);
+          if (!baseTaskIds.has(task.id) && !deletedTaskIds.has(task.id)) mergedTasks.set(task.id, task);
         }
+        const orderedTasks = [];
+        const seenTasks = new Set();
+        for (const savedTask of saved.tasks || []) {
+          const task = mergedTasks.get(savedTask.id);
+          if (!task || seenTasks.has(task.id)) continue;
+          orderedTasks.push(task);
+          seenTasks.add(task.id);
+        }
+        for (const task of baseTasks) {
+          if (seenTasks.has(task.id)) continue;
+          orderedTasks.push(mergedTasks.get(task.id) || task);
+        }
+        tasks = orderedTasks;
         const baseEvents = new Map(events.filter(event => !deletedEventIds.has(event.id)).map(event => [event.id, event]));
         for (const event of saved.events || []) {
           if (!deletedEventIds.has(event.id)) baseEvents.set(event.id, event);
@@ -1006,13 +1027,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     }
     function persistEdits() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        tasks: tasks.map(task => taskStorageRecord(task)),
+        tasks: tasks.map((task, index) => taskStorageRecord(task, index)),
         events,
         deleted_task_ids: deletedTaskIds(),
         deleted_event_ids: deletedEventIds()
       }));
     }
-    function taskStorageRecord(task) {
+    function taskStorageRecord(task, index = 0) {
       return {
         id: task.id,
         issue_id: task.issue_id || null,
@@ -1023,11 +1044,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         children: task.children || [],
         depth: task.depth || 0,
         order: task.order || 0,
+        order_index: index,
         project: task.project || null,
         state: task.state || null,
         priority: task.priority || null,
         progress: task.progress || 0,
         owner: task.owner || null,
+        color: task.color || null,
         labels: task.labels || [],
         modules: task.modules || [],
         start_date: task.start_date || null,
@@ -1046,13 +1069,15 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     function changedTaskRecords() {
       const base = baseTaskMap();
       return tasks
-        .map(task => {
+        .map((task, index) => {
           const original = base.get(task.id);
           if (!original) return null;
           const changes = {};
-          for (const key of ['title', 'compact_label', 'parent_id', 'start_date', 'target_date']) {
-            if (text(task[key]) !== text(original[key])) changes[key] = task[key] ?? null;
+          for (const key of ['title', 'compact_label', 'parent_id', 'start_date', 'target_date', 'owner', 'state', 'progress', 'labels', 'modules', 'color', 'delivery_summary']) {
+            if (!sameValue(task[key], original[key])) changes[key] = task[key] ?? null;
           }
+          const originalOrder = gantt.tasks.findIndex(item => item.id === task.id);
+          if (originalOrder !== -1 && originalOrder !== index) changes.order_index = index;
           return Object.keys(changes).length ? {
             id: task.id,
             issue_id: task.issue_id,
@@ -1073,10 +1098,12 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           title: task.title,
           compact_label: task.compact_label,
           parent_id: task.parent_id || null,
+          order_index: tasks.findIndex(item => item.id === task.id),
           project: task.project || null,
           state: task.state || null,
           progress: task.progress || 0,
           owner: task.owner || null,
+          color: task.color || null,
           labels: task.labels || [],
           modules: task.modules || [],
           start_date: task.start_date || null,
@@ -1085,7 +1112,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           source_refs: task.source_refs || []
         }));
     }
-    function changedEventRecords() {
+    function newEventRecords() {
       const base = baseEventMap();
       return events
         .filter(event => !base.has(event.id))
@@ -1098,6 +1125,24 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           compact_label: event.compact_label,
           source_refs: event.source_refs || []
         }));
+    }
+    function changedEventRecords() {
+      const base = baseEventMap();
+      return events
+        .map(event => {
+          const original = base.get(event.id);
+          if (!original) return null;
+          const changes = {};
+          for (const key of ['task_id', 'type', 'date', 'summary', 'compact_label']) {
+            if (!sameValue(event[key], original[key])) changes[key] = event[key] ?? null;
+          }
+          return Object.keys(changes).length ? {
+            id: event.id,
+            task_id: event.task_id,
+            changes
+          } : null;
+        })
+        .filter(Boolean);
     }
     function deletedTaskIds() {
       const current = new Set(tasks.map(task => task.id));
@@ -1138,17 +1183,26 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         note: 'Static Gantt edits are persisted as an auditable changeset. Applying to Plane requires a controlled API writer; no direct Plane database writes.',
         new_tasks: newTaskRecords(),
         task_changes: changedTaskRecords(),
-        new_events: changedEventRecords(),
+        event_changes: changedEventRecords(),
+        new_events: newEventRecords(),
         deleted_tasks: deletedTaskRecords(),
         deleted_events: deletedEventRecords(),
         snapshot: {
-          tasks: tasks.map(task => ({
+          tasks: tasks.map((task, index) => ({
             id: task.id,
             issue_id: task.issue_id,
             issue_key: task.issue_key,
             title: task.title,
             compact_label: task.compact_label,
             parent_id: task.parent_id,
+            order_index: index,
+            owner: task.owner,
+            state: task.state,
+            progress: task.progress,
+            labels: task.labels || [],
+            modules: task.modules || [],
+            color: task.color || null,
+            delivery_summary: task.delivery_summary || {},
             start_date: task.start_date,
             target_date: task.target_date
           })),
@@ -1169,7 +1223,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     async function pushEdits() {
       persistEdits();
       const changeset = buildChangeset();
-      if (!changeset.new_tasks.length && !changeset.task_changes.length && !changeset.new_events.length && !changeset.deleted_tasks.length && !changeset.deleted_events.length) {
+      if (!changeset.new_tasks.length && !changeset.task_changes.length && !changeset.event_changes.length && !changeset.new_events.length && !changeset.deleted_tasks.length && !changeset.deleted_events.length) {
         alert('没有可 Push 的本地修改。');
         return;
       }
@@ -1220,6 +1274,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         parent_links: tasks.filter(task => task.parent_id).length,
         events: events.length,
         blocked: events.filter(event => event.type === 'blocked').length,
+        in_progress: events.filter(event => event.type === 'in_progress').length,
         completed: events.filter(event => event.type === 'completed').length,
         milestones: events.filter(event => event.type === 'milestone').length
       };
@@ -1255,6 +1310,14 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     }
     function text(value) {
       return value === null || value === undefined || value === '' ? 'n/a' : String(value);
+    }
+    function sameValue(left, right) {
+      const normalize = value => {
+        if (value === undefined || value === null || value === '') return null;
+        if (Array.isArray(value) || typeof value === 'object') return JSON.stringify(value);
+        return String(value);
+      };
+      return normalize(left) === normalize(right);
     }
     function compact(value) {
       return text(value).slice(0, 8);
@@ -1361,7 +1424,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       detail.classList.remove('open');
       detail.setAttribute('aria-hidden', 'true');
     }
-    function openDetail(title, rows, refs, dangerAction) {
+    function openDetail(title, rows, refs, options = {}) {
       document.getElementById('detail-title').textContent = title || 'Delivery summary';
       const body = document.getElementById('detail-body');
       body.replaceChildren();
@@ -1375,6 +1438,49 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         row.append(label, content);
         body.append(row);
       }
+      const actionsList = options.actions || [];
+      const dangerAction = options.dangerAction;
+      if (actionsList.length || options.palette || dangerAction) {
+        const actions = document.createElement('div');
+        actions.className = 'detail-actions';
+        for (const action of actionsList) {
+          const button = document.createElement('button');
+          button.className = 'action-button';
+          button.type = 'button';
+          button.textContent = action.label;
+          button.addEventListener('click', action.onClick);
+          actions.append(button);
+        }
+        if (options.palette) {
+          const label = document.createElement('div');
+          label.className = 'palette-label';
+          label.textContent = options.palette.label;
+          actions.append(label);
+          const palette = document.createElement('div');
+          palette.className = 'palette-grid';
+          for (const color of options.palette.colors) {
+            const swatch = document.createElement('button');
+            swatch.className = 'palette-swatch';
+            swatch.type = 'button';
+            swatch.style.setProperty('--swatch', color);
+            swatch.title = color;
+            swatch.setAttribute('aria-label', color);
+            swatch.setAttribute('aria-pressed', color.toLowerCase() === String(options.palette.value || '').toLowerCase());
+            swatch.addEventListener('click', () => options.palette.onSelect(color));
+            palette.append(swatch);
+          }
+          actions.append(palette);
+        }
+        if (dangerAction) {
+          const danger = document.createElement('button');
+          danger.className = 'danger-button';
+          danger.type = 'button';
+          danger.textContent = dangerAction.label;
+          danger.addEventListener('click', dangerAction.onClick);
+          actions.append(danger);
+        }
+        body.append(actions);
+      }
       const heading = document.createElement('h3');
       heading.textContent = 'Source evidence';
       body.append(heading);
@@ -1387,17 +1493,6 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         list.append(item);
       }
       body.append(list);
-      if (dangerAction) {
-        const actions = document.createElement('div');
-        actions.className = 'detail-actions';
-        const danger = document.createElement('button');
-        danger.className = 'danger-button';
-        danger.type = 'button';
-        danger.textContent = dangerAction.label;
-        danger.addEventListener('click', dangerAction.onClick);
-        actions.append(danger);
-        body.append(actions);
-      }
       const detail = document.getElementById('detail');
       detail.classList.add('open');
       detail.setAttribute('aria-hidden', 'false');
@@ -1414,8 +1509,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         ['Blocker', summary.blocker],
         ['Next action', summary.next_action],
         ['Labels', (task.labels || []).join(', ')],
-        ['Modules', (task.modules || []).join(', ')]
-      ], task.source_refs, { label: '删除任务', onClick: () => deleteTask(task) });
+        ['Modules', (task.modules || []).join(', ')],
+        ['Color', task.color || '默认']
+      ], task.source_refs, {
+        actions: [{ label: '编辑任务字段', onClick: () => editTaskFields(task) }],
+        palette: { label: '任务条颜色', value: task.color, colors: taskColorPalette, onSelect: color => setTaskColor(task, color) },
+        dangerAction: { label: '删除任务', onClick: () => deleteTask(task) }
+      });
     }
     function showEvent(event) {
       const task = tasksById.get(event.task_id) || {};
@@ -1428,7 +1528,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         ['Owner', task.owner],
         ['State', stateText(task.state)],
         ['Next action', (task.delivery_summary || {}).next_action]
-      ], event.source_refs, { label: '删除事件', onClick: () => deleteEvent(event) });
+      ], event.source_refs, {
+        actions: [{ label: '修改事件', onClick: () => editEvent(event) }],
+        dangerAction: { label: '删除事件', onClick: () => deleteEvent(event) }
+      });
     }
     function toggleTask(task) {
       if (!task.children || task.children.length === 0) return;
@@ -1447,6 +1550,67 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       task.delivery_summary.title = title;
       persistEdits();
       render();
+    }
+    function parseList(value) {
+      return String(value || '')
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+    }
+    function setTaskColor(task, color) {
+      task.color = color;
+      persistEdits();
+      render();
+      showTask(task);
+    }
+    function editTaskFields(task) {
+      const summary = task.delivery_summary || {};
+      const rawTitle = prompt('Task', task.title || '');
+      if (rawTitle === null) return;
+      const title = rawTitle.trim();
+      if (!title) {
+        alert('任务名称不能为空。');
+        return;
+      }
+      const owner = prompt('Owner', task.owner || '');
+      if (owner === null) return;
+      const state = prompt('State', task.state || '');
+      if (state === null) return;
+      const rawProgress = prompt('Progress 0-100', String(task.progress ?? 0));
+      if (rawProgress === null) return;
+      const progress = Math.max(0, Math.min(100, Number.parseInt(rawProgress, 10) || 0));
+      const startDate = promptDate('开始日期 YYYY-MM-DD', task.start_date || isoFromOrd(todayOrd()));
+      if (!startDate) return;
+      const targetDate = promptDate('结束日期 YYYY-MM-DD', task.target_date || startDate);
+      if (!targetDate) return;
+      const blocker = prompt('Blocker', summary.blocker || '');
+      if (blocker === null) return;
+      const nextAction = prompt('Next action', summary.next_action || '');
+      if (nextAction === null) return;
+      const labels = prompt('Labels，用英文逗号分隔', (task.labels || []).join(', '));
+      if (labels === null) return;
+      const modules = prompt('Modules，用英文逗号分隔', (task.modules || []).join(', '));
+      if (modules === null) return;
+      const startOrd = dateOrd(startDate) ?? todayOrd();
+      const targetOrd = dateOrd(targetDate) ?? startOrd;
+      task.title = title;
+      task.compact_label = compactTaskLabel(title);
+      task.owner = owner.trim() || null;
+      task.state = state.trim() || null;
+      task.progress = progress;
+      task.start_date = isoFromOrd(Math.min(startOrd, targetOrd));
+      task.target_date = isoFromOrd(Math.max(startOrd, targetOrd));
+      task.labels = parseList(labels);
+      task.modules = parseList(modules);
+      task.delivery_summary = Object.assign({}, summary, {
+        title,
+        blocker: blocker.trim() || null,
+        next_action: nextAction.trim() || null,
+        date_range: `${text(task.start_date)} - ${text(task.target_date)}`
+      });
+      persistEdits();
+      render();
+      showTask(task);
     }
     function taskSearchParts(task) {
       return [task.id, task.issue_id, task.issue_key, task.title, task.compact_label]
@@ -1471,6 +1635,15 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         return null;
       }
       return isoFromOrd(ord);
+    }
+    function normalizeEventType(value, fallback = 'milestone') {
+      const normalized = String(value || '').trim().toLowerCase();
+      if (!normalized) return fallback;
+      if (normalized.includes('求') || normalized.includes('助') || normalized.includes('阻') || normalized.includes('block') || normalized.includes('help')) return 'blocked';
+      if (normalized.includes('进') || normalized.includes('中') || normalized.includes('doing') || normalized.includes('progress') || normalized.includes('ongoing')) return 'in_progress';
+      if (normalized.includes('完') || normalized.includes('done') || normalized.includes('complete')) return 'completed';
+      if (normalized.includes('里') || normalized.includes('碑') || normalized.includes('mile')) return 'milestone';
+      return fallback;
     }
     function insertTask(task, parent) {
       if (!parent) {
@@ -1526,6 +1699,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         priority: null,
         progress: 0,
         owner: null,
+        color: parent?.color || null,
         labels: ['local'],
         modules: [],
         start_date: normalizedStart,
@@ -1564,12 +1738,9 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       addEventAt(task, date);
     }
     function addEventAt(task, date) {
-      const raw = prompt('添加事件类型：求助 / 完成 / 里程碑', '里程碑');
+      const raw = prompt('添加事件类型：求助 / 进行中 / 完成 / 里程碑', '里程碑');
       if (raw === null) return;
-      const normalized = raw.trim().toLowerCase();
-      let type = 'milestone';
-      if (normalized.includes('求') || normalized.includes('助') || normalized.includes('阻') || normalized.includes('block') || normalized.includes('help')) type = 'blocked';
-      else if (normalized.includes('完') || normalized.includes('done') || normalized.includes('complete')) type = 'completed';
+      const type = normalizeEventType(raw, 'milestone');
       const summary = prompt('事件简述', eventLabel(type));
       if (summary === null) return;
       const label = summary.trim() || eventLabel(type);
@@ -1585,6 +1756,24 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       persistEdits();
       render();
     }
+    function editEvent(event) {
+      const rawType = prompt('事件类型：求助 / 进行中 / 完成 / 里程碑', eventLabel(event.type));
+      if (rawType === null) return;
+      const type = normalizeEventType(rawType, event.type);
+      const date = promptDate('事件日期 YYYY-MM-DD', event.date || isoFromOrd(todayOrd()));
+      if (!date) return;
+      const summary = prompt('事件简述', event.summary || eventLabel(type));
+      if (summary === null) return;
+      event.type = type;
+      event.date = date;
+      event.summary = summary.trim() || eventLabel(type);
+      event.compact_label = compact(event.summary);
+      event.source_refs = event.source_refs || [];
+      event.source_refs.push({ event_time: new Date().toISOString(), event_type: 'local_event_edit', source: { table: 'localStorage', id: event.id } });
+      persistEdits();
+      render();
+      showEvent(event);
+    }
     function addDemoEvents() {
       const task = visibleTasks()[0] || tasks[0];
       if (!task) return;
@@ -1592,6 +1781,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const stamp = Date.now();
       [
         ['blocked', '求助', '求助: 同日多事件测试'],
+        ['in_progress', '进行中', '进行中: 同日多事件测试'],
         ['completed', '完成', '完成: 同日多事件测试'],
         ['milestone', '里程碑', '里程碑: 同日多事件测试']
       ].forEach(([type, label, summary], index) => {
@@ -1661,6 +1851,11 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           return;
         }
         showEvent(event);
+      });
+      marker.addEventListener('dblclick', eventObject => {
+        eventObject.preventDefault();
+        eventObject.stopPropagation();
+        editEvent(event);
       });
       return marker;
     }
@@ -1847,6 +2042,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         `Links ${summary.parent_links}`,
         `Markers ${summary.events}`,
         `Blocked ${summary.blocked}`,
+        `In Progress ${summary.in_progress}`,
         `Completed ${summary.completed}`,
         `Milestones ${summary.milestones}`
       ].map(label => {
@@ -1927,6 +2123,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         bar.type = 'button';
         bar.style.left = `${left}px`;
         bar.style.width = `${width}px`;
+        if (task.color) bar.style.setProperty('--task-color', task.color);
         const barLabel = document.createElement('span');
         barLabel.className = 'bar-label';
         barLabel.textContent = task.compact_label;
