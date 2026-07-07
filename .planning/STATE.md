@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-07T09:42:29Z"
-last_activity: 2026-07-07 — Gantt row interaction polish completed
+last_updated: "2026-07-07T09:51:00Z"
+last_activity: 2026-07-07 — Gantt report export and today centering completed
 progress:
   total_phases: 6
   completed_phases: 6
@@ -58,6 +58,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Gantt visible add buttons completed: toolbar buttons now create task bars and events, and changesets record new task bars separately from task edits.
 - Gantt editing polish completed: manual row order survives refresh, events can be edited, `进行中` arrow markers are supported, and task fields/colors are editable.
 - Gantt row interaction polish completed: left-side rows can collapse/expand, task bar labels stay visible while scrolling the timeline, and Owner cells support double-click editing.
+- Gantt report export and today centering completed: toolbar reports export daily/weekly/monthly Markdown by date range, and refresh centers today's date in the timeline.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -90,6 +91,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260707-ono | Gantt report export and today centering | 2026-07-07 | e50c83a | [260707-ono-add-gantt-report-export-button-with-date](./quick/260707-ono-add-gantt-report-export-button-with-date/) |
 | 260707-ogc | Gantt row interaction polish | 2026-07-07 | 22647f5 | [260707-ogc-polish-gantt-row-toggle-sticky-bar-label](./quick/260707-ogc-polish-gantt-row-toggle-sticky-bar-label/) |
 | 260707-nlu | Gantt editing polish | 2026-07-07 | 8c72ddc | [260707-nlu-polish-gantt-persistence-editing-events-](./quick/260707-nlu-polish-gantt-persistence-editing-events-/) |
 | 260707-kua | Gantt visible add buttons | 2026-07-07 | 8add2bf | [260707-kua-add-visible-gantt-add-buttons-for-new-ta](./quick/260707-kua-add-visible-gantt-add-buttons-for-new-ta/) |
@@ -116,7 +118,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-07 — Gantt row interaction polish completed
+Last activity: 2026-07-07 — Gantt report export and today centering completed
 
 ## Operator Next Steps
 
