@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import re
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -296,7 +297,33 @@ def next_actions(project: dict[str, Any]) -> list[str]:
     return actions
 
 
+LEADING_DATE_RE = re.compile(r"^\s*(?:\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{4}\s+Q\d)\s*")
+
+
+def meaningful_label(value: Any) -> str:
+    text = " ".join(str(value or "").split())
+    text = LEADING_DATE_RE.sub("", text).strip()
+    if "：" in text:
+        prefix, rest = text.split("：", 1)
+        if rest.strip() and (
+            re.search(r"\d", prefix)
+            or len(prefix) <= 8
+            or prefix.endswith(("需求", "SFT", "chunkmoe"))
+        ):
+            text = rest.strip()
+    elif ": " in text:
+        prefix, rest = text.split(": ", 1)
+        if rest.strip() and (re.search(r"\d", prefix) or len(prefix) <= 12):
+            text = rest.strip()
+    return text or "未命名"
+
+
 def compact_label(value: Any, limit: int = 8) -> str:
+    text = meaningful_label(value)
+    return text[:limit]
+
+
+def compact_marker_label(value: Any, limit: int = 8) -> str:
     text = " ".join(str(value or "").split())
     return text[:limit]
 
@@ -433,7 +460,7 @@ def build_gantt_data(timeline: list[dict[str, Any]], audits: list[dict[str, Any]
                 "id": event_id,
                 "task_id": task["id"],
                 "type": event_type,
-                "compact_label": compact_label(label),
+                "compact_label": compact_marker_label(label),
                 "date": event_date,
                 "summary": summary,
                 "source_refs": [source_ref(row)],
@@ -783,8 +810,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Plane Demand Hub Gantt</title>
   <style>
-    :root { color-scheme: light; --ink:#20242a; --muted:#657282; --line:#d9dee7; --bg:#f7f8fa; --panel:#ffffff; --blue:#2f6fed; --green:#1b8a5a; --amber:#b26b00; --red:#c43d3d; --row-h:30px; --bar-h:18px; --day-w:28px; --table-w:380px; --font-body:13px; --font-label:12px; }
-    body[data-density="present"] { --row-h:52px; --bar-h:28px; --day-w:38px; --table-w:440px; --font-body:15px; --font-label:13px; }
+    :root { color-scheme: light; --ink:#20242a; --muted:#657282; --line:#d9dee7; --bg:#f7f8fa; --panel:#ffffff; --blue:#2f6fed; --green:#1b8a5a; --amber:#b26b00; --red:#c43d3d; --row-h:30px; --bar-h:18px; --day-w:30px; --table-w:520px; --font-body:13px; --font-label:12px; }
+    body[data-density="present"] { --row-h:52px; --bar-h:28px; --day-w:40px; --table-w:620px; --font-body:15px; --font-label:13px; }
     * { box-sizing:border-box; }
     body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--bg); font-size:var(--font-body); letter-spacing:0; }
     header { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:16px 24px; border-bottom:1px solid var(--line); background:var(--panel); }
@@ -797,35 +824,34 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     main { padding:16px 24px 32px; }
     .summary { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; color:var(--muted); }
     .summary span { background:#fff; border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
-    .gantt-layout { display:grid; grid-template-columns:minmax(280px,var(--table-w)) minmax(560px,1fr); border:1px solid var(--line); background:var(--panel); min-height:520px; overflow:hidden; }
+    .gantt-layout { display:grid; grid-template-columns:minmax(430px,var(--table-w)) minmax(560px,1fr); border:1px solid var(--line); background:var(--panel); min-height:520px; overflow:hidden; }
     .task-pane { border-right:1px solid var(--line); background:#fff; z-index:2; }
     .pane-head { height:34px; display:grid; align-items:center; border-bottom:1px solid var(--line); background:#fbfcfd; color:var(--muted); font-weight:600; font-size:12px; }
-    .task-head { grid-template-columns:1.25fr .72fr .72fr .9fr; }
-    .task-head span, .task-row span { padding:0 8px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .task-row { height:var(--row-h); display:grid; grid-template-columns:1.25fr .72fr .72fr .9fr; align-items:center; border-bottom:1px solid var(--line); }
+    .task-head { grid-template-columns:minmax(240px,1fr) 62px 64px 74px; }
+    .task-head span, .task-row span { padding:0 6px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .task-row { height:var(--row-h); display:grid; grid-template-columns:minmax(240px,1fr) 62px 64px 74px; align-items:center; border-bottom:1px solid var(--line); }
     .task-main { display:flex; align-items:center; gap:4px; min-width:0; }
     .row-button { width:100%; min-height:calc(var(--row-h) - 6px); display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--ink); text-align:left; cursor:pointer; padding:0 4px; border-radius:4px; overflow:hidden; }
     .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
     .chevron { width:14px; flex:0 0 14px; color:var(--muted); text-align:center; }
-    .task-key { color:var(--muted); flex:0 0 auto; }
+    .task-key { color:var(--muted); flex:0 0 34px; width:34px; padding:0; font-size:11px; text-align:right; overflow:hidden; text-overflow:ellipsis; }
     .task-label { font-weight:600; font-size:var(--font-label); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .timeline-pane { overflow:auto; background:#fff; position:relative; }
     .timeline-content { position:relative; min-height:100%; }
     .time-head { height:34px; position:sticky; top:0; z-index:3; display:flex; border-bottom:1px solid var(--line); background:#fbfcfd; }
-    .tick { width:var(--day-w); flex:0 0 var(--day-w); border-right:1px solid var(--line); padding:10px 2px 0; color:var(--muted); font-size:11px; text-align:center; }
+    .tick { width:var(--day-w); flex:0 0 var(--day-w); border-right:1px solid var(--line); padding:10px 1px 0; color:var(--muted); font-size:10px; text-align:center; white-space:nowrap; overflow:hidden; }
     .timeline-row { height:var(--row-h); position:relative; border-bottom:1px solid var(--line); background-image:linear-gradient(to right, rgba(217,222,231,.72) 1px, transparent 1px); background-size:var(--day-w) 100%; }
-    .bar { position:absolute; top:calc((var(--row-h) - var(--bar-h)) / 2); height:var(--bar-h); min-width:18px; border:0; border-radius:5px; background:var(--blue); color:#fff; padding:0 6px; display:flex; align-items:center; justify-content:center; font-weight:650; font-size:var(--font-label); overflow:hidden; white-space:nowrap; cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.18); }
+    .bar { position:absolute; top:calc((var(--row-h) - var(--bar-h)) / 2); height:var(--bar-h); min-width:18px; border:0; border-radius:5px; background:var(--blue); color:#fff; padding:0 8px; display:flex; align-items:center; justify-content:flex-start; font-weight:650; font-size:var(--font-label); overflow:hidden; white-space:nowrap; cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.18); }
     .bar-label { position:relative; z-index:1; overflow:hidden; text-overflow:ellipsis; }
-    .bar.parent { background:#2459be; }
+    .bar.parent { background:var(--blue); }
     .bar.blocked { background:var(--red); }
-    .progress { position:absolute; left:0; top:0; bottom:0; background:rgba(255,255,255,.22); pointer-events:none; }
     .marker { position:absolute; top:calc((var(--row-h) - 22px) / 2); min-width:22px; height:22px; border:1px solid currentColor; background:#fff; border-radius:11px; display:flex; align-items:center; gap:3px; padding:0 5px; cursor:pointer; font-size:12px; font-weight:700; box-shadow:0 1px 2px rgba(32,36,42,.12); }
     .marker span { max-width:8ch; overflow:hidden; white-space:nowrap; }
     .marker.blocked { color:var(--red); }
     .marker.completed { color:var(--green); }
     .marker.milestone { color:var(--amber); }
     .connector-layer { position:absolute; left:0; top:34px; pointer-events:none; overflow:visible; z-index:1; }
-    .connector { fill:none; stroke:#aeb8c7; stroke-width:1.5; stroke-linecap:round; stroke-dasharray:4 3; }
+    .connector { fill:none; stroke:#9aa5b4; stroke-width:1.35; stroke-linecap:square; stroke-linejoin:miter; stroke-dasharray:5 4; opacity:.9; vector-effect:non-scaling-stroke; shape-rendering:geometricPrecision; mix-blend-mode:normal; }
     .empty { padding:24px; color:var(--muted); }
     .detail { position:fixed; top:0; right:0; width:min(420px,100vw); height:100vh; background:#fff; border-left:1px solid var(--line); box-shadow:-12px 0 24px rgba(32,36,42,.12); transform:translateX(105%); transition:transform .16s ease; z-index:8; display:flex; flex-direction:column; }
     .detail.open { transform:translateX(0); }
@@ -837,7 +863,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .source-list { margin:8px 0 0; padding-left:18px; color:var(--muted); }
     @media (max-width: 760px) {
       header, main { padding-left:12px; padding-right:12px; }
-      .gantt-layout { grid-template-columns:minmax(260px,70vw) minmax(520px,1fr); overflow:auto; }
+      .gantt-layout { grid-template-columns:minmax(430px,78vw) minmax(520px,1fr); overflow:auto; }
       .timeline-pane { overflow:visible; }
     }
   </style>
@@ -948,16 +974,45 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     function compact(value) {
       return text(value).slice(0, 8);
     }
+    function dateObj(value) {
+      const ord = dateOrd(value);
+      return ord === null ? null : new Date(ord * DAY_MS);
+    }
+    function monthText(value) {
+      const date = dateObj(value);
+      return date ? `M${date.getUTCMonth() + 1}` : 'n/a';
+    }
+    function monthRange(task) {
+      const start = monthText(task.start_date);
+      const target = monthText(task.target_date);
+      if (start === 'n/a' && target === 'n/a') return 'n/a';
+      if (start === target || target === 'n/a') return start;
+      if (start === 'n/a') return target;
+      return `${start}～${target}`;
+    }
+    function shortDate(value) {
+      const date = dateObj(value);
+      return date ? `${date.getUTCMonth() + 1}/${date.getUTCDate()}` : 'n/a';
+    }
+    function stateText(value) {
+      const raw = text(value);
+      const lower = raw.toLowerCase();
+      if (['done', 'completed', 'complete', 'closed', '已完成', '完成'].includes(lower) || lower.includes('done')) return '完成';
+      if (['todo', 'backlog', '待办'].includes(lower)) return '待办';
+      if (lower.includes('blocked') || lower.includes('waiting') || lower.includes('stuck') || raw.includes('阻塞') || raw.includes('等待')) return '阻塞';
+      if (raw === 'n/a') return 'n/a';
+      return '进行中';
+    }
     function setDensity(mode) {
       document.body.dataset.density = mode;
       document.getElementById('density-dense').setAttribute('aria-pressed', mode === 'dense');
       document.getElementById('density-present').setAttribute('aria-pressed', mode === 'present');
       render();
     }
-    function makeCell(value) {
+    function makeCell(value, title) {
       const span = document.createElement('span');
       span.textContent = text(value);
-      span.title = text(value);
+      span.title = text(title ?? value);
       return span;
     }
     function openDetail(title, rows, refs) {
@@ -995,9 +1050,9 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       openDetail(summary.title || task.title, [
         ['Task', `${text(task.issue_key)} ${text(task.title)}`],
         ['Owner', task.owner],
-        ['State', task.state],
+        ['State', stateText(task.state)],
         ['Progress', `${text(task.progress)}%`],
-        ['Range', summary.date_range || `${text(task.start_date)} - ${text(task.target_date)}`],
+        ['Range', monthRange(task)],
         ['Blocker', summary.blocker],
         ['Next action', summary.next_action],
         ['Labels', (task.labels || []).join(', ')],
@@ -1009,10 +1064,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       openDetail(event.summary || 'Delivery summary', [
         ['Event', event.type],
         ['Task', `${text(task.issue_key)} ${text(task.title)}`],
-        ['Date', event.date],
+        ['Date', shortDate(event.date)],
         ['Summary', event.summary],
         ['Owner', task.owner],
-        ['State', task.state],
+        ['State', stateText(task.state)],
         ['Next action', (task.delivery_summary || {}).next_action]
       ], event.source_refs);
     }
@@ -1045,7 +1100,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       for (let ord = minOrd; ord <= maxOrd; ord += 1) {
         const tick = document.createElement('div');
         tick.className = 'tick';
-        tick.textContent = new Date(ord * DAY_MS).toISOString().slice(5, 10);
+        tick.textContent = shortDate(new Date(ord * DAY_MS).toISOString().slice(0, 10));
         head.append(tick);
       }
       const taskRows = document.getElementById('task-rows');
@@ -1075,7 +1130,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         button.append(chevron, key, label);
         button.addEventListener('click', () => showTask(task));
         buttonCell.append(button);
-        row.append(buttonCell, makeCell(task.owner), makeCell(task.state), makeCell(`${text(task.start_date)}→${text(task.target_date)}`));
+        row.append(buttonCell, makeCell(task.owner), makeCell(stateText(task.state), task.state), makeCell(monthRange(task), `${text(task.start_date)}→${text(task.target_date)}`));
         taskRows.append(row);
 
         const track = document.createElement('div');
@@ -1089,14 +1144,11 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         bar.type = 'button';
         bar.style.left = `${left}px`;
         bar.style.width = `${width}px`;
-        const progress = document.createElement('span');
-        progress.className = 'progress';
-        progress.style.width = `${Math.min(100, Math.max(0, Number(task.progress) || 0))}%`;
         const barLabel = document.createElement('span');
         barLabel.className = 'bar-label';
         barLabel.textContent = task.compact_label;
         bar.title = task.title;
-        bar.append(progress, barLabel);
+        bar.append(barLabel);
         bar.addEventListener('click', () => { toggleTask(task); showTask(task); });
         track.append(bar);
         for (const event of eventsByTask.get(task.id) || []) {
@@ -1122,18 +1174,33 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       connectorLayer.style.height = `${Math.max(visible.length * rowHeight(), 1)}px`;
       connectorLayer.replaceChildren();
       const visibleIds = new Set(visible.map(task => task.id));
+      const childrenByParent = new Map();
       for (const task of visible) {
         if (!task.parent_id || !visibleIds.has(task.parent_id)) continue;
-        const parentMetric = metrics.get(task.parent_id);
-        const childMetric = metrics.get(task.id);
-        if (!parentMetric || !childMetric) continue;
-        const x1 = parentMetric.left + 8;
-        const x2 = childMetric.left + 8;
-        const y1 = parentMetric.y;
-        const y2 = childMetric.y;
+        if (!childrenByParent.has(task.parent_id)) childrenByParent.set(task.parent_id, []);
+        childrenByParent.get(task.parent_id).push(task);
+      }
+      for (const [parentId, children] of childrenByParent) {
+        const parentMetric = metrics.get(parentId);
+        if (!parentMetric) continue;
+        const parentX = parentMetric.left + 10;
+        const parentY = parentMetric.y;
+        const childMetrics = children
+          .map(child => ({ child, metric: metrics.get(child.id) }))
+          .filter(item => item.metric)
+          .sort((a, b) => a.metric.y - b.metric.y);
+        if (!childMetrics.length) continue;
+        const trunkX = Math.min(parentX + 22, ...childMetrics.map(item => item.metric.left + 8));
+        const parts = [`M ${parentX} ${parentY} H ${trunkX}`];
+        for (const item of childMetrics) {
+          const childX = item.metric.left + 8;
+          const childY = item.metric.y;
+          parts.push(`V ${childY} H ${childX}`);
+          parts.push(`M ${trunkX} ${childY}`);
+        }
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('class', 'connector');
-        path.setAttribute('d', `M ${x1} ${y1} C ${x1 + 24} ${y1}, ${Math.max(0, x2 - 24)} ${y2}, ${x2} ${y2}`);
+        path.setAttribute('d', parts.join(' '));
         connectorLayer.append(path);
       }
     }
