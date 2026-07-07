@@ -844,6 +844,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .timeline-content { position:relative; min-height:100%; }
     .time-head { height:34px; position:sticky; top:0; z-index:3; display:flex; border-bottom:1px solid var(--line); background:#fbfcfd; }
     .tick { width:var(--day-w); flex:0 0 var(--day-w); border-right:1px solid var(--line); padding:10px 1px 0; color:var(--muted); font-size:10px; text-align:center; white-space:nowrap; overflow:hidden; }
+    .tick.weekend, .tick.holiday { background:#eef1f4; color:#7b8794; }
+    .tick.holiday { box-shadow:inset 0 -2px 0 rgba(123,135,148,.34); }
     .timeline-row { height:var(--row-h); position:relative; border-bottom:1px solid var(--line); background-image:linear-gradient(to right, rgba(217,222,231,.72) 1px, transparent 1px); background-size:var(--day-w) 100%; }
     .bar { position:absolute; top:calc((var(--row-h) - var(--bar-h)) / 2); height:var(--bar-h); min-width:18px; border:0; border-radius:5px; background:var(--task-color,var(--blue)); color:#fff; padding:0 8px; display:flex; align-items:center; justify-content:flex-start; font-weight:650; font-size:var(--font-label); overflow:hidden; white-space:nowrap; cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.18); }
     .bar-label { position:sticky; left:8px; max-width:calc(100% - 16px); z-index:1; overflow:hidden; text-overflow:ellipsis; pointer-events:none; }
@@ -958,9 +960,19 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     const taskColorPalette = ['#458A74', '#018B38', '#D9A421', '#F5A216', '#57AF37', '#41B9C1', '#008B8B', '#4E5689', '#6A8EC9', '#652884', '#652884', '#8A7355', '#CC5B45', '#848484', '#E42320', '#B46DA9'];
     const defaultTaskColor = '#2f6fed';
     const blockedTaskColor = '#c43d3d';
-    const staleStartDays = 6;
+    const staleStartDays = 2;
     const staleMinimumOpacity = 0.1;
-    const staleFullFadeDays = 30;
+    const staleFullFadeDays = 6;
+    const holidayDates = new Set([
+      '2026-01-01', '2026-01-02', '2026-01-03',
+      '2026-02-15', '2026-02-16', '2026-02-17', '2026-02-18', '2026-02-19', '2026-02-20', '2026-02-21', '2026-02-22', '2026-02-23',
+      '2026-04-04', '2026-04-05', '2026-04-06',
+      '2026-05-01', '2026-05-02', '2026-05-03', '2026-05-04', '2026-05-05',
+      '2026-06-19', '2026-06-20', '2026-06-21',
+      '2026-09-25', '2026-09-26', '2026-09-27',
+      '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06', '2026-10-07'
+    ]);
+    const fixedHolidayMonthDays = new Set(['01-01', '05-01', '10-01']);
     const clone = value => JSON.parse(JSON.stringify(value));
     let tasks = clone(gantt.tasks);
     let events = clone(gantt.events);
@@ -986,6 +998,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     }
     function todayOrd() {
       return dateOrd(new Date().toISOString().slice(0, 10));
+    }
+    function isWeekendOrd(ord) {
+      const day = new Date(ord * DAY_MS).getUTCDay();
+      return day === 0 || day === 6;
+    }
+    function isHolidayDate(isoDate) {
+      return holidayDates.has(isoDate) || fixedHolidayMonthDays.has(isoDate.slice(5));
     }
     function updateBounds() {
       const ords = [];
@@ -1440,7 +1459,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     function taskFreshnessOpacity(task, taskEvents = []) {
       const age = taskLastEventAgeDays(task, taskEvents);
       if (age === null || age < staleStartDays) return 1;
-      const span = Math.max(1, staleFullFadeDays - staleStartDays);
+      if (age >= staleFullFadeDays) return staleMinimumOpacity;
+      const span = Math.max(1, staleFullFadeDays - staleStartDays + 1);
       const ratio = Math.min(1, (age - staleStartDays + 1) / span);
       return Math.max(staleMinimumOpacity, 1 - ratio * (1 - staleMinimumOpacity));
     }
@@ -2334,8 +2354,15 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       head.replaceChildren();
       for (let ord = activeMinOrd; ord <= activeMaxOrd; ord += 1) {
         const tick = document.createElement('div');
-        tick.className = 'tick';
-        tick.textContent = shortDate(new Date(ord * DAY_MS).toISOString().slice(0, 10));
+        const isoDate = isoFromOrd(ord);
+        const classes = ['tick'];
+        const weekend = isWeekendOrd(ord);
+        const holiday = isHolidayDate(isoDate);
+        if (weekend) classes.push('weekend');
+        if (holiday) classes.push('holiday');
+        tick.className = classes.join(' ');
+        tick.title = `${isoDate}${holiday ? ' · 节假日' : weekend ? ' · 周末' : ''}`;
+        tick.textContent = shortDate(isoDate);
         head.append(tick);
       }
       const taskRows = document.getElementById('task-rows');
