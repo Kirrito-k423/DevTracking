@@ -834,7 +834,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .task-row.drop-parent { background:#eef5ff; box-shadow:inset 0 0 0 2px rgba(47,111,237,.2); }
     .task-main { display:flex; align-items:center; gap:4px; min-width:0; }
     .row-button { width:100%; min-height:calc(var(--row-h) - 6px); display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--ink); text-align:left; cursor:pointer; padding:0 4px; border-radius:4px; overflow:hidden; }
-    .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+    .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible, .danger-button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
     .chevron { width:14px; flex:0 0 14px; color:var(--muted); text-align:center; }
     .task-key { color:var(--muted); flex:0 0 34px; width:34px; padding:0; font-size:11px; text-align:right; overflow:hidden; text-overflow:ellipsis; }
     .task-label { flex:1 1 auto; min-width:0; font-weight:600; font-size:var(--font-label); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -879,6 +879,9 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .kv { display:grid; grid-template-columns:120px 1fr; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); }
     .kv b { color:var(--muted); font-weight:600; }
     .source-list { margin:8px 0 0; padding-left:18px; color:var(--muted); }
+    .detail-actions { margin-top:18px; padding-top:14px; border-top:1px solid var(--line); }
+    .danger-button { width:100%; min-height:36px; border:1px solid #e49a9a; background:#fff5f5; color:var(--red); border-radius:6px; padding:0 12px; font-weight:700; cursor:pointer; }
+    .danger-button:hover { background:#ffecec; }
     @media (max-width: 760px) {
       header, main { padding-left:12px; padding-right:12px; }
       .gantt-layout { grid-template-columns:minmax(430px,78vw) minmax(520px,1fr); overflow:auto; }
@@ -980,10 +983,15 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
         if (!saved) return;
+        const deletedTaskIds = new Set(saved.deleted_task_ids || []);
+        const deletedEventIds = new Set(saved.deleted_event_ids || []);
+        tasks = tasks.filter(task => !deletedTaskIds.has(task.id));
         const savedTasks = new Map((saved.tasks || []).map(task => [task.id, task]));
         tasks = tasks.map(task => Object.assign(task, savedTasks.get(task.id) || {}));
-        const baseEvents = new Map(events.map(event => [event.id, event]));
-        for (const event of saved.events || []) baseEvents.set(event.id, event);
+        const baseEvents = new Map(events.filter(event => !deletedEventIds.has(event.id)).map(event => [event.id, event]));
+        for (const event of saved.events || []) {
+          if (!deletedEventIds.has(event.id)) baseEvents.set(event.id, event);
+        }
         events = [...baseEvents.values()];
       } catch {
         localStorage.removeItem(STORAGE_KEY);
@@ -1000,7 +1008,9 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           target_date: task.target_date,
           children: task.children || []
         })),
-        events
+        events,
+        deleted_task_ids: deletedTaskIds(),
+        deleted_event_ids: deletedEventIds()
       }));
     }
     function baseTaskMap() {
@@ -1041,6 +1051,37 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           source_refs: event.source_refs || []
         }));
     }
+    function deletedTaskIds() {
+      const current = new Set(tasks.map(task => task.id));
+      return gantt.tasks.filter(task => !current.has(task.id)).map(task => task.id);
+    }
+    function deletedEventIds() {
+      const current = new Set(events.map(event => event.id));
+      return gantt.events.filter(event => !current.has(event.id)).map(event => event.id);
+    }
+    function deletedTaskRecords() {
+      const current = new Set(tasks.map(task => task.id));
+      return gantt.tasks
+        .filter(task => !current.has(task.id))
+        .map(task => ({
+          id: task.id,
+          issue_id: task.issue_id,
+          issue_key: task.issue_key,
+          title: task.title
+        }));
+    }
+    function deletedEventRecords() {
+      const current = new Set(events.map(event => event.id));
+      return gantt.events
+        .filter(event => !current.has(event.id))
+        .map(event => ({
+          id: event.id,
+          task_id: event.task_id,
+          type: event.type,
+          date: event.date,
+          summary: event.summary
+        }));
+    }
     function buildChangeset() {
       return {
         schema: 'plane-demand-hub.gantt-edits.v1',
@@ -1049,6 +1090,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         note: 'Static Gantt edits are persisted as an auditable changeset. Applying to Plane requires a controlled API writer; no direct Plane database writes.',
         task_changes: changedTaskRecords(),
         new_events: changedEventRecords(),
+        deleted_tasks: deletedTaskRecords(),
+        deleted_events: deletedEventRecords(),
         snapshot: {
           tasks: tasks.map(task => ({
             id: task.id,
@@ -1077,7 +1120,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     async function pushEdits() {
       persistEdits();
       const changeset = buildChangeset();
-      if (!changeset.task_changes.length && !changeset.new_events.length) {
+      if (!changeset.task_changes.length && !changeset.new_events.length && !changeset.deleted_tasks.length && !changeset.deleted_events.length) {
         alert('没有可 Push 的本地修改。');
         return;
       }
@@ -1264,7 +1307,12 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       task.delivery_summary = task.delivery_summary || {};
       task.delivery_summary.date_range = `${text(task.start_date)} - ${text(task.target_date)}`;
     }
-    function openDetail(title, rows, refs) {
+    function closeDetail() {
+      const detail = document.getElementById('detail');
+      detail.classList.remove('open');
+      detail.setAttribute('aria-hidden', 'true');
+    }
+    function openDetail(title, rows, refs, dangerAction) {
       document.getElementById('detail-title').textContent = title || 'Delivery summary';
       const body = document.getElementById('detail-body');
       body.replaceChildren();
@@ -1290,6 +1338,17 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         list.append(item);
       }
       body.append(list);
+      if (dangerAction) {
+        const actions = document.createElement('div');
+        actions.className = 'detail-actions';
+        const danger = document.createElement('button');
+        danger.className = 'danger-button';
+        danger.type = 'button';
+        danger.textContent = dangerAction.label;
+        danger.addEventListener('click', dangerAction.onClick);
+        actions.append(danger);
+        body.append(actions);
+      }
       const detail = document.getElementById('detail');
       detail.classList.add('open');
       detail.setAttribute('aria-hidden', 'false');
@@ -1306,7 +1365,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         ['Next action', summary.next_action],
         ['Labels', (task.labels || []).join(', ')],
         ['Modules', (task.modules || []).join(', ')]
-      ], task.source_refs);
+      ], task.source_refs, { label: '删除任务', onClick: () => deleteTask(task) });
     }
     function showEvent(event) {
       const task = tasksById.get(event.task_id) || {};
@@ -1318,7 +1377,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         ['Owner', task.owner],
         ['State', stateText(task.state)],
         ['Next action', (task.delivery_summary || {}).next_action]
-      ], event.source_refs);
+      ], event.source_refs, { label: '删除事件', onClick: () => deleteEvent(event) });
     }
     function toggleTask(task) {
       if (!task.children || task.children.length === 0) return;
@@ -1381,6 +1440,31 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         });
       });
       persistEdits();
+      render();
+    }
+    function deleteTask(task) {
+      if (!task || !tasksById.has(task.id)) return;
+      if (!confirm(`删除任务「${text(task.title)}」？子任务会保留并上移一层。`)) return;
+      const parentId = task.parent_id || null;
+      tasks = tasks
+        .filter(item => item.id !== task.id)
+        .map(item => item.parent_id === task.id ? Object.assign(item, { parent_id: parentId }) : item);
+      events = events.filter(event => event.task_id !== task.id);
+      collapsed.delete(task.id);
+      for (const key of [...expandedEventStacks]) {
+        if (key.startsWith(`${task.id}:`)) expandedEventStacks.delete(key);
+      }
+      persistEdits();
+      closeDetail();
+      render();
+    }
+    function deleteEvent(event) {
+      if (!event) return;
+      if (!confirm(`删除事件「${eventLabel(event.type)} · ${text(event.summary)}」？`)) return;
+      events = events.filter(item => item.id !== event.id);
+      expandedEventStacks.delete(eventStackKey(event.task_id, event.date));
+      persistEdits();
+      closeDetail();
       render();
     }
     function expandEventStack(key) {
@@ -1812,9 +1896,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       render();
     });
     document.getElementById('detail-close').addEventListener('click', () => {
-      const detail = document.getElementById('detail');
-      detail.classList.remove('open');
-      detail.setAttribute('aria-hidden', 'true');
+      closeDetail();
     });
     window.addEventListener('resize', render);
     render();
