@@ -852,12 +852,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .bar-handle:hover { background:rgba(255,255,255,.28); }
     .bar.parent { background:var(--blue); }
     .bar.blocked { background:var(--red); }
-    .event-stack { position:absolute; top:calc((var(--row-h) - var(--marker-size) - 4px) / 2); min-height:calc(var(--marker-size) + 4px); display:flex; align-items:center; gap:2px; padding:1px; border:1px solid var(--line); border-radius:999px; background:#fff; box-shadow:0 1px 3px rgba(32,36,42,.16); z-index:5; }
-    .event-stack.multi { box-shadow:0 2px 6px rgba(32,36,42,.2); }
-    .event-stack.collapsed { overflow:hidden; }
-    .event-stack.expanded { gap:4px; padding:4px 6px 4px 18px; border-color:var(--blue); border-radius:8px; box-shadow:0 0 0 2px rgba(47,111,237,.16), 0 6px 16px rgba(32,36,42,.16); z-index:7; }
-    .stack-collapse { position:absolute; left:2px; top:2px; width:14px; height:14px; border:1px solid var(--line); background:#fff; color:var(--muted); border-radius:999px; padding:0; display:flex; align-items:center; justify-content:center; font-size:10px; line-height:1; cursor:pointer; }
-    .marker { width:var(--stack-marker-size, var(--marker-size)); height:var(--stack-marker-size, var(--marker-size)); border:1px solid var(--marker-color); background:var(--marker-color); color:#fff; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; font-size:calc(var(--stack-marker-size, var(--marker-size)) * .58); font-weight:800; line-height:1; box-shadow:inset 0 -1px 0 rgba(0,0,0,.16); }
+    .event-stack { position:absolute; top:50%; transform:translateY(-50%); min-height:calc(var(--marker-size) + 4px); display:flex; align-items:center; justify-content:center; gap:2px; padding:1px; border:1px solid rgba(154,165,180,.72); border-radius:999px; background:#fff; box-shadow:0 1px 3px rgba(32,36,42,.14); z-index:5; }
+    .event-stack.multi { box-shadow:0 2px 6px rgba(32,36,42,.18); }
+    .event-stack.collapsed { overflow:hidden; background:#fff; }
+    .event-stack.expanded { min-height:26px; gap:4px; padding:2px 6px 2px 21px; border-color:var(--blue); border-radius:9px; background:#fff; box-shadow:0 0 0 2px rgba(47,111,237,.14), 0 4px 10px rgba(32,36,42,.12); z-index:7; }
+    .stack-collapse { position:absolute; left:4px; top:50%; transform:translateY(-50%); width:13px; height:13px; border:1px solid #c8d1df; background:#fff; color:var(--blue); border-radius:999px; padding:0; display:flex; align-items:center; justify-content:center; font-size:10px; line-height:1; cursor:pointer; box-shadow:0 1px 2px rgba(32,36,42,.08); }
+    .marker { width:var(--stack-marker-size, var(--marker-size)); height:var(--stack-marker-size, var(--marker-size)); border:1px solid var(--marker-color); background:var(--marker-color); color:#fff; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; font-size:11px; font-weight:800; line-height:1; box-shadow:inset 0 -1px 0 rgba(0,0,0,.16); }
+    .marker b { display:block; line-height:1; transform:translateY(-.25px); }
     .event-stack.collapsed .marker { position:absolute; top:50%; transform:translateY(-50%); }
     .event-stack.expanded .marker { position:relative; flex:0 0 auto; }
     .marker.blocked { --marker-color:var(--red); }
@@ -1717,7 +1718,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
             const visualSize = Math.max(12, Math.min(markerSize(), collapsedWidth / Math.max(1.4, 1 + (dateEvents.length - 1) * 0.22)));
             const step = dateEvents.length <= 1 ? 0 : (collapsedWidth - visualSize) / (dateEvents.length - 1);
             stack.style.width = `${collapsedWidth}px`;
-            stack.style.height = `${Math.max(visualSize + 4, 16)}px`;
+            stack.style.height = `${Math.max(visualSize + 4, 18)}px`;
             stack.style.setProperty('--stack-marker-size', `${visualSize}px`);
             dateEvents.forEach((event, markerIndex) => {
               const marker = createMarker(event, stackKey, true);
