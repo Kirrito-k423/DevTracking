@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-08T02:03:52Z"
-last_activity: 2026-07-08 — Gantt today highlight and event types completed
+last_updated: "2026-07-08T03:01:55Z"
+last_activity: 2026-07-08 — Gantt row drag hierarchy choices completed
 progress:
   total_phases: 6
   completed_phases: 6
@@ -64,6 +64,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Gantt stale fade inheritance bugfix completed: parent task fading now accounts for descendant events, and locally added task bars fade from their start date until an explicit event refreshes them.
 - Gantt event add realtime stale color refresh completed: newly added events immediately refresh stale task bar colors via event source timestamps, and toolbar event dates default to today.
 - Gantt today highlight and event types completed: today's timeline column is highlighted in light yellow, and event markers now support todo, grey 阻塞, and yellow 重启 while preserving red 求助.
+- Gantt row drag hierarchy choices completed: row dragging now shows explicit horizontal indentation choices for same-level, child, and ancestor-level placements.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -96,6 +97,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260708-f24 | Gantt row drag hierarchy drop choices | 2026-07-08 | 03f8ef5 | [260708-f24-improve-gantt-row-drag-hierarchy-drop-ch](./quick/260708-f24-improve-gantt-row-drag-hierarchy-drop-ch/) |
 | 260708-duv | Gantt today column highlight and new event types | 2026-07-08 | 7fc316e | [260708-duv-add-today-column-highlight-and-new-gantt](./quick/260708-duv-add-today-column-highlight-and-new-gantt/) |
 | 260708-dbz | Gantt event add realtime stale color refresh | 2026-07-08 | 49212f5 | [260708-dbz-fix-gantt-event-add-realtime-stale-color](./quick/260708-dbz-fix-gantt-event-add-realtime-stale-color/) |
 | 260708-d1x | Gantt stale fade event inheritance and local task coverage | 2026-07-08 | 1bef8f8 | [260708-d1x-fix-gantt-stale-fade-event-inheritance-a](./quick/260708-d1x-fix-gantt-stale-fade-event-inheritance-a/) |
@@ -128,7 +130,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-08 — Gantt today highlight and event types completed
+Last activity: 2026-07-08 — Gantt row drag hierarchy choices completed
 
 ## Operator Next Steps
 
