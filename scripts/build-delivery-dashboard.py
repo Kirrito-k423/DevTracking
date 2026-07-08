@@ -1450,11 +1450,20 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       if (!isLocalTask(task)) return null;
       return dateOrd(task.start_date) ?? dateOrd(task.target_date);
     }
+    function eventActivityOrds(event) {
+      const ords = [];
+      const eventOrd = dateOrd(event.date);
+      if (eventOrd !== null) ords.push(eventOrd);
+      for (const ref of event.source_refs || []) {
+        const refOrd = dateOrd(ref.event_time);
+        if (refOrd !== null) ords.push(refOrd);
+      }
+      return ords;
+    }
     function directTaskActivityOrds(task, taskEvents = []) {
       const ords = [];
       for (const event of taskEvents) {
-        const ord = dateOrd(event.date);
-        if (ord !== null) ords.push(ord);
+        ords.push(...eventActivityOrds(event));
       }
       const completedOrd = dateOrd(task.completed_at);
       if (completedOrd !== null) ords.push(completedOrd);
@@ -2005,7 +2014,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         alert('没有找到匹配的任务。');
         return;
       }
-      const date = promptDate('事件日期 YYYY-MM-DD', task.target_date || task.start_date || isoFromOrd(todayOrd()));
+      const date = promptDate('事件日期 YYYY-MM-DD', isoFromOrd(todayOrd()));
       if (!date) return;
       selectedTaskId = task.id;
       addEventAt(task, date);
