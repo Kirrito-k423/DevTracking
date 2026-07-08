@@ -1440,24 +1440,53 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       }
       return map;
     }
-    function latestTaskEventOrd(task, taskEvents = []) {
+    function isLocalTask(task) {
+      return String(task?.id || '').startsWith('local-task:') || (task?.labels || []).includes('local') || task?.issue_key === 'NEW';
+    }
+    function isFreshnessSourceRef(ref) {
+      return ref?.event_type !== 'local_task_created';
+    }
+    function localTaskFallbackOrd(task) {
+      if (!isLocalTask(task)) return null;
+      return dateOrd(task.start_date) ?? dateOrd(task.target_date);
+    }
+    function directTaskActivityOrds(task, taskEvents = []) {
       const ords = [];
       for (const event of taskEvents) {
         const ord = dateOrd(event.date);
         if (ord !== null) ords.push(ord);
       }
+      const completedOrd = dateOrd(task.completed_at);
+      if (completedOrd !== null) ords.push(completedOrd);
       for (const ref of task.source_refs || []) {
+        if (!isFreshnessSourceRef(ref)) continue;
         const ord = dateOrd(ref.event_time);
         if (ord !== null) ords.push(ord);
       }
+      if (!ords.length) {
+        const fallback = localTaskFallbackOrd(task);
+        if (fallback !== null) ords.push(fallback);
+      }
+      return ords;
+    }
+    function latestTaskEventOrd(task, taskEventsOrMap = [], seen = new Set()) {
+      if (!task || seen.has(task.id)) return null;
+      seen.add(task.id);
+      const byTask = taskEventsOrMap instanceof Map ? taskEventsOrMap : new Map([[task.id, taskEventsOrMap]]);
+      const ords = directTaskActivityOrds(task, byTask.get(task.id) || []);
+      for (const childId of task.children || []) {
+        const child = tasksById.get(childId);
+        const childOrd = latestTaskEventOrd(child, byTask, seen);
+        if (childOrd !== null) ords.push(childOrd);
+      }
       return ords.length ? Math.max(...ords) : null;
     }
-    function taskLastEventAgeDays(task, taskEvents = []) {
-      const last = latestTaskEventOrd(task, taskEvents);
+    function taskLastEventAgeDays(task, taskEventsOrMap = []) {
+      const last = latestTaskEventOrd(task, taskEventsOrMap);
       return last === null ? null : Math.max(0, todayOrd() - last);
     }
-    function taskFreshnessOpacity(task, taskEvents = []) {
-      const age = taskLastEventAgeDays(task, taskEvents);
+    function taskFreshnessOpacity(task, taskEventsOrMap = []) {
+      const age = taskLastEventAgeDays(task, taskEventsOrMap);
       if (age === null || age < staleStartDays) return 1;
       if (age >= staleFullFadeDays) return staleMinimumOpacity;
       const span = Math.max(1, staleFullFadeDays - staleStartDays + 1);
@@ -1480,8 +1509,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const blue = value & 255;
       return `rgba(${red}, ${green}, ${blue}, ${alpha.toFixed(3)})`;
     }
-    function taskStaleTitle(task, taskEvents = []) {
-      const age = taskLastEventAgeDays(task, taskEvents);
+    function taskStaleTitle(task, taskEventsOrMap = []) {
+      const age = taskLastEventAgeDays(task, taskEventsOrMap);
       if (age === null) return '暂无事件记录';
       if (age < staleStartDays) return `最近事件 ${age} 天前`;
       return `最近事件 ${age} 天前，颜色已淡化提醒关注`;
@@ -2427,7 +2456,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         const left = offsetForDate(task.start_date);
         const width = widthForTask(task);
         const taskEvents = sortedEvents(byTask.get(task.id) || []);
-        const freshnessOpacity = taskFreshnessOpacity(task, taskEvents);
+        const freshnessOpacity = taskFreshnessOpacity(task, byTask);
         metrics.set(task.id, { left, width, y: index * rowHeight() + rowHeight() / 2 });
         const bar = document.createElement('button');
         bar.className = `bar ${task.children && task.children.length ? 'parent' : ''} ${(task.labels || []).includes('blocked') || (task.labels || []).includes('needs-help') ? 'blocked' : ''} ${isDropParent ? 'drop-parent' : ''}`;
@@ -2439,7 +2468,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         const barLabel = document.createElement('span');
         barLabel.className = 'bar-label';
         barLabel.textContent = task.compact_label;
-        bar.title = `${task.title} · ${taskStaleTitle(task, taskEvents)}`;
+        bar.title = `${task.title} · ${taskStaleTitle(task, byTask)}`;
         const startHandle = document.createElement('span');
         startHandle.className = 'bar-handle start';
         const endHandle = document.createElement('span');
