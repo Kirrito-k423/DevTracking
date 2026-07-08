@@ -1005,7 +1005,9 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     let didCenterToday = false;
 
     restoreEdits();
+    const migratedLocalTaskKeys = normalizeLocalTaskKeys();
     rebuildTaskIndex();
+    if (migratedLocalTaskKeys) persistEdits();
 
     function dateOrd(value) {
       if (!value) return null;
@@ -1461,6 +1463,28 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     }
     function isLocalTask(task) {
       return String(task?.id || '').startsWith('local-task:') || (task?.labels || []).includes('local') || task?.issue_key === 'NEW';
+    }
+    function localTaskKeyNumber(value) {
+      const match = String(value || '').trim().match(/^N-(\\d+)$/i);
+      return match ? Number.parseInt(match[1], 10) : null;
+    }
+    function nextLocalTaskKey() {
+      let maxNumber = 0;
+      for (const task of tasks) {
+        const number = localTaskKeyNumber(task.issue_key);
+        if (number !== null) maxNumber = Math.max(maxNumber, number);
+      }
+      return `N-${maxNumber + 1}`;
+    }
+    function normalizeLocalTaskKeys() {
+      let changed = false;
+      for (const task of tasks) {
+        if (isLocalTask(task) && (!task.issue_key || task.issue_key === 'NEW')) {
+          task.issue_key = nextLocalTaskKey();
+          changed = true;
+        }
+      }
+      return changed;
     }
     function isFreshnessSourceRef(ref) {
       return ref?.event_type !== 'local_task_created';
@@ -2062,7 +2086,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const task = {
         id: taskId,
         issue_id: null,
-        issue_key: 'NEW',
+        issue_key: nextLocalTaskKey(),
         title,
         compact_label: compactTaskLabel(title),
         parent_id: parent?.id || null,
