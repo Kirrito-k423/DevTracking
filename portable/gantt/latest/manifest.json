@@ -1,0 +1,27 @@
+{
+  "changeset_generated_at": "2026-07-08T08:52:12.607Z",
+  "counts": {
+    "deleted_events": 16,
+    "deleted_tasks": 8,
+    "event_changes": 0,
+    "events": 29,
+    "new_events": 27,
+    "new_tasks": 26,
+    "task_changes": 14,
+    "tasks": 40
+  },
+  "exported_at": "2026-07-08T09:37:40.675719Z",
+  "files": [
+    "gantt.html",
+    "gantt.json",
+    "gantt-local-edits.json",
+    "manifest.json",
+    "README.md",
+    "start-windows.bat",
+    "start-windows.ps1",
+    "start-macos-linux.sh"
+  ],
+  "schema": "plane-demand-hub.gantt-portable.v1",
+  "source_delivery_dir": "exports/delivery",
+  "source_gantt_generated_at": "2026-07-08T09:35:44.585031+00:00"
+}
