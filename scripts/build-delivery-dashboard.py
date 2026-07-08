@@ -506,8 +506,10 @@ def build_gantt_data(timeline: list[dict[str, Any]], audits: list[dict[str, Any]
             label_lower = label_text.lower()
             if label_lower.startswith("owner:"):
                 task["owner"] = label_text.split(":", 1)[1].strip() or task.get("owner")
-            if label_lower in {"blocked", "needs-help", "blocker"}:
-                add_event(task, "blocked", row, "阻塞" if label_lower == "blocked" else "求助", f"{label_text}: {task['title']}")
+            if label_lower == "needs-help":
+                add_event(task, "blocked", row, "求助", f"{label_text}: {task['title']}")
+            elif label_lower in {"blocked", "blocker"}:
+                add_event(task, "stalled", row, "阻塞", f"{label_text}: {task['title']}")
             if label_lower == "milestone":
                 add_event(task, "milestone", row, "里程碑", f"Milestone: {task['title']}")
         elif event_type == "module_linked":
@@ -555,10 +557,10 @@ def build_gantt_data(timeline: list[dict[str, Any]], audits: list[dict[str, Any]
                     "完成",
                     f"Completed: {task['title']}",
                 )
-        if blocked_state(task.get("state")) and not any(event["task_id"] == task["id"] and event["type"] == "blocked" for event in events.values()):
+        if blocked_state(task.get("state")) and not any(event["task_id"] == task["id"] and event["type"] == "stalled" for event in events.values()):
             add_event(
                 task,
-                "blocked",
+                "stalled",
                 {"event_time": task.get("_latest_event_date"), "event_type": "state_blocked", "source": {"table": "issues", "field": "state", "id": task["id"]}},
                 "阻塞",
                 f"Blocked state: {task['title']}",
@@ -638,7 +640,7 @@ def build_gantt_data(timeline: list[dict[str, Any]], audits: list[dict[str, Any]
         task["order"] = index
         task["compact_label"] = compact_label(task.get("title") or task.get("issue_key"))
         if not task.get("delivery_summary").get("next_action"):
-            if any(event["task_id"] == task["id"] and event["type"] == "blocked" for event in events.values()):
+            if any(event["task_id"] == task["id"] and event["type"] in {"blocked", "stalled"} for event in events.values()):
                 task["delivery_summary"]["next_action"] = "确认阻塞解除时间和协助人"
             elif task.get("children"):
                 task["delivery_summary"]["next_action"] = "展开子任务复查交付路径"
@@ -696,7 +698,11 @@ def build_gantt_data(timeline: list[dict[str, Any]], audits: list[dict[str, Any]
             "tasks": len(public_tasks),
             "events": len(event_list),
             "parent_links": sum(1 for task in public_tasks if task.get("parent_id")),
+            "todo": sum(1 for event in event_list if event["type"] == "todo"),
             "blocked": sum(1 for event in event_list if event["type"] == "blocked"),
+            "stalled": sum(1 for event in event_list if event["type"] == "stalled"),
+            "restart": sum(1 for event in event_list if event["type"] == "restart"),
+            "in_progress": sum(1 for event in event_list if event["type"] == "in_progress"),
             "completed": sum(1 for event in event_list if event["type"] == "completed"),
             "milestones": sum(1 for event in event_list if event["type"] == "milestone"),
         },
@@ -846,8 +852,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .tick { width:var(--day-w); flex:0 0 var(--day-w); border-right:1px solid var(--line); padding:10px 1px 0; color:var(--muted); font-size:10px; text-align:center; white-space:nowrap; overflow:hidden; }
     .tick.weekend, .tick.holiday { background:#eef1f4; color:#7b8794; }
     .tick.holiday { box-shadow:inset 0 -2px 0 rgba(123,135,148,.34); }
+    .tick.today { background:#fff3bf; color:#7a5a00; font-weight:700; box-shadow:inset 0 -2px 0 rgba(217,164,33,.46); }
     .timeline-row { height:var(--row-h); position:relative; border-bottom:1px solid var(--line); background-image:linear-gradient(to right, rgba(217,222,231,.72) 1px, transparent 1px); background-size:var(--day-w) 100%; }
-    .bar { position:absolute; top:calc((var(--row-h) - var(--bar-h)) / 2); height:var(--bar-h); min-width:18px; border:0; border-radius:5px; background:var(--task-color,var(--blue)); color:#fff; padding:0 8px; display:flex; align-items:center; justify-content:flex-start; font-weight:650; font-size:var(--font-label); overflow:hidden; white-space:nowrap; cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.18); }
+    .timeline-row.today-highlight::before { content:""; position:absolute; top:0; bottom:0; left:var(--today-left); width:var(--day-w); background:rgba(255,236,153,.42); pointer-events:none; z-index:0; }
+    .bar { position:absolute; top:calc((var(--row-h) - var(--bar-h)) / 2); height:var(--bar-h); min-width:18px; border:0; border-radius:5px; background:var(--task-color,var(--blue)); color:#fff; padding:0 8px; display:flex; align-items:center; justify-content:flex-start; font-weight:650; font-size:var(--font-label); overflow:hidden; white-space:nowrap; cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.18); z-index:2; }
     .bar-label { position:sticky; left:8px; max-width:calc(100% - 16px); z-index:1; overflow:hidden; text-overflow:ellipsis; pointer-events:none; }
     .bar.drop-parent { transform:scaleY(1.28); transform-origin:center; box-shadow:0 0 0 2px rgba(47,111,237,.22), inset 0 -1px 0 rgba(0,0,0,.18); }
     .bar-handle { position:absolute; top:0; bottom:0; width:10px; z-index:2; cursor:ew-resize; }
@@ -866,6 +874,9 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .event-stack.collapsed .marker { position:absolute; top:50%; transform:translateY(-50%); }
     .event-stack.expanded .marker { position:relative; flex:0 0 auto; }
     .marker.blocked { --marker-color:var(--red); }
+    .marker.todo { --marker-color:#7b8794; }
+    .marker.stalled { --marker-color:#848484; }
+    .marker.restart { --marker-color:#D9A421; }
     .marker.in_progress { --marker-color:#6A8EC9; }
     .marker.completed { --marker-color:var(--green); }
     .marker.milestone { --marker-color:var(--amber); }
@@ -954,9 +965,9 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     const collapsed = new Set();
     const DAY_MS = 86400000;
     const PAD_DAYS = 30;
-    const symbol = { blocked: '✕', in_progress: '→', completed: '●', milestone: '★' };
-    const eventTypeLabel = { blocked: '求助', in_progress: '进行中', completed: '完成', milestone: '里程碑' };
-    const eventTypeOrder = { blocked: 0, in_progress: 1, completed: 2, milestone: 3 };
+    const symbol = { blocked: '✕', todo: '○', stalled: '×', restart: '↻', in_progress: '→', completed: '●', milestone: '★' };
+    const eventTypeLabel = { blocked: '求助', todo: 'Todo', stalled: '阻塞', restart: '重启', in_progress: '进行中', completed: '完成', milestone: '里程碑' };
+    const eventTypeOrder = { todo: 0, blocked: 1, stalled: 2, restart: 3, in_progress: 4, completed: 5, milestone: 6 };
     const taskColorPalette = ['#458A74', '#018B38', '#D9A421', '#F5A216', '#57AF37', '#41B9C1', '#008B8B', '#4E5689', '#6A8EC9', '#652884', '#652884', '#8A7355', '#CC5B45', '#848484', '#E42320', '#B46DA9'];
     const defaultTaskColor = '#2f6fed';
     const blockedTaskColor = '#c43d3d';
@@ -1529,7 +1540,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         tasks: tasks.length,
         parent_links: tasks.filter(task => task.parent_id).length,
         events: events.length,
+        todo: events.filter(event => event.type === 'todo').length,
         blocked: events.filter(event => event.type === 'blocked').length,
+        stalled: events.filter(event => event.type === 'stalled').length,
+        restart: events.filter(event => event.type === 'restart').length,
         in_progress: events.filter(event => event.type === 'in_progress').length,
         completed: events.filter(event => event.type === 'completed').length,
         milestones: events.filter(event => event.type === 'milestone').length
@@ -1626,6 +1640,15 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     function shortDate(value) {
       const date = dateObj(value);
       return date ? `${date.getUTCMonth() + 1}/${date.getUTCDate()}` : 'n/a';
+    }
+    function todayColumnLeft() {
+      const today = todayOrd();
+      return today >= activeMinOrd && today <= activeMaxOrd ? (today - activeMinOrd) * dayWidth() : null;
+    }
+    function applyTodayColumn(element, left) {
+      if (left === null) return;
+      element.classList.add('today-highlight');
+      element.style.setProperty('--today-left', `${left}px`);
     }
     function stateText(value) {
       const raw = text(value);
@@ -1921,7 +1944,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     function normalizeEventType(value, fallback = 'milestone') {
       const normalized = String(value || '').trim().toLowerCase();
       if (!normalized) return fallback;
-      if (normalized.includes('求') || normalized.includes('助') || normalized.includes('阻') || normalized.includes('block') || normalized.includes('help')) return 'blocked';
+      if (normalized.includes('todo') || normalized.includes('待') || normalized.includes('办')) return 'todo';
+      if (normalized.includes('求') || normalized.includes('助') || normalized.includes('help')) return 'blocked';
+      if (normalized.includes('阻') || normalized.includes('block') || normalized.includes('stuck') || normalized.includes('stall')) return 'stalled';
+      if (normalized.includes('重') || normalized.includes('启') || normalized.includes('restart') || normalized.includes('reopen') || normalized.includes('resume')) return 'restart';
       if (normalized.includes('进') || normalized.includes('中') || normalized.includes('doing') || normalized.includes('progress') || normalized.includes('ongoing')) return 'in_progress';
       if (normalized.includes('完') || normalized.includes('done') || normalized.includes('complete')) return 'completed';
       if (normalized.includes('里') || normalized.includes('碑') || normalized.includes('mile')) return 'milestone';
@@ -2020,7 +2046,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       addEventAt(task, date);
     }
     function addEventAt(task, date) {
-      const raw = prompt('添加事件类型：求助 / 进行中 / 完成 / 里程碑', '里程碑');
+      const raw = prompt('添加事件类型：todo / 求助 / 阻塞 / 重启 / 进行中 / 完成 / 里程碑', '里程碑');
       if (raw === null) return;
       const type = normalizeEventType(raw, 'milestone');
       const summary = prompt('事件简述', eventLabel(type));
@@ -2039,7 +2065,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       render();
     }
     function editEvent(event) {
-      const rawType = prompt('事件类型：求助 / 进行中 / 完成 / 里程碑', eventLabel(event.type));
+      const rawType = prompt('事件类型：todo / 求助 / 阻塞 / 重启 / 进行中 / 完成 / 里程碑', eventLabel(event.type));
       if (rawType === null) return;
       const type = normalizeEventType(rawType, event.type);
       const date = promptDate('事件日期 YYYY-MM-DD', event.date || isoFromOrd(todayOrd()));
@@ -2062,7 +2088,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const date = task.start_date || task.target_date || isoFromOrd(todayOrd());
       const stamp = Date.now();
       [
+        ['todo', 'Todo', 'Todo: 同日多事件测试'],
         ['blocked', '求助', '求助: 同日多事件测试'],
+        ['stalled', '阻塞', '阻塞: 同日多事件测试'],
+        ['restart', '重启', '重启: 同日多事件测试'],
         ['in_progress', '进行中', '进行中: 同日多事件测试'],
         ['completed', '完成', '完成: 同日多事件测试'],
         ['milestone', '里程碑', '里程碑: 同日多事件测试']
@@ -2377,7 +2406,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         `Tasks ${summary.tasks}`,
         `Links ${summary.parent_links}`,
         `Markers ${summary.events}`,
-        `Blocked ${summary.blocked}`,
+        `Todo ${summary.todo}`,
+        `Help ${summary.blocked}`,
+        `Blocked ${summary.stalled}`,
+        `Restart ${summary.restart}`,
         `In Progress ${summary.in_progress}`,
         `Completed ${summary.completed}`,
         `Milestones ${summary.milestones}`
@@ -2390,16 +2422,24 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const head = document.getElementById('time-head');
       head.style.width = `${chartWidth}px`;
       head.replaceChildren();
+      const today = todayOrd();
+      const todayLeft = todayColumnLeft();
       for (let ord = activeMinOrd; ord <= activeMaxOrd; ord += 1) {
         const tick = document.createElement('div');
         const isoDate = isoFromOrd(ord);
         const classes = ['tick'];
         const weekend = isWeekendOrd(ord);
         const holiday = isHolidayDate(isoDate);
+        const isToday = ord === today;
         if (weekend) classes.push('weekend');
         if (holiday) classes.push('holiday');
+        if (isToday) classes.push('today');
         tick.className = classes.join(' ');
-        tick.title = `${isoDate}${holiday ? ' · 节假日' : weekend ? ' · 周末' : ''}`;
+        const titleParts = [];
+        if (isToday) titleParts.push('今天');
+        if (holiday) titleParts.push('节假日');
+        else if (weekend) titleParts.push('周末');
+        tick.title = `${isoDate}${titleParts.length ? ` · ${titleParts.join(' · ')}` : ''}`;
         tick.textContent = shortDate(isoDate);
         head.append(tick);
       }
@@ -2422,6 +2462,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           const track = document.createElement('div');
           track.className = 'timeline-row placeholder';
           track.style.width = `${chartWidth}px`;
+          applyTodayColumn(track, todayLeft);
           timelineRows.append(track);
           return;
         }
@@ -2462,6 +2503,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         track.className = `timeline-row ${isDropParent ? 'drop-parent' : ''}`;
         track.dataset.taskId = task.id;
         track.style.width = `${chartWidth}px`;
+        applyTodayColumn(track, todayLeft);
         const left = offsetForDate(task.start_date);
         const width = widthForTask(task);
         const taskEvents = sortedEvents(byTask.get(task.id) || []);
