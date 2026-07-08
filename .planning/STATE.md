@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-08T01:27:42Z"
-last_activity: 2026-07-08 — Gantt stale fade inheritance bugfix completed
+last_updated: "2026-07-08T01:40:47Z"
+last_activity: 2026-07-08 — Gantt event add realtime stale color refresh completed
 progress:
   total_phases: 6
   completed_phases: 6
@@ -62,6 +62,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Gantt stale task bar fading completed: task bars begin fading after 6 days without a task event and clamp to 0.1 opacity for very stale tasks.
 - Gantt fade thresholds and holiday headers completed: task bars keep original color for 0-1 day recent events, fade from day 2, clamp at 0.1 by day 6, and timeline headers mark weekends/holidays grey.
 - Gantt stale fade inheritance bugfix completed: parent task fading now accounts for descendant events, and locally added task bars fade from their start date until an explicit event refreshes them.
+- Gantt event add realtime stale color refresh completed: newly added events immediately refresh stale task bar colors via event source timestamps, and toolbar event dates default to today.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -94,6 +95,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260708-dbz | Gantt event add realtime stale color refresh | 2026-07-08 | 49212f5 | [260708-dbz-fix-gantt-event-add-realtime-stale-color](./quick/260708-dbz-fix-gantt-event-add-realtime-stale-color/) |
 | 260708-d1x | Gantt stale fade event inheritance and local task coverage | 2026-07-08 | 1bef8f8 | [260708-d1x-fix-gantt-stale-fade-event-inheritance-a](./quick/260708-d1x-fix-gantt-stale-fade-event-inheritance-a/) |
 | 260707-tuf | Gantt fade thresholds and holiday headers | 2026-07-07 | 54e8cf1 | [260707-tuf-adjust-gantt-stale-fade-thresholds-and-g](./quick/260707-tuf-adjust-gantt-stale-fade-thresholds-and-g/) |
 | 260707-tn0 | Gantt stale task bar fading | 2026-07-07 | 55e5e03 | [260707-tn0-fade-stale-gantt-task-bars-based-on-days](./quick/260707-tn0-fade-stale-gantt-task-bars-based-on-days/) |
@@ -124,7 +126,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-08 — Gantt stale fade inheritance bugfix completed
+Last activity: 2026-07-08 — Gantt event add realtime stale color refresh completed
 
 ## Operator Next Steps
 
