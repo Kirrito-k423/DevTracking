@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-08T04:06:49Z"
-last_activity: 2026-07-08 — Gantt manual task numbering completed
+last_updated: "2026-07-08T09:38:44Z"
+last_activity: 2026-07-08 — Gantt portable snapshot export completed
 progress:
   total_phases: 6
   completed_phases: 6
@@ -66,6 +66,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Gantt today highlight and event types completed: today's timeline column is highlighted in light yellow, and event markers now support todo, grey 阻塞, and yellow 重启 while preserving red 求助.
 - Gantt row drag hierarchy choices completed: row dragging now shows explicit horizontal indentation choices for same-level, child, and ancestor-level placements.
 - Gantt manual task numbering completed: manually added task bars now receive local `N-x` keys instead of displaying `NEW`, with existing local `NEW` tasks migrated on load.
+- Gantt portable snapshot export completed: `portable/gantt/latest/` now stores a committed clone-ready snapshot, the page can export it with one button, and Windows launch helpers can serve it after clone.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -98,6 +99,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260708-ocv | Gantt portable snapshot export | 2026-07-08 | 9c98c2e | [260708-ocv-add-portable-gantt-snapshot-export](./quick/260708-ocv-add-portable-gantt-snapshot-export/) |
 | 260708-grn | Gantt manual task numbering | 2026-07-08 | 867df19 | [260708-grn-fix-manual-gantt-task-numbering](./quick/260708-grn-fix-manual-gantt-task-numbering/) |
 | 260708-f24 | Gantt row drag hierarchy drop choices | 2026-07-08 | 03f8ef5 | [260708-f24-improve-gantt-row-drag-hierarchy-drop-ch](./quick/260708-f24-improve-gantt-row-drag-hierarchy-drop-ch/) |
 | 260708-duv | Gantt today column highlight and new event types | 2026-07-08 | 7fc316e | [260708-duv-add-today-column-highlight-and-new-gantt](./quick/260708-duv-add-today-column-highlight-and-new-gantt/) |
@@ -132,7 +134,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-08 — Gantt manual task numbering completed
+Last activity: 2026-07-08 — Gantt portable snapshot export completed
 
 ## Operator Next Steps
 
