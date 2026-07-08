@@ -838,6 +838,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .task-row { height:var(--row-h); display:grid; grid-template-columns:minmax(240px,1fr) 62px 64px 74px; align-items:center; border-bottom:1px solid var(--line); }
     .task-row.placeholder { background:#eef1f6; color:var(--muted); border:1px dashed #aeb8c7; transition:height .16s ease, background .16s ease; }
     .task-row.drop-parent { background:#eef5ff; box-shadow:inset 0 0 0 2px rgba(47,111,237,.2); }
+    .task-row.drop-options { background:#f8fbff; box-shadow:inset 0 0 0 1px rgba(47,111,237,.18); }
+    .drop-options-cell { grid-column:1 / -1; display:flex; align-items:center; gap:6px; padding:3px 6px; min-width:0; overflow-x:auto; overflow-y:hidden; scrollbar-width:thin; }
+    .drop-choice { flex:0 0 auto; min-height:22px; max-width:122px; display:flex; align-items:center; gap:4px; border:1px solid #c9d4e4; background:#fff; color:var(--ink); border-radius:5px; padding:0 7px; font-size:11px; cursor:pointer; white-space:nowrap; overflow:hidden; }
+    .drop-choice[aria-pressed="true"] { border-color:var(--blue); color:var(--blue); background:#eef5ff; box-shadow:0 0 0 2px rgba(47,111,237,.12); }
+    .drop-choice-indent { display:flex; align-items:center; gap:2px; flex:0 0 auto; }
+    .indent-cell { width:7px; height:7px; border:1px solid #c5cfdd; background:#f4f7fb; border-radius:2px; }
+    .drop-choice-label { overflow:hidden; text-overflow:ellipsis; }
     .task-main { display:flex; align-items:center; gap:4px; min-width:0; }
     .row-button { width:100%; min-height:calc(var(--row-h) - 6px); display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--ink); text-align:left; cursor:pointer; padding:0 4px; border-radius:4px; overflow:hidden; }
     .task-row span:not(.task-main):not(.editable-cell) { cursor:pointer; }
@@ -883,6 +890,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .connector-layer { position:absolute; left:0; top:34px; pointer-events:none; overflow:visible; z-index:1; }
     .connector { fill:none; stroke:#9aa5b4; stroke-width:1.35; stroke-linecap:square; stroke-linejoin:miter; stroke-dasharray:5 4; opacity:.9; vector-effect:non-scaling-stroke; shape-rendering:geometricPrecision; mix-blend-mode:normal; }
     .timeline-row.placeholder { background:#eef1f6; border:1px dashed #aeb8c7; transition:height .16s ease, background .16s ease; }
+    .timeline-row.drop-options { background:#f8fbff; box-shadow:inset 0 0 0 1px rgba(47,111,237,.14); }
     .timeline-row.drop-parent { background:#f0f6ff; }
     .drag-ghost { position:fixed; left:0; top:0; z-index:20; pointer-events:none; min-width:240px; max-width:420px; padding:8px 10px; background:#fff; border:1px solid #aeb8c7; border-radius:6px; box-shadow:0 12px 30px rgba(32,36,42,.22); font-weight:700; opacity:.96; transform:translate(-9999px,-9999px); }
     body.dragging-row { user-select:none; cursor:grabbing; }
@@ -1697,6 +1705,65 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       for (const childId of task?.children || []) subtreeIds(childId, ids);
       return ids;
     }
+    function ancestorTasks(task) {
+      const ancestors = [];
+      let parent = task?.parent_id ? tasksById.get(task.parent_id) : null;
+      const seen = new Set();
+      while (parent && !seen.has(parent.id)) {
+        ancestors.unshift(parent);
+        seen.add(parent.id);
+        parent = parent.parent_id ? tasksById.get(parent.parent_id) : null;
+      }
+      return ancestors;
+    }
+    function dropChoicesForTarget(targetId, movingIds = new Set()) {
+      const target = tasksById.get(targetId);
+      if (!target || movingIds.has(target.id)) return [];
+      const choices = [];
+      const addChoice = choice => {
+        if (choice.parentId && movingIds.has(choice.parentId)) return;
+        if (choice.anchorId && movingIds.has(choice.anchorId)) return;
+        choices.push(Object.assign(choice, {
+          key: `${choice.intent}:${choice.anchorId}:${choice.parentId || 'root'}:${choice.insert}`,
+          targetId: target.id
+        }));
+      };
+      for (const ancestor of ancestorTasks(target)) {
+        addChoice({
+          intent: 'ancestor-after',
+          label: `升到${ancestor.depth + 1}级后`,
+          depth: ancestor.depth,
+          parentId: ancestor.parent_id || null,
+          anchorId: ancestor.id,
+          insert: 'after-subtree'
+        });
+      }
+      addChoice({
+        intent: 'before',
+        label: '同级前',
+        depth: target.depth || 0,
+        parentId: target.parent_id || null,
+        anchorId: target.id,
+        insert: 'before'
+      });
+      addChoice({
+        intent: 'after',
+        label: '同级后',
+        depth: target.depth || 0,
+        parentId: target.parent_id || null,
+        anchorId: target.id,
+        insert: 'after-subtree'
+      });
+      addChoice({
+        intent: 'child',
+        label: '作为子任务',
+        depth: (target.depth || 0) + 1,
+        parentId: target.id,
+        anchorId: target.id,
+        insert: 'after'
+      });
+      return choices;
+    }
     function ordFromPointer(event) {
       const pane = document.getElementById('timeline-scroll');
       const rect = pane.getBoundingClientRect();
@@ -2171,22 +2238,24 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       return marker;
     }
     function moveTask(taskId, drop) {
-      if (!drop || !tasksById.has(taskId) || !tasksById.has(drop.targetId)) return;
+      if (!drop || !tasksById.has(taskId) || !tasksById.has(drop.targetId || drop.anchorId)) return;
       const movingIds = subtreeIds(taskId);
-      if (movingIds.has(drop.targetId)) return;
+      if (movingIds.has(drop.targetId) || movingIds.has(drop.anchorId) || (drop.parentId && movingIds.has(drop.parentId))) return;
       const movingGroup = tasks.filter(task => movingIds.has(task.id));
       const remaining = tasks.filter(task => !movingIds.has(task.id));
       const movingRoot = movingGroup.find(task => task.id === taskId);
-      const target = remaining.find(task => task.id === drop.targetId);
-      if (!movingRoot || !target) return;
-      if (drop.mode === 'child') {
-        movingRoot.parent_id = target.id;
-        collapsed.delete(target.id);
-      } else {
-        movingRoot.parent_id = target.parent_id || null;
+      const anchor = remaining.find(task => task.id === (drop.anchorId || drop.targetId));
+      if (!movingRoot || !anchor) return;
+      movingRoot.parent_id = drop.parentId || null;
+      if (drop.intent === 'child' && drop.parentId) collapsed.delete(drop.parentId);
+      const anchorIndex = remaining.findIndex(task => task.id === anchor.id);
+      let insertAt = anchorIndex + 1;
+      if (drop.insert === 'before') {
+        insertAt = anchorIndex;
+      } else if (drop.insert === 'after-subtree') {
+        const anchorSubtree = subtreeIds(anchor.id);
+        insertAt = Math.max(...remaining.map((task, index) => anchorSubtree.has(task.id) ? index : -1)) + 1;
       }
-      const targetIndex = remaining.findIndex(task => task.id === target.id);
-      const insertAt = drop.mode === 'before' ? targetIndex : targetIndex + 1;
       tasks = [...remaining.slice(0, insertAt), ...movingGroup, ...remaining.slice(insertAt)];
       rebuildTaskIndex();
       persistEdits();
@@ -2204,59 +2273,62 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       ghost.style.transform = `translate(${event.clientX + 12}px, ${event.clientY + 12}px)`;
     }
     function sameDrop(a, b) {
-      return !!a === !!b && (!a || (a.mode === b.mode && a.targetId === b.targetId));
+      return !!a === !!b && (!a || a.key === b.key);
+    }
+    function sameDropChoiceState(targetId, choices) {
+      if (dragState?.hoverTargetId !== targetId) return false;
+      const oldKeys = (dragState.dropChoices || []).map(choice => choice.key).join('|');
+      const nextKeys = (choices || []).map(choice => choice.key).join('|');
+      return oldKeys === nextKeys;
+    }
+    function defaultDropChoice(choices, ratio) {
+      if (!choices.length) return null;
+      if (ratio < 0.28) return choices.find(choice => choice.intent === 'before') || choices[0];
+      if (ratio > 0.72) return choices.find(choice => choice.intent === 'after') || choices[choices.length - 1];
+      return choices.find(choice => choice.intent === 'child') || choices.find(choice => choice.intent === 'after') || choices[0];
     }
     function updateDragDrop(event) {
       if (!dragState) return;
       moveGhost(dragState.ghost, event);
       const element = document.elementFromPoint(event.clientX, event.clientY);
+      const moving = subtreeIds(dragState.task.id);
+      const choiceElement = element?.closest?.('[data-drop-choice-key]');
+      if (choiceElement) {
+        const targetId = choiceElement.dataset.dropTargetId;
+        const choices = dropChoicesForTarget(targetId, moving);
+        const nextDrop = choices.find(choice => choice.key === choiceElement.dataset.dropChoiceKey) || null;
+        const changed = !sameDropChoiceState(targetId, choices) || !sameDrop(dragState.drop, nextDrop);
+        dragState.hoverTargetId = targetId;
+        dragState.dropChoices = choices;
+        dragState.drop = nextDrop;
+        if (changed) render();
+        return;
+      }
       const row = element?.closest?.('[data-task-id]');
       const targetId = row?.dataset.taskId;
-      const moving = subtreeIds(dragState.task.id);
       let nextDrop = null;
       if (targetId && !moving.has(targetId)) {
         const rect = row.getBoundingClientRect();
         const ratio = (event.clientY - rect.top) / Math.max(1, rect.height);
-        if (ratio < 0.28) {
-          clearTimeout(dragState.hoverTimer);
-          dragState.hoverId = null;
-          dragState.childReady = false;
-          nextDrop = { mode: 'before', targetId };
-        } else if (ratio > 0.72) {
-          clearTimeout(dragState.hoverTimer);
-          dragState.hoverId = null;
-          dragState.childReady = false;
-          nextDrop = { mode: 'after', targetId };
-        }
-        else {
-          nextDrop = dragState.childReady && dragState.hoverId === targetId ? { mode: 'child', targetId } : { mode: 'after', targetId };
-          if (dragState.hoverId !== targetId) {
-            clearTimeout(dragState.hoverTimer);
-            dragState.hoverId = targetId;
-            dragState.childReady = false;
-            dragState.hoverTimer = setTimeout(() => {
-              if (!dragState || dragState.hoverId !== targetId) return;
-              dragState.childReady = true;
-              dragState.drop = { mode: 'child', targetId };
-              collapsed.delete(targetId);
-              render();
-            }, 420);
-          }
-        }
-      } else {
-        clearTimeout(dragState.hoverTimer);
-        dragState.hoverId = null;
-        dragState.childReady = false;
-      }
-      if (!sameDrop(dragState.drop, nextDrop)) {
+        const choices = dropChoicesForTarget(targetId, moving);
+        nextDrop = defaultDropChoice(choices, ratio);
+        const changed = !sameDropChoiceState(targetId, choices) || !sameDrop(dragState.drop, nextDrop);
+        dragState.hoverTargetId = targetId;
+        dragState.dropChoices = choices;
         dragState.drop = nextDrop;
-        render();
+        if (changed) render();
+        return;
+      } else {
+        const changed = dragState.hoverTargetId || dragState.dropChoices?.length || dragState.drop;
+        dragState.hoverTargetId = null;
+        dragState.dropChoices = [];
+        dragState.drop = null;
+        if (changed) render();
       }
     }
     function beginRowDrag(event, task) {
       event.preventDefault();
-      clearTimeout(dragState?.hoverTimer);
-      dragState = { task, drop: null, hoverId: null, childReady: false, hoverTimer: null, ghost: createGhost(task, event) };
+      dragState = { task, drop: null, hoverTargetId: null, dropChoices: [], ghost: createGhost(task, event) };
       document.body.classList.add('dragging-row');
       window.addEventListener('pointermove', updateDragDrop);
       window.addEventListener('pointerup', finishRowDrag, { once: true });
@@ -2267,7 +2339,6 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const state = dragState;
       dragState = null;
       document.body.classList.remove('dragging-row');
-      clearTimeout(state?.hoverTimer);
       state?.ghost?.remove();
       if (state?.drop) moveTask(state.task.id, state.drop);
       else render();
@@ -2326,15 +2397,14 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const filtered = baseVisible.filter(task => !moving.has(task.id));
       const items = [];
       for (const task of filtered) {
-        if (dragState?.drop?.mode === 'before' && dragState.drop.targetId === task.id) {
-          items.push({ kind: 'placeholder', depth: task.depth, mode: 'between' });
-        }
         items.push({ kind: 'task', task });
-        if (dragState?.drop?.mode === 'after' && dragState.drop.targetId === task.id) {
-          items.push({ kind: 'placeholder', depth: task.depth, mode: 'between' });
-        }
-        if (dragState?.drop?.mode === 'child' && dragState.drop.targetId === task.id) {
-          items.push({ kind: 'placeholder', depth: task.depth + 1, mode: 'child' });
+        if (dragState?.hoverTargetId === task.id && dragState.dropChoices?.length) {
+          items.push({
+            kind: 'drop-options',
+            target: task,
+            choices: dragState.dropChoices,
+            selectedKey: dragState.drop?.key || null
+          });
         }
       }
       return items;
@@ -2450,6 +2520,44 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const metrics = new Map();
       let taskIndex = 0;
       renderItems.forEach((item, index) => {
+        if (item.kind === 'drop-options') {
+          const row = document.createElement('div');
+          row.className = 'task-row drop-options';
+          row.dataset.taskId = item.target.id;
+          const cell = document.createElement('span');
+          cell.className = 'drop-options-cell';
+          for (const choice of item.choices) {
+            const button = document.createElement('button');
+            button.className = 'drop-choice';
+            button.type = 'button';
+            button.dataset.dropTargetId = item.target.id;
+            button.dataset.dropChoiceKey = choice.key;
+            button.style.marginLeft = `${Math.min(choice.depth, 6) * 10}px`;
+            button.setAttribute('aria-pressed', choice.key === item.selectedKey ? 'true' : 'false');
+            button.title = choice.label;
+            const indent = document.createElement('span');
+            indent.className = 'drop-choice-indent';
+            for (let dot = 0; dot < Math.min(choice.depth, 4); dot += 1) {
+              const square = document.createElement('span');
+              square.className = 'indent-cell';
+              indent.append(square);
+            }
+            const label = document.createElement('span');
+            label.className = 'drop-choice-label';
+            label.textContent = choice.label;
+            button.append(indent, label);
+            cell.append(button);
+          }
+          row.append(cell);
+          taskRows.append(row);
+          const track = document.createElement('div');
+          track.className = 'timeline-row drop-options';
+          track.dataset.taskId = item.target.id;
+          track.style.width = `${chartWidth}px`;
+          applyTodayColumn(track, todayLeft);
+          timelineRows.append(track);
+          return;
+        }
         if (item.kind === 'placeholder') {
           const row = document.createElement('div');
           row.className = 'task-row placeholder';
@@ -2467,7 +2575,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           return;
         }
         const task = item.task;
-        const isDropParent = dragState?.drop?.mode === 'child' && dragState.drop.targetId === task.id;
+        const isDropParent = dragState?.drop?.intent === 'child' && dragState.drop.targetId === task.id;
         const row = document.createElement('div');
         row.className = `task-row ${isDropParent ? 'drop-parent' : ''}`;
         row.dataset.taskId = task.id;
