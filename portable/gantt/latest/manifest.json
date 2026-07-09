@@ -1,16 +1,16 @@
 {
-  "changeset_generated_at": "2026-07-09T03:29:07.125Z",
+  "changeset_generated_at": "2026-07-09T07:26:40.112Z",
   "counts": {
     "deleted_events": 16,
     "deleted_tasks": 8,
     "event_changes": 0,
-    "events": 46,
-    "new_events": 44,
-    "new_tasks": 35,
+    "events": 47,
+    "new_events": 45,
+    "new_tasks": 38,
     "task_changes": 14,
-    "tasks": 49
+    "tasks": 52
   },
-  "exported_at": "2026-07-09T07:15:56.417981Z",
+  "exported_at": "2026-07-09T07:26:40.126735Z",
   "files": [
     "gantt.html",
     "gantt.json",

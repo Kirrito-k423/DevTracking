@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-09T07:17:46Z"
-last_activity: 2026-07-09 — Gantt stale localStorage restore bug fixed
+last_updated: "2026-07-09T07:30:22Z"
+last_activity: 2026-07-09 — Gantt portable export query download fixed
 progress:
   total_phases: 6
   completed_phases: 6
@@ -72,6 +72,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Gantt daily portable GitHub backup scheduled: `scripts/backup-gantt-portable.py` exports the newest autosave/pushed state to `portable/gantt/latest/`, commits it, and a local Codex cron automation runs it daily at midnight.
 - Gantt import/export usability and desktop release packaging completed: the toolbar now has separate migration `导出`/`导入` controls, zip drag/drop import, a desktop launcher, PyInstaller spec, and GitHub Release `gantt-app-v0.1.0` with Windows/macOS zip assets.
 - Gantt stale localStorage restore bug fixed: disk snapshots still contained `VeRL-Omni专项`; restore now rejects newer localStorage when it would hide tasks/events present in autosave/pushed/portable snapshots.
+- Gantt portable export query download fixed: `/api/gantt-portable/download?t=...` now strips query strings before API route matching, so the toolbar `导出` button downloads the zip package correctly.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -143,7 +144,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-09 — Gantt stale localStorage restore bug fixed
+Last activity: 2026-07-09 — Gantt portable export query download fixed
 
 ## Operator Next Steps
 

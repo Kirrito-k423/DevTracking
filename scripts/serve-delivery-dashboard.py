@@ -13,6 +13,7 @@ import zipfile
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -40,7 +41,7 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=directory or str(DEFAULT_DIRECTORY), **kwargs)
 
     def do_GET(self) -> None:
-        route = self.path.rstrip("/")
+        route = self._route_path()
         if route == "/api/gantt-autosave/latest":
             self._send_latest_gantt_autosave()
             return
@@ -59,7 +60,7 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self) -> None:
-        route = self.path.rstrip("/")
+        route = self._route_path()
         if route == "/api/gantt-portable/import":
             self._import_portable_zip()
             return
@@ -305,6 +306,9 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
             name += ".json"
         name = re.sub(r"[^A-Za-z0-9._-]+", "-", name).strip(".-")
         return name[:160]
+
+    def _route_path(self) -> str:
+        return urlsplit(self.path).path.rstrip("/") or "/"
 
 
 def _load_portable_exporter():
