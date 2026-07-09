@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-09T06:18:20Z"
-last_activity: 2026-07-09 — Gantt pushed edits recovery and restore precedence fix completed
+last_updated: "2026-07-09T06:31:06Z"
+last_activity: 2026-07-09 — Gantt realtime autosave backups completed
 progress:
   total_phases: 6
   completed_phases: 6
@@ -68,6 +68,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Gantt manual task numbering completed: manually added task bars now receive local `N-x` keys instead of displaying `NEW`, with existing local `NEW` tasks migrated on load.
 - Gantt portable snapshot export completed: `portable/gantt/latest/` now stores a committed clone-ready snapshot, the page can export it with one button, and Windows launch helpers can serve it after clone.
 - Gantt pushed edits recovery completed: recovered the 2026-07-09 11:29 pushed changeset to 49 tasks / 46 events, restored portable snapshot, and fixed startup precedence so pushed edits beat older portable snapshots.
+- Gantt realtime autosave backups completed: browser edits now write debounced disk backups to `exports/delivery/gantt-autosave.json` plus rolling history, restore ahead of pushed/portable snapshots, and show toolbar save status.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -100,6 +101,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260709-jxg | Gantt realtime autosave backups | 2026-07-09 | fce58ce | [260709-jxg-add-realtime-gantt-autosave-backups](./quick/260709-jxg-add-realtime-gantt-autosave-backups/) |
 | 260709-jss | Gantt pushed edits recovery and restore precedence fix | 2026-07-09 | 3cb9ccc | [260709-jss-recover-pushed-gantt-changes-and-fix-por](./quick/260709-jss-recover-pushed-gantt-changes-and-fix-por/) |
 | 260708-ocv | Gantt portable snapshot export | 2026-07-08 | 9c98c2e | [260708-ocv-add-portable-gantt-snapshot-export](./quick/260708-ocv-add-portable-gantt-snapshot-export/) |
 | 260708-grn | Gantt manual task numbering | 2026-07-08 | 867df19 | [260708-grn-fix-manual-gantt-task-numbering](./quick/260708-grn-fix-manual-gantt-task-numbering/) |
@@ -136,7 +138,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-09 — Gantt pushed edits recovery and restore precedence fix completed
+Last activity: 2026-07-09 — Gantt realtime autosave backups completed
 
 ## Operator Next Steps
 
