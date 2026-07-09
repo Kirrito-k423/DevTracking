@@ -831,6 +831,9 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .autosave-status[data-state="saved"] { color:var(--green); }
     .autosave-status[data-state="saving"] { color:var(--amber); }
     .autosave-status[data-state="error"] { color:var(--red); }
+    .hidden-file-input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+    .drop-overlay { position:fixed; inset:14px; z-index:30; display:none; align-items:center; justify-content:center; border:2px dashed var(--blue); border-radius:8px; background:rgba(246,249,255,.92); color:var(--blue); font-size:22px; font-weight:800; pointer-events:none; }
+    body.drag-import .drop-overlay { display:flex; }
     main { padding:16px 24px 32px; }
     .summary { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; color:var(--muted); }
     .summary span { background:#fff; border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
@@ -933,8 +936,9 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       <button class="tool-button" id="refresh" type="button">Refresh exports</button>
       <button class="tool-button" id="reset-edits" type="button">Reset local edits</button>
       <button class="tool-button" id="push-edits" type="button">Push changes</button>
-      <button class="tool-button" id="export-portable" type="button">导出迁移快照</button>
-      <button class="tool-button" id="export-report" type="button">输出报告</button>
+      <button class="tool-button" id="export-portable" type="button" title="导出迁移包">导出</button>
+      <button class="tool-button" id="import-portable" type="button" title="导入迁移包">导入</button>
+      <button class="tool-button" id="export-report" type="button">报告</button>
       <button class="tool-button" id="add-task" type="button">新增任务条</button>
       <button class="tool-button" id="add-event" type="button">新增事件</button>
       <button class="tool-button" id="marker-demo" type="button">Demo markers</button>
@@ -943,8 +947,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       <button class="tool-button" id="density-dense" type="button" aria-pressed="true">Dense</button>
       <button class="tool-button" id="density-present" type="button" aria-pressed="false">Present</button>
       <span class="autosave-status" id="autosave-status" data-state="idle">Autosave idle</span>
+      <input class="hidden-file-input" id="import-portable-file" type="file" accept=".zip,application/zip">
     </div>
   </header>
+  <div class="drop-overlay" id="drop-overlay">释放导入迁移包</div>
   <main>
     <section class="summary" id="summary"></section>
     <section class="gantt-layout" aria-label="Gantt chart">
@@ -1403,6 +1409,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       link.remove();
       URL.revokeObjectURL(link.href);
     }
+    function downloadUrl(url) {
+      const link = document.createElement('a');
+      link.href = url;
+      document.body.append(link);
+      link.click();
+      link.remove();
+    }
     function addDays(value, days) {
       return isoFromOrd((dateOrd(value) ?? todayOrd()) + days);
     }
@@ -1559,7 +1572,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         alert('当前服务器不支持直接写文件，已下载 changeset JSON。真正写回 Plane 仍需受控 API writer。');
       }
     }
-    async function exportPortableSnapshot() {
+    async function exportPortablePackage() {
       persistEdits();
       const changeset = buildChangeset();
       try {
@@ -1571,11 +1584,74 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const result = await response.json();
         const counts = result.manifest?.counts || {};
-        alert(`已导出迁移快照：${result.directory || 'portable/gantt/latest'}\\n任务 ${counts.tasks ?? '-'}，事件 ${counts.events ?? '-'}。\\n提交 portable/gantt/latest 后，其他机器 clone 即可复现。`);
+        downloadUrl(`/api/gantt-portable/download?t=${Date.now()}`);
+        alert(`已导出迁移包：${result.directory || 'portable/gantt/latest'}\\n任务 ${counts.tasks ?? '-'}，事件 ${counts.events ?? '-'}。`);
       } catch (error) {
         downloadJson('gantt-portable-local-edits.json', changeset);
-        alert('当前服务器不支持写 portable 目录，已下载快照 JSON。请使用 scripts/export-gantt-portable.py 在本机打包。');
+        alert('当前服务器不支持迁移包下载，已下载快照 JSON。');
       }
+    }
+    async function importPortablePackage(file) {
+      if (!file) return;
+      if (!/\\.zip$/i.test(file.name || '')) {
+        alert('请选择 .zip 迁移包。');
+        return;
+      }
+      try {
+        const response = await fetch('/api/gantt-portable/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/zip' },
+          body: file
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json();
+        if (!applyChangesetSnapshot(result.changeset)) throw new Error('missing snapshot');
+        normalizeLocalTaskKeys();
+        rebuildTaskIndex();
+        closeDetail();
+        persistEdits();
+        render();
+        const counts = result.counts || {};
+        alert(`已导入迁移包：任务 ${counts.tasks ?? tasks.length}，事件 ${counts.events ?? events.length}。`);
+      } catch (error) {
+        alert('导入失败：迁移包无效，或当前服务器不支持导入。');
+      }
+    }
+    function setupPortableImportDrop() {
+      const input = document.getElementById('import-portable-file');
+      let dragDepth = 0;
+      const zipFromTransfer = event => {
+        const files = [...(event.dataTransfer?.files || [])];
+        return files.find(file => /\\.zip$/i.test(file.name || '')) || files[0] || null;
+      };
+      const hasFiles = event => Array.from(event.dataTransfer?.types || []).includes('Files');
+      document.getElementById('import-portable').addEventListener('click', () => input.click());
+      input.addEventListener('change', () => {
+        const file = input.files?.[0] || null;
+        input.value = '';
+        importPortablePackage(file);
+      });
+      window.addEventListener('dragenter', event => {
+        if (!hasFiles(event)) return;
+        dragDepth += 1;
+        document.body.classList.add('drag-import');
+      });
+      window.addEventListener('dragover', event => {
+        if (!hasFiles(event)) return;
+        event.preventDefault();
+      });
+      window.addEventListener('dragleave', event => {
+        if (!hasFiles(event)) return;
+        dragDepth = Math.max(0, dragDepth - 1);
+        if (!dragDepth) document.body.classList.remove('drag-import');
+      });
+      window.addEventListener('drop', event => {
+        if (!hasFiles(event)) return;
+        event.preventDefault();
+        dragDepth = 0;
+        document.body.classList.remove('drag-import');
+        importPortablePackage(zipFromTransfer(event));
+      });
     }
     function rebuildTaskIndex() {
       tasksById = new Map(tasks.map(task => [task.id, task]));
@@ -2918,8 +2994,9 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     });
     document.getElementById('refresh').addEventListener('click', () => location.reload());
     document.getElementById('push-edits').addEventListener('click', pushEdits);
-    document.getElementById('export-portable').addEventListener('click', exportPortableSnapshot);
+    document.getElementById('export-portable').addEventListener('click', exportPortablePackage);
     document.getElementById('export-report').addEventListener('click', exportReport);
+    setupPortableImportDrop();
     document.getElementById('add-task').addEventListener('click', addTaskBar);
     document.getElementById('add-event').addEventListener('click', addEventFromButton);
     document.getElementById('marker-demo').addEventListener('click', addDemoEvents);

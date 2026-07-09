@@ -159,7 +159,7 @@ git commit -m "data: update portable gantt snapshot"
 git push
 ```
 
-The Gantt page also has a `导出迁移快照` button that writes this same directory when served through `scripts/serve-delivery-dashboard.py`.
+The Gantt page also has `导出` and `导入` migration package buttons when served through `scripts/serve-delivery-dashboard.py`.
 
 ## Daily GitHub Backup
 

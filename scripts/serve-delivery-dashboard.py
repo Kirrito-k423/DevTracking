@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import io
 import importlib.util
 import json
 import re
 import shutil
+import zipfile
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -18,9 +20,22 @@ DEFAULT_DIRECTORY = ROOT_DIR / "exports/delivery"
 PORTABLE_DIRECTORY = ROOT_DIR / "portable/gantt/latest"
 PORTABLE_EXPORT_SCRIPT = ROOT_DIR / "scripts/export-gantt-portable.py"
 AUTOSAVE_HISTORY_LIMIT = 200
+PORTABLE_ZIP_LIMIT = 20_000_000
+PORTABLE_IMPORT_FILES = {
+    "gantt.html",
+    "gantt.json",
+    "gantt-local-edits.json",
+    "manifest.json",
+    "README.md",
+    "start-windows.bat",
+    "start-windows.ps1",
+    "start-macos-linux.sh",
+}
 
 
 class DeliveryHandler(SimpleHTTPRequestHandler):
+    portable_directory = PORTABLE_DIRECTORY
+
     def __init__(self, *args, directory: str | None = None, **kwargs):
         super().__init__(*args, directory=directory or str(DEFAULT_DIRECTORY), **kwargs)
 
@@ -38,10 +53,16 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
         if route == "/api/gantt-portable/manifest":
             self._send_portable_manifest()
             return
+        if route == "/api/gantt-portable/download":
+            self._download_portable_zip()
+            return
         super().do_GET()
 
     def do_POST(self) -> None:
         route = self.path.rstrip("/")
+        if route == "/api/gantt-portable/import":
+            self._import_portable_zip()
+            return
         if route not in {"/api/gantt-autosave", "/api/gantt-edits", "/api/gantt-portable/export"}:
             self.send_error(404, "Unknown API route")
             return
@@ -152,7 +173,7 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
         self._send_json(200, {"ok": True, "changeset": payload})
 
     def _send_latest_portable_gantt(self) -> None:
-        latest_path = PORTABLE_DIRECTORY / "gantt-local-edits.json"
+        latest_path = self.portable_directory / "gantt-local-edits.json"
         if not latest_path.exists():
             self._send_json(404, {"ok": False, "reason": "no_portable_snapshot"})
             return
@@ -164,7 +185,7 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
         self._send_json(200, {"ok": True, "changeset": payload})
 
     def _send_portable_manifest(self) -> None:
-        manifest_path = PORTABLE_DIRECTORY / "manifest.json"
+        manifest_path = self.portable_directory / "manifest.json"
         if not manifest_path.exists():
             self._send_json(404, {"ok": False, "reason": "no_portable_manifest"})
             return
@@ -178,11 +199,96 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
     def _export_portable_gantt(self, changeset: dict) -> None:
         try:
             exporter = _load_portable_exporter()
-            result = exporter(Path(self.directory), PORTABLE_DIRECTORY, changeset=changeset)
+            result = exporter(Path(self.directory), self.portable_directory, changeset=changeset)
         except Exception as exc:  # noqa: BLE001 - local tool should surface exact export failure.
             self._send_json(500, {"ok": False, "reason": "portable_export_failed", "error": str(exc)})
             return
         self._send_json(200, result)
+
+    def _download_portable_zip(self) -> None:
+        portable_dir = self.portable_directory
+        if not (portable_dir / "gantt-local-edits.json").exists():
+            self._send_json(404, {"ok": False, "reason": "no_portable_snapshot"})
+            return
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for path in sorted(portable_dir.iterdir()):
+                if path.is_file() and path.name in PORTABLE_IMPORT_FILES:
+                    archive.write(path, arcname=path.name)
+        body = buffer.getvalue()
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/zip")
+        self.send_header("Content-Disposition", f'attachment; filename="plane-demand-hub-gantt-{stamp}.zip"')
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _import_portable_zip(self) -> None:
+        content_length = int(self.headers.get("Content-Length", "0") or "0")
+        if content_length <= 0 or content_length > PORTABLE_ZIP_LIMIT:
+            self.send_error(413, "Invalid portable package size")
+            return
+        raw = self.rfile.read(content_length)
+
+        try:
+            with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                files = self._read_portable_zip_files(archive)
+        except (zipfile.BadZipFile, ValueError) as exc:
+            self._send_json(400, {"ok": False, "reason": "invalid_portable_zip", "error": str(exc)})
+            return
+
+        changeset = files.get("gantt-local-edits.json")
+        if not isinstance(changeset, dict) or not self._valid_changeset_snapshot(changeset):
+            self._send_json(400, {"ok": False, "reason": "missing_valid_changeset"})
+            return
+
+        portable_dir = self.portable_directory
+        portable_dir.mkdir(parents=True, exist_ok=True)
+        for name, payload in files.items():
+            target = portable_dir / name
+            if isinstance(payload, dict):
+                target.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            else:
+                target.write_text(payload, encoding="utf-8")
+            if name == "start-macos-linux.sh":
+                target.chmod(target.stat().st_mode | 0o755)
+
+        root = Path(self.directory).resolve()
+        root.mkdir(parents=True, exist_ok=True)
+        encoded = json.dumps(changeset, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+        (root / "gantt-local-edits.json").write_text(encoded, encoding="utf-8")
+        (root / "gantt-autosave.json").write_text(encoded, encoding="utf-8")
+        counts = {
+            "tasks": len(changeset.get("snapshot", {}).get("tasks") or []),
+            "events": len(changeset.get("snapshot", {}).get("events") or []),
+        }
+        self._send_json(200, {"ok": True, "changeset": changeset, "counts": counts})
+
+    def _read_portable_zip_files(self, archive: zipfile.ZipFile) -> dict[str, dict | str]:
+        files: dict[str, dict | str] = {}
+        for info in archive.infolist():
+            name = Path(info.filename).name
+            if not name or name != info.filename or name not in PORTABLE_IMPORT_FILES:
+                continue
+            if info.file_size > PORTABLE_ZIP_LIMIT:
+                raise ValueError(f"{name} is too large")
+            data = archive.read(info)
+            if name.endswith(".json"):
+                files[name] = json.loads(data.decode("utf-8"))
+            else:
+                files[name] = data.decode("utf-8")
+        return files
+
+    @staticmethod
+    def _valid_changeset_snapshot(changeset: dict) -> bool:
+        snapshot = changeset.get("snapshot")
+        return (
+            isinstance(snapshot, dict)
+            and isinstance(snapshot.get("tasks"), list)
+            and isinstance(snapshot.get("events"), list)
+        )
 
     def _send_json(self, status: int, payload: dict) -> None:
         body = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
@@ -210,14 +316,14 @@ def _load_portable_exporter():
     return module.export_portable
 
 
-def prepare_directory_from_portable(directory: Path) -> None:
+def prepare_directory_from_portable(directory: Path, portable_directory: Path = PORTABLE_DIRECTORY) -> None:
     directory.mkdir(parents=True, exist_ok=True)
     if (directory / "gantt.html").exists():
         return
-    if not (PORTABLE_DIRECTORY / "gantt.html").exists():
+    if not (portable_directory / "gantt.html").exists():
         return
     for name in ["gantt.html", "gantt.json", "gantt-local-edits.json"]:
-        source = PORTABLE_DIRECTORY / name
+        source = portable_directory / name
         if source.exists() and source.resolve() != (directory / name).resolve():
             shutil.copy2(source, directory / name)
 
@@ -227,12 +333,17 @@ def main() -> int:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8091)
     parser.add_argument("--directory", default=str(DEFAULT_DIRECTORY))
+    parser.add_argument("--portable-directory", default=str(PORTABLE_DIRECTORY))
     args = parser.parse_args()
 
     directory = Path(args.directory)
     if not directory.is_absolute():
         directory = ROOT_DIR / directory
-    prepare_directory_from_portable(directory)
+    portable_directory = Path(args.portable_directory)
+    if not portable_directory.is_absolute():
+        portable_directory = ROOT_DIR / portable_directory
+    DeliveryHandler.portable_directory = portable_directory
+    prepare_directory_from_portable(directory, portable_directory)
 
     def handler(*handler_args, **handler_kwargs):
         return DeliveryHandler(*handler_args, directory=str(directory), **handler_kwargs)

@@ -2,7 +2,7 @@
 
 This directory is safe to commit. It captures the current Plane Demand Hub Gantt state for another machine.
 
-Exported at: `2026-07-09T06:39:02.578197Z`
+Exported at: `2026-07-09T07:01:07.752603Z`
 
 Snapshot contents:
 
@@ -40,7 +40,7 @@ git commit -m "data: update portable gantt snapshot"
 git push
 ```
 
-The Gantt page also has a `导出迁移快照` button that writes this same directory when served through `scripts/serve-delivery-dashboard.py`.
+The Gantt page also has `导出` and `导入` migration package buttons when served through `scripts/serve-delivery-dashboard.py`.
 
 ## Daily GitHub Backup
 
