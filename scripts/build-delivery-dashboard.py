@@ -1060,19 +1060,28 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     function applyChangesetSnapshot(changeset) {
       return applySnapshot(changeset?.snapshot);
     }
-    function snapshotCandidate(source, snapshot, generatedAt = null, priority = 0) {
+    function snapshotCandidate(source, snapshot, generatedAt = null, priority = 0, options = {}) {
       if (!snapshot || !Array.isArray(snapshot.tasks) || !Array.isArray(snapshot.events)) return null;
       const parsed = Date.parse(generatedAt || '');
+      const taskIds = new Set(snapshot.tasks.map(task => task.id).filter(Boolean));
+      const eventIds = new Set(snapshot.events.map(event => event.id).filter(Boolean));
       return {
         source,
         snapshot,
         generatedAt: generatedAt || null,
         timestamp: Number.isNaN(parsed) ? 0 : parsed,
-        priority
+        priority,
+        taskIds,
+        eventIds,
+        deletedTaskIds: new Set(options.deletedTaskIds || []),
+        deletedEventIds: new Set(options.deletedEventIds || [])
       };
     }
     function changesetCandidate(source, changeset, priority = 0) {
-      return snapshotCandidate(source, changeset?.snapshot, changeset?.saved_at || changeset?.generated_at || null, priority);
+      return snapshotCandidate(source, changeset?.snapshot, changeset?.saved_at || changeset?.generated_at || null, priority, {
+        deletedTaskIds: (changeset?.deleted_tasks || []).map(task => task.id).filter(Boolean),
+        deletedEventIds: (changeset?.deleted_events || []).map(event => event.id).filter(Boolean)
+      });
     }
     async function fetchChangesetCandidate(url, source, priority = 0) {
       try {
@@ -1092,7 +1101,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         return snapshotCandidate('localStorage', {
           tasks: saved.tasks || [],
           events: saved.events || []
-        }, saved.saved_at || saved.generated_at || null, 30);
+        }, saved.saved_at || saved.generated_at || null, 30, {
+          deletedTaskIds: saved.deleted_task_ids || [],
+          deletedEventIds: saved.deleted_event_ids || []
+        });
       } catch {
         localStorage.removeItem(STORAGE_KEY);
         return null;
@@ -1136,14 +1148,24 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         return false;
       }
     }
+    function localPreservesFileSnapshot(local, fileCandidate) {
+      if (!local || !fileCandidate) return true;
+      for (const id of fileCandidate.taskIds || []) {
+        if (!local.taskIds.has(id) && !local.deletedTaskIds.has(id)) return false;
+      }
+      for (const id of fileCandidate.eventIds || []) {
+        if (!local.eventIds.has(id) && !local.deletedEventIds.has(id)) return false;
+      }
+      return true;
+    }
     function selectRestoreCandidate(local, autosave, pushed, portable) {
-      const fileCandidate = [autosave, pushed]
+      const fileCandidate = [autosave, pushed, portable]
         .filter(Boolean)
         .sort((a, b) => (b.timestamp - a.timestamp) || (b.priority - a.priority))[0] || null;
-      if (local?.generatedAt && (!fileCandidate || local.timestamp >= fileCandidate.timestamp)) return local;
+      if (local?.generatedAt && (!fileCandidate || (local.timestamp >= fileCandidate.timestamp && localPreservesFileSnapshot(local, fileCandidate)))) return local;
       if (fileCandidate) return fileCandidate;
       if (local) return local;
-      return portable;
+      return null;
     }
     function setAutosaveStatus(message, state = 'idle') {
       const status = document.getElementById('autosave-status');
