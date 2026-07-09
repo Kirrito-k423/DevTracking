@@ -910,6 +910,14 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .kv { display:grid; grid-template-columns:120px 1fr; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); }
     .kv b { color:var(--muted); font-weight:600; }
     .source-list { margin:8px 0 0; padding-left:18px; color:var(--muted); }
+    .detail-section { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
+    .detail-section h3 { margin:0 0 8px; font-size:13px; letter-spacing:0; }
+    .event-preview-list { display:grid; gap:8px; }
+    .event-preview-item { display:grid; grid-template-columns:72px 56px 1fr; gap:8px; align-items:start; padding:8px; border:1px solid var(--line); border-radius:6px; background:#fbfcfd; }
+    .event-preview-date, .event-preview-type { color:var(--muted); font-size:12px; white-space:nowrap; }
+    .event-preview-main { min-width:0; }
+    .event-preview-task { font-weight:700; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .event-preview-summary { margin-top:3px; color:var(--ink); font-size:12px; line-height:1.35; overflow-wrap:anywhere; }
     .detail-actions { margin-top:18px; padding-top:14px; border-top:1px solid var(--line); display:grid; gap:8px; }
     .action-button { width:100%; min-height:34px; border:1px solid #bfd0ef; background:#f6f9ff; color:var(--blue); border-radius:6px; padding:0 12px; font-weight:700; cursor:pointer; }
     .action-button:hover { background:#edf4ff; }
@@ -1445,10 +1453,11 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const raw = String(value || '').trim().toLowerCase();
       if (raw.includes('周') || raw.includes('week')) return 'weekly';
       if (raw.includes('月') || raw.includes('month')) return 'monthly';
+      if (raw.includes('任务') || raw.includes('task')) return 'task';
       return 'daily';
     }
     function reportKindLabel(kind) {
-      return { daily: '日报', weekly: '周报', monthly: '月报' }[kind] || '日报';
+      return { daily: '日报', weekly: '周报', monthly: '月报', task: '任务报告' }[kind] || '日报';
     }
     function defaultReportPeriod(kind) {
       const today = todayOrd();
@@ -1489,12 +1498,14 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     function pushLine(lines, value) {
       if (value) lines.push(value);
     }
-    function buildReportMarkdown(kind, startDate, endDate) {
+    function buildReportMarkdown(kind, startDate, endDate, options = {}) {
       const label = reportKindLabel(kind);
-      const periodEvents = sortedEvents(events.filter(event => dateInRange(event.date, startDate, endDate)));
-      const reportTasks = tasks.filter(task => taskOverlapsPeriod(task, startDate, endDate, periodEvents));
+      const scopedTaskIds = options.taskIds || null;
+      const inScope = taskId => !scopedTaskIds || scopedTaskIds.has(taskId);
+      const periodEvents = sortedEvents(events.filter(event => inScope(event.task_id) && dateInRange(event.date, startDate, endDate)));
+      const reportTasks = tasks.filter(task => inScope(task.id) && taskOverlapsPeriod(task, startDate, endDate, periodEvents));
       const lines = [
-        `# Plane Demand Hub ${label}`,
+        `# ${options.title || `Plane Demand Hub ${label}`}`,
         '',
         `周期：${startDate} 至 ${endDate}`,
         `生成时间：${new Date().toISOString()}`,
@@ -1880,6 +1891,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         text(left.id).localeCompare(text(right.id))
       ));
     }
+    function sortedEventsDesc(eventList) {
+      return [...eventList].sort((left, right) => (
+        text(right.date).localeCompare(text(left.date)) ||
+        ((eventTypeOrder[left.type] ?? 9) - (eventTypeOrder[right.type] ?? 9)) ||
+        text(right.id).localeCompare(text(left.id))
+      ));
+    }
     function shouldSuppressClick(event) {
       if (!suppressNextClick) return false;
       suppressNextClick = false;
@@ -1969,6 +1987,51 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       for (const childId of task?.children || []) subtreeIds(childId, ids);
       return ids;
     }
+    function scopedTaskEvents(taskIds) {
+      return sortedEventsDesc(events.filter(event => taskIds.has(event.task_id)));
+    }
+    function taskReportDateRange(taskIds) {
+      const ords = [];
+      for (const taskId of taskIds) {
+        const task = tasksById.get(taskId);
+        if (!task) continue;
+        const start = dateOrd(task.start_date);
+        const target = dateOrd(task.target_date);
+        if (start !== null) ords.push(start);
+        if (target !== null) ords.push(target);
+      }
+      for (const event of events) {
+        if (!taskIds.has(event.task_id)) continue;
+        const ord = dateOrd(event.date);
+        if (ord !== null) ords.push(ord);
+      }
+      const fallback = todayOrd();
+      return {
+        start: isoFromOrd(ords.length ? Math.min(...ords) : fallback),
+        end: isoFromOrd(ords.length ? Math.max(...ords) : fallback)
+      };
+    }
+    function safeFileSegment(value) {
+      return String(value || 'task')
+        .trim()
+        .replace(/[\\/:*?"<>|]+/g, '-')
+        .replace(/\\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 80) || 'task';
+    }
+    function exportTaskReport(task) {
+      persistEdits();
+      rebuildTaskIndex();
+      const taskIds = subtreeIds(task.id);
+      const range = taskReportDateRange(taskIds);
+      const markdown = buildReportMarkdown('task', range.start, range.end, {
+        taskIds,
+        title: `Plane Demand Hub 任务报告：${taskName(task)}`
+      });
+      const filename = `gantt-task-report-${safeFileSegment(taskName(task))}-${range.start}-to-${range.end}.md`;
+      downloadText(filename, markdown);
+    }
     function ancestorTasks(task) {
       const ancestors = [];
       let parent = task?.parent_id ? tasksById.get(task.parent_id) : null;
@@ -2052,6 +2115,46 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       detail.classList.remove('open');
       detail.setAttribute('aria-hidden', 'true');
     }
+    function appendEventPreviewSection(body, task, scopedEvents) {
+      const section = document.createElement('section');
+      section.className = 'detail-section';
+      const heading = document.createElement('h3');
+      heading.textContent = '事件预览（含子任务，倒序）';
+      section.append(heading);
+      if (!scopedEvents.length) {
+        const empty = document.createElement('div');
+        empty.className = 'event-preview-summary';
+        empty.textContent = '暂无事件。';
+        section.append(empty);
+      } else {
+        const list = document.createElement('div');
+        list.className = 'event-preview-list';
+        for (const event of scopedEvents.slice(0, 12)) {
+          const eventTask = tasksById.get(event.task_id) || task;
+          const item = document.createElement('div');
+          item.className = 'event-preview-item';
+          const date = document.createElement('div');
+          date.className = 'event-preview-date';
+          date.textContent = shortDate(event.date);
+          const type = document.createElement('div');
+          type.className = 'event-preview-type';
+          type.textContent = eventLabel(event.type);
+          const main = document.createElement('div');
+          main.className = 'event-preview-main';
+          const title = document.createElement('div');
+          title.className = 'event-preview-task';
+          title.textContent = taskName(eventTask);
+          const summary = document.createElement('div');
+          summary.className = 'event-preview-summary';
+          summary.textContent = cleanReportText(event.summary) || 'n/a';
+          main.append(title, summary);
+          item.append(date, type, main);
+          list.append(item);
+        }
+        section.append(list);
+      }
+      body.append(section);
+    }
     function openDetail(title, rows, refs, options = {}) {
       document.getElementById('detail-title').textContent = title || 'Delivery summary';
       const body = document.getElementById('detail-body');
@@ -2065,6 +2168,9 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         content.textContent = text(value);
         row.append(label, content);
         body.append(row);
+      }
+      for (const section of options.sections || []) {
+        if (section.type === 'event-preview') appendEventPreviewSection(body, section.task, section.events || []);
       }
       const actionsList = options.actions || [];
       const dangerAction = options.dangerAction;
@@ -2127,7 +2233,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     }
     function showTask(task) {
       selectedTaskId = task.id;
+      rebuildTaskIndex();
       const summary = task.delivery_summary || {};
+      const taskIds = subtreeIds(task.id);
+      const previewEvents = scopedTaskEvents(taskIds);
       openDetail(summary.title || task.title, [
         ['Task', `${text(task.issue_key)} ${text(task.title)}`],
         ['Owner', task.owner],
@@ -2140,7 +2249,11 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         ['Modules', (task.modules || []).join(', ')],
         ['Color', task.color || '默认']
       ], task.source_refs, {
-        actions: [{ label: '编辑任务字段', onClick: () => editTaskFields(task) }],
+        sections: [{ type: 'event-preview', task, events: previewEvents }],
+        actions: [
+          { label: '导出任务报告（含子任务）', onClick: () => exportTaskReport(task) },
+          { label: '编辑任务字段', onClick: () => editTaskFields(task) }
+        ],
         palette: { label: '任务条颜色', value: task.color, colors: taskColorPalette, onSelect: color => setTaskColor(task, color) },
         dangerAction: { label: '删除任务', onClick: () => deleteTask(task) }
       });
