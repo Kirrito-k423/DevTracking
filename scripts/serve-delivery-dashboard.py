@@ -17,6 +17,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_DIRECTORY = ROOT_DIR / "exports/delivery"
 PORTABLE_DIRECTORY = ROOT_DIR / "portable/gantt/latest"
 PORTABLE_EXPORT_SCRIPT = ROOT_DIR / "scripts/export-gantt-portable.py"
+AUTOSAVE_HISTORY_LIMIT = 200
 
 
 class DeliveryHandler(SimpleHTTPRequestHandler):
@@ -25,6 +26,9 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self) -> None:
         route = self.path.rstrip("/")
+        if route == "/api/gantt-autosave/latest":
+            self._send_latest_gantt_autosave()
+            return
         if route == "/api/gantt-edits/latest":
             self._send_latest_gantt_edits()
             return
@@ -38,7 +42,7 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self) -> None:
         route = self.path.rstrip("/")
-        if route not in {"/api/gantt-edits", "/api/gantt-portable/export"}:
+        if route not in {"/api/gantt-autosave", "/api/gantt-edits", "/api/gantt-portable/export"}:
             self.send_error(404, "Unknown API route")
             return
 
@@ -53,6 +57,9 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
 
         if route == "/api/gantt-portable/export":
             self._export_portable_gantt(changeset)
+            return
+        if route == "/api/gantt-autosave":
+            self._persist_gantt_autosave(payload, changeset)
             return
 
         self._persist_gantt_edits(payload, changeset)
@@ -92,6 +99,45 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
             "write_boundary": "Local changeset only. Applying to Plane requires a controlled API writer.",
         }
         self._send_json(200, response)
+
+    def _persist_gantt_autosave(self, payload: dict, changeset: dict) -> None:
+        root = Path(self.directory).resolve()
+        autosave_dir = root / "gantt-autosaves"
+        autosave_dir.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
+        filename = self._safe_filename(str(payload.get("filename") or f"gantt-autosave-{stamp}.json"))
+        timestamped_path = autosave_dir / filename
+        latest_path = root / "gantt-autosave.json"
+
+        encoded = json.dumps(changeset, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+        timestamped_path.write_text(encoded, encoding="utf-8")
+        latest_path.write_text(encoded, encoding="utf-8")
+        self._prune_autosaves(autosave_dir)
+
+        response = {
+            "ok": True,
+            "path": str(timestamped_path.relative_to(ROOT_DIR)),
+            "latest": str(latest_path.relative_to(ROOT_DIR)),
+            "history_limit": AUTOSAVE_HISTORY_LIMIT,
+        }
+        self._send_json(200, response)
+
+    def _prune_autosaves(self, autosave_dir: Path) -> None:
+        files = sorted(autosave_dir.glob("*.json"), key=lambda path: path.stat().st_mtime, reverse=True)
+        for old_file in files[AUTOSAVE_HISTORY_LIMIT:]:
+            old_file.unlink(missing_ok=True)
+
+    def _send_latest_gantt_autosave(self) -> None:
+        latest_path = Path(self.directory).resolve() / "gantt-autosave.json"
+        if not latest_path.exists():
+            self._send_json(404, {"ok": False, "reason": "no_autosave"})
+            return
+        try:
+            payload = json.loads(latest_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            self._send_json(500, {"ok": False, "reason": "invalid_autosave"})
+            return
+        self._send_json(200, {"ok": True, "changeset": payload})
 
     def _send_latest_gantt_edits(self) -> None:
         latest_path = Path(self.directory).resolve() / "gantt-local-edits.json"

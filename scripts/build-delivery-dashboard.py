@@ -827,6 +827,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .tool-button { min-width:36px; min-height:32px; border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:6px; padding:0 10px; cursor:pointer; }
     .tool-button[aria-pressed="true"] { border-color:var(--blue); color:var(--blue); box-shadow:0 0 0 2px rgba(47,111,237,.12); }
+    .autosave-status { color:var(--muted); font-size:12px; white-space:nowrap; }
+    .autosave-status[data-state="saved"] { color:var(--green); }
+    .autosave-status[data-state="saving"] { color:var(--amber); }
+    .autosave-status[data-state="error"] { color:var(--red); }
     main { padding:16px 24px 32px; }
     .summary { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; color:var(--muted); }
     .summary span { background:#fff; border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
@@ -938,6 +942,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       <button class="tool-button" id="collapse-all" type="button" title="Collapse all">Collapse</button>
       <button class="tool-button" id="density-dense" type="button" aria-pressed="true">Dense</button>
       <button class="tool-button" id="density-present" type="button" aria-pressed="false">Present</button>
+      <span class="autosave-status" id="autosave-status" data-state="idle">Autosave idle</span>
     </div>
   </header>
   <main>
@@ -971,6 +976,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
   <script>
     const gantt = JSON.parse(document.getElementById('gantt-data').textContent);
     const STORAGE_KEY = 'plane-demand-hub-gantt-local-edits-v1';
+    const AUTOSAVE_DELAY_MS = 900;
     const collapsed = new Set();
     const DAY_MS = 86400000;
     const PAD_DAYS = 30;
@@ -1004,6 +1010,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     let activeMaxOrd = 0;
     let selectedTaskId = null;
     let didCenterToday = false;
+    let autosaveEnabled = false;
+    let autosaveTimer = null;
+    let autosaveInFlight = false;
+    let autosavePending = false;
 
     function dateOrd(value) {
       if (!value) return null;
@@ -1056,7 +1066,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       };
     }
     function changesetCandidate(source, changeset, priority = 0) {
-      return snapshotCandidate(source, changeset?.snapshot, changeset?.generated_at || changeset?.saved_at || null, priority);
+      return snapshotCandidate(source, changeset?.snapshot, changeset?.saved_at || changeset?.generated_at || null, priority);
     }
     async function fetchChangesetCandidate(url, source, priority = 0) {
       try {
@@ -1120,22 +1130,71 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         return false;
       }
     }
-    function selectRestoreCandidate(local, pushed, portable) {
-      if (local?.generatedAt && (!pushed || local.timestamp >= pushed.timestamp)) return local;
-      if (pushed) return pushed;
+    function selectRestoreCandidate(local, autosave, pushed, portable) {
+      const fileCandidate = [autosave, pushed]
+        .filter(Boolean)
+        .sort((a, b) => (b.timestamp - a.timestamp) || (b.priority - a.priority))[0] || null;
+      if (local?.generatedAt && (!fileCandidate || local.timestamp >= fileCandidate.timestamp)) return local;
+      if (fileCandidate) return fileCandidate;
       if (local) return local;
       return portable;
     }
+    function setAutosaveStatus(message, state = 'idle') {
+      const status = document.getElementById('autosave-status');
+      if (!status) return;
+      status.dataset.state = state;
+      status.textContent = message;
+    }
+    function scheduleAutosave() {
+      if (!autosaveEnabled) return;
+      clearTimeout(autosaveTimer);
+      setAutosaveStatus('Autosave queued', 'saving');
+      autosaveTimer = setTimeout(runAutosave, AUTOSAVE_DELAY_MS);
+    }
+    async function runAutosave() {
+      if (!autosaveEnabled) return;
+      if (autosaveInFlight) {
+        autosavePending = true;
+        return;
+      }
+      autosaveInFlight = true;
+      autosavePending = false;
+      setAutosaveStatus('Autosave saving...', 'saving');
+      const changeset = buildChangeset();
+      const filename = `gantt-autosave-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      try {
+        const response = await fetch('/api/gantt-autosave', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename, changeset })
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json();
+        const savedAt = new Date().toLocaleTimeString();
+        setAutosaveStatus(`Autosave saved ${savedAt}`, 'saved');
+        if (result.latest) {
+          document.getElementById('autosave-status').title = result.latest;
+        }
+      } catch (error) {
+        setAutosaveStatus('Autosave failed', 'error');
+      } finally {
+        autosaveInFlight = false;
+        if (autosavePending) scheduleAutosave();
+      }
+    }
     async function initializeGantt() {
       const local = localStorageCandidate();
+      const autosave = await fetchChangesetCandidate('/api/gantt-autosave/latest', 'autosave', 25);
       const pushed = await fetchChangesetCandidate('/api/gantt-edits/latest', 'pushed changes', 20);
       const portable = await fetchChangesetCandidate('/api/gantt-portable/latest', 'portable snapshot', 10);
-      const selected = selectRestoreCandidate(local, pushed, portable);
+      const selected = selectRestoreCandidate(local, autosave, pushed, portable);
       if (selected) applySnapshot(selected.snapshot);
       const migratedLocalTaskKeys = normalizeLocalTaskKeys();
       rebuildTaskIndex();
       if (selected || migratedLocalTaskKeys) persistEdits();
       render();
+      autosaveEnabled = true;
+      setAutosaveStatus(selected ? `Restored ${selected.source}` : 'Autosave ready', selected ? 'saved' : 'idle');
     }
     function persistEdits() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -1145,6 +1204,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         deleted_task_ids: deletedTaskIds(),
         deleted_event_ids: deletedEventIds()
       }));
+      scheduleAutosave();
     }
     function taskStorageRecord(task, index = 0) {
       return {

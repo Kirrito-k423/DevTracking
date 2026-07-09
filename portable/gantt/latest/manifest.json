@@ -10,7 +10,7 @@
     "task_changes": 14,
     "tasks": 49
   },
-  "exported_at": "2026-07-09T06:16:36.802876Z",
+  "exported_at": "2026-07-09T06:28:13.779706Z",
   "files": [
     "gantt.html",
     "gantt.json",
@@ -23,5 +23,5 @@
   ],
   "schema": "plane-demand-hub.gantt-portable.v1",
   "source_delivery_dir": "exports/delivery",
-  "source_gantt_generated_at": "2026-07-09T06:16:36.767160+00:00"
+  "source_gantt_generated_at": "2026-07-09T06:28:05.634689+00:00"
 }
