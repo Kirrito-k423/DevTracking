@@ -160,6 +160,16 @@ git push
 ```
 
 The Gantt page also has a `导出迁移快照` button that writes this same directory when served through `scripts/serve-delivery-dashboard.py`.
+
+## Daily GitHub Backup
+
+Use the backup wrapper to choose the newest browser autosave or pushed changeset, regenerate this directory, commit it, and push it to GitHub:
+
+```bash
+python3 scripts/backup-gantt-portable.py --branch codex/phase-06-gantt
+```
+
+See `docs/GANTT-PORTABLE-BACKUP.md` for the scheduled midnight backup details.
 """
 
 
