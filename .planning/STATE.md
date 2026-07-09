@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-09T06:40:53Z"
-last_activity: 2026-07-09 — Gantt daily portable GitHub backup scheduled
+last_updated: "2026-07-09T07:03:02Z"
+last_activity: 2026-07-09 — Gantt import/export usability and desktop release packaging completed
 progress:
   total_phases: 6
   completed_phases: 6
@@ -70,6 +70,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Gantt pushed edits recovery completed: recovered the 2026-07-09 11:29 pushed changeset to 49 tasks / 46 events, restored portable snapshot, and fixed startup precedence so pushed edits beat older portable snapshots.
 - Gantt realtime autosave backups completed: browser edits now write debounced disk backups to `exports/delivery/gantt-autosave.json` plus rolling history, restore ahead of pushed/portable snapshots, and show toolbar save status.
 - Gantt daily portable GitHub backup scheduled: `scripts/backup-gantt-portable.py` exports the newest autosave/pushed state to `portable/gantt/latest/`, commits it, and a local Codex cron automation runs it daily at midnight.
+- Gantt import/export usability and desktop release packaging completed: the toolbar now has separate migration `导出`/`导入` controls, zip drag/drop import, a desktop launcher, PyInstaller spec, and a GitHub Release workflow for Windows/macOS builds.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -102,6 +103,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260709-kmq | Gantt import/export usability and desktop release packaging | 2026-07-09 | 2887e75 | [260709-kmq-improve-gantt-import-export-usability-an](./quick/260709-kmq-improve-gantt-import-export-usability-an/) |
 | 260709-k9p | Gantt daily portable GitHub backup | 2026-07-09 | bf9e3e0 | [260709-k9p-schedule-daily-midnight-backup-of-gantt-](./quick/260709-k9p-schedule-daily-midnight-backup-of-gantt-/) |
 | 260709-jxg | Gantt realtime autosave backups | 2026-07-09 | fce58ce | [260709-jxg-add-realtime-gantt-autosave-backups](./quick/260709-jxg-add-realtime-gantt-autosave-backups/) |
 | 260709-jss | Gantt pushed edits recovery and restore precedence fix | 2026-07-09 | 3cb9ccc | [260709-jss-recover-pushed-gantt-changes-and-fix-por](./quick/260709-jss-recover-pushed-gantt-changes-and-fix-por/) |
@@ -140,7 +142,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-09 — Gantt daily portable GitHub backup scheduled
+Last activity: 2026-07-09 — Gantt import/export usability and desktop release packaging completed
 
 ## Operator Next Steps
 
