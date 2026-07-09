@@ -1044,20 +1044,49 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     function applyChangesetSnapshot(changeset) {
       return applySnapshot(changeset?.snapshot);
     }
-    async function restorePortableEdits() {
+    function snapshotCandidate(source, snapshot, generatedAt = null, priority = 0) {
+      if (!snapshot || !Array.isArray(snapshot.tasks) || !Array.isArray(snapshot.events)) return null;
+      const parsed = Date.parse(generatedAt || '');
+      return {
+        source,
+        snapshot,
+        generatedAt: generatedAt || null,
+        timestamp: Number.isNaN(parsed) ? 0 : parsed,
+        priority
+      };
+    }
+    function changesetCandidate(source, changeset, priority = 0) {
+      return snapshotCandidate(source, changeset?.snapshot, changeset?.generated_at || changeset?.saved_at || null, priority);
+    }
+    async function fetchChangesetCandidate(url, source, priority = 0) {
       try {
-        const response = await fetch('/api/gantt-portable/latest', { cache: 'no-store' });
-        if (!response.ok) return false;
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) return null;
         const payload = await response.json();
-        return applyChangesetSnapshot(payload.changeset || payload);
+        return changesetCandidate(source, payload.changeset || payload, priority);
       } catch {
-        return false;
+        return null;
+      }
+    }
+    function localStorageCandidate() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        if (!saved) return null;
+        if (saved.snapshot) return changesetCandidate('localStorage', saved, 30);
+        return snapshotCandidate('localStorage', {
+          tasks: saved.tasks || [],
+          events: saved.events || []
+        }, saved.saved_at || saved.generated_at || null, 30);
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+        return null;
       }
     }
     function restoreEdits() {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (!saved) return false;
+      if (saved.snapshot) return applyChangesetSnapshot(saved);
       try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-        if (!saved) return false;
         const deletedTaskIds = new Set(saved.deleted_task_ids || []);
         const deletedEventIds = new Set(saved.deleted_event_ids || []);
         const baseTasks = tasks.filter(task => !deletedTaskIds.has(task.id));
@@ -1091,16 +1120,26 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         return false;
       }
     }
+    function selectRestoreCandidate(local, pushed, portable) {
+      if (local?.generatedAt && (!pushed || local.timestamp >= pushed.timestamp)) return local;
+      if (pushed) return pushed;
+      if (local) return local;
+      return portable;
+    }
     async function initializeGantt() {
-      const restoredPortable = await restorePortableEdits();
-      if (!restoredPortable) restoreEdits();
+      const local = localStorageCandidate();
+      const pushed = await fetchChangesetCandidate('/api/gantt-edits/latest', 'pushed changes', 20);
+      const portable = await fetchChangesetCandidate('/api/gantt-portable/latest', 'portable snapshot', 10);
+      const selected = selectRestoreCandidate(local, pushed, portable);
+      if (selected) applySnapshot(selected.snapshot);
       const migratedLocalTaskKeys = normalizeLocalTaskKeys();
       rebuildTaskIndex();
-      if (restoredPortable || migratedLocalTaskKeys) persistEdits();
+      if (selected || migratedLocalTaskKeys) persistEdits();
       render();
     }
     function persistEdits() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        saved_at: new Date().toISOString(),
         tasks: tasks.map((task, index) => taskStorageRecord(task, index)),
         events,
         deleted_task_ids: deletedTaskIds(),

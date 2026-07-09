@@ -4,3 +4,4 @@ plane-selfhost/plane-app/backup/
 exports/
 __pycache__/
 *.pyc
+.planning/recovery/
