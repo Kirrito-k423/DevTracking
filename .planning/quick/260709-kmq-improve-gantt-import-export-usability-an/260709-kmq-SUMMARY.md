@@ -1,7 +1,7 @@
 ---
 status: complete
 completed: 2026-07-09
-commit: 2887e75
+commit: 6f5da4b
 ---
 
 # Quick Task 260709-kmq Summary: Import/Export Usability And Desktop Release Packaging
@@ -17,6 +17,7 @@ commit: 2887e75
 - Added PyInstaller spec at `packaging/plane-demand-hub-gantt.spec`.
 - Added GitHub Actions workflow `.github/workflows/release-gantt-app.yml` for Windows/macOS release assets.
 - Added desktop release documentation.
+- Published GitHub Release `gantt-app-v0.1.0`.
 
 ## Verification
 
@@ -26,8 +27,11 @@ commit: 2887e75
 - Portable zip import restored 49 tasks / 46 events.
 - Desktop launcher initialized a temporary user data directory and served `gantt.html` successfully.
 - Portable snapshot remained at 49 tasks / 46 events.
+- GitHub Actions release run `29000543672` completed successfully.
+- Release assets are `PlaneDemandHubGantt-macos.zip` and `PlaneDemandHubGantt-windows.zip`.
 
 ## Release Notes
 
 - The workflow publishes a GitHub Release when a `gantt-app-v*` tag is pushed.
 - Local PyInstaller was not installed on this Mac, so binary packaging is delegated to GitHub Actions runners.
+- Release URL: `https://github.com/Kirrito-k423/DevTracking/releases/tag/gantt-app-v0.1.0`
