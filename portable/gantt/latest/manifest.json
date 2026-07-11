@@ -1,16 +1,16 @@
 {
-  "changeset_generated_at": "2026-07-09T12:14:35.196Z",
+  "changeset_generated_at": "2026-07-10T09:24:48.940Z",
   "counts": {
     "deleted_events": 16,
     "deleted_tasks": 8,
     "event_changes": 0,
-    "events": 54,
-    "new_events": 52,
-    "new_tasks": 44,
+    "events": 67,
+    "new_events": 65,
+    "new_tasks": 51,
     "task_changes": 14,
-    "tasks": 58
+    "tasks": 65
   },
-  "exported_at": "2026-07-10T00:02:54.772109Z",
+  "exported_at": "2026-07-11T00:03:47.590651Z",
   "files": [
     "gantt.html",
     "gantt.json",
@@ -23,5 +23,5 @@
   ],
   "schema": "plane-demand-hub.gantt-portable.v1",
   "source_delivery_dir": "exports/delivery",
-  "source_gantt_generated_at": "2026-07-10T00:02:54.758586+00:00"
+  "source_gantt_generated_at": "2026-07-11T00:03:47.575694+00:00"
 }
