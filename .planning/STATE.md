@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-09T09:46:45Z"
-last_activity: 2026-07-09 — Gantt task detail event preview and scoped report export completed
+last_updated: "2026-07-12T04:05:20Z"
+last_activity: 2026-07-12 — Added repository README with architecture documentation links
 progress:
   total_phases: 6
   completed_phases: 6
@@ -106,6 +106,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260712-gsg | Add architecture documentation links to README and push | 2026-07-12 | 98d53eb | [260712-gsg-add-architecture-documentation-links-to-](./quick/260712-gsg-add-architecture-documentation-links-to-/) |
 | 260709-oki | Gantt task detail event preview and scoped report export | 2026-07-09 | 4751022 | [260709-oki-add-task-detail-event-timeline-preview-a](./quick/260709-oki-add-task-detail-event-timeline-preview-a/) |
 | 260709-kmq | Gantt import/export usability and desktop release packaging | 2026-07-09 | 6f5da4b | [260709-kmq-improve-gantt-import-export-usability-an](./quick/260709-kmq-improve-gantt-import-export-usability-an/) |
 | 260709-k9p | Gantt daily portable GitHub backup | 2026-07-09 | bf9e3e0 | [260709-k9p-schedule-daily-midnight-backup-of-gantt-](./quick/260709-k9p-schedule-daily-midnight-backup-of-gantt-/) |
@@ -146,7 +147,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-09 — Gantt task detail event preview and scoped report export completed
+Last activity: 2026-07-12 — Added repository README with architecture documentation links
 
 ## Operator Next Steps
 
