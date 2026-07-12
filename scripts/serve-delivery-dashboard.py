@@ -34,6 +34,15 @@ PORTABLE_IMPORT_FILES = {
 }
 
 
+def display_path(path: Path) -> str:
+    """Return a readable path without assuming runtime data lives in the repo."""
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(ROOT_DIR))
+    except ValueError:
+        return str(resolved)
+
+
 class DeliveryHandler(SimpleHTTPRequestHandler):
     portable_directory = PORTABLE_DIRECTORY
 
@@ -116,8 +125,8 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
 
         response = {
             "ok": True,
-            "path": str(timestamped_path.relative_to(ROOT_DIR)),
-            "latest": str(latest_path.relative_to(ROOT_DIR)),
+            "path": display_path(timestamped_path),
+            "latest": display_path(latest_path),
             "write_boundary": "Local changeset only. Applying to Plane requires a controlled API writer.",
         }
         self._send_json(200, response)
@@ -138,8 +147,8 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
 
         response = {
             "ok": True,
-            "path": str(timestamped_path.relative_to(ROOT_DIR)),
-            "latest": str(latest_path.relative_to(ROOT_DIR)),
+            "path": display_path(timestamped_path),
+            "latest": display_path(latest_path),
             "history_limit": AUTOSAVE_HISTORY_LIMIT,
         }
         self._send_json(200, response)

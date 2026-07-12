@@ -82,10 +82,15 @@ setlocal
 cd /d "%~dp0\\..\\..\\.."
 echo Starting Plane Demand Hub Gantt at http://127.0.0.1:8091/gantt.html
 where py >nul 2>nul
-if %errorlevel%==0 (
+if not errorlevel 1 (
   py -3 scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8091
 ) else (
-  python scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8091
+  where python >nul 2>nul
+  if not errorlevel 1 (
+    python scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8091
+  ) else (
+    echo Python 3 was not found. Install it from https://www.python.org/downloads/windows/ and enable "Add python.exe to PATH".
+  )
 )
 pause
 """
@@ -99,7 +104,11 @@ Write-Host "Starting Plane Demand Hub Gantt at http://127.0.0.1:8091/gantt.html"
 if (Get-Command py -ErrorAction SilentlyContinue) {
   & py -3 scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8091
 } else {
-  & python scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8091
+  $Python = Get-Command python -ErrorAction SilentlyContinue
+  if (-not $Python) {
+    throw 'Python 3 was not found. Install it from https://www.python.org/downloads/windows/ and enable "Add python.exe to PATH".'
+  }
+  & $Python.Source scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8091
 }
 """
 
@@ -145,15 +154,15 @@ Counts:
 If double-click is blocked by policy, open PowerShell at the repository root and run:
 
 ```powershell
-py -3 scripts\\serve-delivery-dashboard.py --port 8091
+python scripts\\serve-delivery-dashboard.py --port 8091
 ```
 
 ## Updating This Snapshot
 
 From the repository root:
 
-```bash
-python3 scripts/export-gantt-portable.py
+```powershell
+python scripts\\export-gantt-portable.py
 git add portable/gantt/latest
 git commit -m "data: update portable gantt snapshot"
 git push
@@ -165,8 +174,8 @@ The Gantt page also has `导出` and `导入` migration package buttons when ser
 
 Use the backup wrapper to choose the newest browser autosave or pushed changeset, regenerate this directory, commit it, and push it to GitHub:
 
-```bash
-python3 scripts/backup-gantt-portable.py --branch codex/phase-06-gantt
+```powershell
+python scripts\\backup-gantt-portable.py --branch codex/phase-06-gantt
 ```
 
 See `docs/GANTT-PORTABLE-BACKUP.md` for the scheduled midnight backup details.

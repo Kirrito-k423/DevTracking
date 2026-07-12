@@ -22,14 +22,14 @@ It then regenerates `portable/gantt/latest/`, commits only that directory, and p
 
 From the repository root:
 
-```bash
-python3 scripts/backup-gantt-portable.py --branch codex/phase-06-gantt
+```powershell
+python scripts\backup-gantt-portable.py --branch codex/phase-06-gantt
 ```
 
 For a local test without Git commit or push:
 
-```bash
-python3 scripts/backup-gantt-portable.py --dry-run --branch codex/phase-06-gantt
+```powershell
+python scripts\backup-gantt-portable.py --dry-run --branch codex/phase-06-gantt
 ```
 
 If GitHub is unreachable from China without a proxy, the script defaults Git push to `http://127.0.0.1:7890` for GitHub remotes.
@@ -43,7 +43,7 @@ Automation id: `daily-gantt-portable-github-backup`
 It runs every day at local midnight and calls:
 
 ```bash
-python3 scripts/backup-gantt-portable.py --branch codex/phase-06-gantt
+python scripts/backup-gantt-portable.py --branch codex/phase-06-gantt
 ```
 
 ## Restore On Another Machine
@@ -51,8 +51,8 @@ python3 scripts/backup-gantt-portable.py --branch codex/phase-06-gantt
 1. Clone the GitHub repository.
 2. Start the local dashboard server:
 
-```bash
-python3 scripts/serve-delivery-dashboard.py --port 8091
+```powershell
+python scripts\serve-delivery-dashboard.py --port 8091
 ```
 
 3. Open `http://127.0.0.1:8091/gantt.html`.

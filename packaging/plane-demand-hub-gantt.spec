@@ -3,7 +3,7 @@
 from pathlib import Path
 
 
-ROOT = Path.cwd()
+ROOT = Path(SPEC).resolve().parent.parent
 
 DATA_FILES = [
     "scripts/serve-delivery-dashboard.py",
@@ -26,7 +26,8 @@ a = Analysis(
     pathex=[str(ROOT)],
     binaries=[],
     datas=datas,
-    hiddenimports=[],
+    # These modules are imported by server/export scripts loaded dynamically at runtime.
+    hiddenimports=["http.server", "io", "json", "re", "stat", "urllib.parse", "zipfile"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

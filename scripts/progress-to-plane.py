@@ -25,7 +25,8 @@ def source_id_from_time() -> str:
 def run_export(timeline_path: Path) -> None:
     subprocess.run(
         [
-            str(ROOT_DIR / "scripts/export-plane-timeline.sh"),
+            sys.executable,
+            str(ROOT_DIR / "scripts/export-plane-timeline.py"),
             "--since",
             "1970-01-01T00:00:00Z",
             "--output",
@@ -63,6 +64,7 @@ def apply_changes(result: dict, dry_run: bool) -> int:
 
         target = change["target"]
         command = [
+            sys.executable,
             str(ROOT_DIR / "scripts/plane-api-comment.py"),
             "--workspace",
             str(target["workspace_slug"]),
@@ -96,7 +98,7 @@ def main() -> int:
     parser.add_argument("--source-id", help="Stable source id for traceability.")
     parser.add_argument("--timeline", default=str(DEFAULT_TIMELINE), help="Timeline JSONL path.")
     parser.add_argument("--audit-dir", default=str(DEFAULT_AUDIT_DIR), help="Audit output directory.")
-    parser.add_argument("--refresh-timeline", action="store_true", help="Run export-plane-timeline.sh before resolving.")
+    parser.add_argument("--refresh-timeline", action="store_true", help="Export the Plane timeline before resolving.")
     parser.add_argument("--apply", action="store_true", help="Apply resolved comments through Plane API. Requires PLANE_API_KEY.")
     parser.add_argument("--json", action="store_true", help="Print JSON result instead of human preview.")
     args = parser.parse_args()

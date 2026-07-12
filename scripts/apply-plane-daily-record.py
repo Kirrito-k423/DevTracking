@@ -302,6 +302,14 @@ def today_shanghai() -> str:
     return datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
 
 
+def run_bootstrap() -> None:
+    subprocess.run(
+        [sys.executable, str(ROOT_DIR / "scripts/bootstrap-plane-visual-constructs.py")],
+        cwd=ROOT_DIR,
+        check=True,
+    )
+
+
 def load_events(args: argparse.Namespace) -> list[dict]:
     if args.events_json:
         return json.loads(args.events_json)
@@ -432,7 +440,7 @@ def main() -> int:
     generated_at = datetime.now(ZoneInfo("Asia/Shanghai")).isoformat()
 
     if not args.skip_bootstrap:
-        subprocess.run([str(ROOT_DIR / "scripts/bootstrap-plane-visual-constructs.py")], cwd=ROOT_DIR, check=True)
+        run_bootstrap()
 
     script = DJANGO_SCRIPT.format(
         event_specs_json=json.dumps(events, ensure_ascii=False),
