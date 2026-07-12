@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Plane Demand Hub",
+    "subtitle": "Local-first progress intake, Plane synchronization, delivery artifacts, and portable Gantt",
+    "output": "docs/architecture/plane-demand-hub-architecture.html"
+  },
+  "components": [
+    {
+      "id": "plane_db",
+      "type": "database",
+      "label": "Plane PostgreSQL",
+      "sublabel": "analytics source",
+      "pos": [40, 100],
+      "size": [160, 64],
+      "tag": "read only"
+    },
+    {
+      "id": "plane_api",
+      "type": "security",
+      "label": "Plane Web / API",
+      "sublabel": "supported write path",
+      "pos": [40, 240],
+      "size": [160, 64],
+      "tag": "API key gate"
+    },
+    {
+      "id": "timeline_exporter",
+      "type": "backend",
+      "label": "Timeline Exporter",
+      "sublabel": "SQL to JSONL",
+      "pos": [250, 100],
+      "size": [160, 64]
+    },
+    {
+      "id": "progress_parser",
+      "type": "backend",
+      "label": "Progress Pipeline",
+      "sublabel": "parse, resolve, audit",
+      "pos": [250, 240],
+      "size": [160, 64],
+      "tag": "dry-run default"
+    },
+    {
+      "id": "dashboard_builder",
+      "type": "backend",
+      "label": "Delivery Builder",
+      "sublabel": "dashboard + Gantt",
+      "pos": [470, 100],
+      "size": [160, 64]
+    },
+    {
+      "id": "generated_delivery",
+      "type": "database",
+      "label": "Delivery Artifacts",
+      "sublabel": "HTML + JSON + Markdown",
+      "pos": [690, 100],
+      "size": [170, 64]
+    },
+    {
+      "id": "reports",
+      "type": "cloud",
+      "label": "Reports / AI Context",
+      "sublabel": "daily, weekly, risk",
+      "pos": [920, 100],
+      "size": [170, 64]
+    },
+    {
+      "id": "operator",
+      "type": "external",
+      "label": "Operator",
+      "sublabel": "browser or conversation",
+      "pos": [40, 440],
+      "size": [160, 64]
+    },
+    {
+      "id": "gantt_ui",
+      "type": "frontend",
+      "label": "Gantt UI",
+      "sublabel": "edit, report, import/export",
+      "pos": [250, 440],
+      "size": [160, 64]
+    },
+    {
+      "id": "local_server",
+      "type": "backend",
+      "label": "Local HTTP Sidecar",
+      "sublabel": "127.0.0.1:8091",
+      "pos": [470, 440],
+      "size": [160, 64]
+    },
+    {
+      "id": "runtime_store",
+      "type": "database",
+      "label": "Runtime Snapshots",
+      "sublabel": "autosave + pushed edits",
+      "pos": [690, 440],
+      "size": [170, 64],
+      "tag": "200 history"
+    },
+    {
+      "id": "portable_snapshot",
+      "type": "database",
+      "label": "Portable Snapshot",
+      "sublabel": "clone-ready fallback",
+      "pos": [920, 440],
+      "size": [170, 64]
+    },
+    {
+      "id": "desktop_launcher",
+      "type": "frontend",
+      "label": "Desktop Launcher",
+      "sublabel": "PyInstaller, no Docker",
+      "pos": [250, 580],
+      "size": [160, 64]
+    },
+    {
+      "id": "github",
+      "type": "external",
+      "label": "GitHub",
+      "sublabel": "backup, CI, Releases",
+      "pos": [1160, 440],
+      "size": [170, 64],
+      "tag": "gantt-app-v*"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Optional self-hosted Plane boundary",
+      "wraps": ["plane_db", "plane_api"],
+      "pad": 20
+    },
+    {
+      "kind": "region",
+      "label": "Demand Hub local workspace / desktop data",
+      "wraps": [
+        "timeline_exporter",
+        "progress_parser",
+        "dashboard_builder",
+        "generated_delivery",
+        "reports",
+        "gantt_ui",
+        "local_server",
+        "runtime_store",
+        "portable_snapshot",
+        "desktop_launcher"
+      ],
+      "pad": 22
+    }
+  ],
+  "connections": [
+    {
+      "from": "plane_db",
+      "to": "timeline_exporter",
+      "label": "read-only SQL",
+      "variant": "security",
+      "route": "orthogonal-h",
+      "labelAt": [225, 178]
+    },
+    {
+      "from": "timeline_exporter",
+      "to": "dashboard_builder",
+      "label": "timeline JSONL",
+      "variant": "emphasis",
+      "labelAt": [440, 178]
+    },
+    {
+      "from": "progress_parser",
+      "to": "dashboard_builder",
+      "label": "progress audits",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "progress_parser",
+      "to": "plane_api",
+      "label": "confirmed API write",
+      "variant": "security",
+      "fromSide": "left",
+      "toSide": "right",
+      "route": "orthogonal-h",
+      "labelAt": [225, 318]
+    },
+    {
+      "from": "operator",
+      "to": "progress_parser",
+      "label": "daily update",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "left",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "dashboard_builder",
+      "to": "generated_delivery",
+      "variant": "emphasis"
+    },
+    {
+      "from": "generated_delivery",
+      "to": "reports",
+      "label": "report inputs",
+      "variant": "dashed",
+      "labelAt": [890, 178]
+    },
+    {
+      "from": "generated_delivery",
+      "to": "runtime_store",
+      "label": "serve base state",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "operator",
+      "to": "gantt_ui",
+      "variant": "emphasis"
+    },
+    {
+      "from": "desktop_launcher",
+      "to": "gantt_ui",
+      "label": "opens browser",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "gantt_ui",
+      "to": "local_server",
+      "label": "HTTP + JSON",
+      "variant": "emphasis"
+    },
+    {
+      "from": "local_server",
+      "to": "runtime_store",
+      "label": "autosave / push",
+      "variant": "emphasis",
+      "labelAt": [660, 518]
+    },
+    {
+      "from": "runtime_store",
+      "to": "portable_snapshot",
+      "label": "export snapshot",
+      "variant": "dashed",
+      "labelAt": [890, 518]
+    },
+    {
+      "from": "portable_snapshot",
+      "to": "github",
+      "label": "backup + release",
+      "variant": "dashed",
+      "route": "orthogonal-h",
+      "labelAt": [1125, 518]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime modes",
+      "items": [
+        "Standalone desktop Gantt requires no Docker",
+        "Source mode serves exports/delivery on localhost",
+        "Plane integration is optional and Docker-backed"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Trust boundaries",
+      "items": [
+        "PostgreSQL is read-only for analytics extraction",
+        "Normal Plane writes require API key and confirmation",
+        "Mutable Gantt state stays outside Plane internal schema"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Recovery and portability",
+      "items": [
+        "Restore selects the newest safe local or disk snapshot",
+        "Autosave keeps a bounded 200-file history",
+        "Portable snapshot supports clone, ZIP import, and backup"
+      ]
+    }
+  ]
+}
