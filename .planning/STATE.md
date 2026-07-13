@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-13T07:16:00Z"
-last_activity: 2026-07-13 — Gantt public JSON import/export compatibility completed
+last_updated: "2026-07-13T10:03:41Z"
+last_activity: 2026-07-13 — Gantt clear all data button completed
 progress:
   total_phases: 6
   completed_phases: 6
@@ -75,6 +75,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Gantt portable export query download fixed: `/api/gantt-portable/download?t=...` now strips query strings before API route matching, so the toolbar `导出` button downloads the zip package correctly.
 - Gantt task detail event preview and scoped report export completed: task detail drawers now show descendant event previews in reverse chronological order and export task-scoped Markdown reports including child tasks.
 - Gantt public JSON import/export compatibility completed: public static pages can import their exported JSON changesets, while local Gantt servers keep ZIP migration-package import.
+- Gantt clear all data button completed: toolbar now has a red `Clear` action that requires typing `CLEAR`, empties tasks/events, resets transient UI state, and persists the empty snapshot through localStorage and autosave.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -107,6 +108,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260713-oy0 | Gantt clear all data button | 2026-07-13 | cf21788 | [260713-oy0-add-gantt-clear-all-data-button](./quick/260713-oy0-add-gantt-clear-all-data-button/) |
 | 260713-kzq | 修复公开 Gantt：导出 JSON 后可导入 JSON，移除误导性的 ZIP 导入路径，并重新部署。 | 2026-07-13 | 9ef9830 | [260713-kzq-gantt-json-json-zip](./quick/260713-kzq-gantt-json-json-zip/) |
 | 260712-gsg | Add architecture documentation links to README and push | 2026-07-12 | 98d53eb | [260712-gsg-add-architecture-documentation-links-to-](./quick/260712-gsg-add-architecture-documentation-links-to-/) |
 | 260709-oki | Gantt task detail event preview and scoped report export | 2026-07-09 | 4751022 | [260709-oki-add-task-detail-event-timeline-preview-a](./quick/260709-oki-add-task-detail-event-timeline-preview-a/) |
@@ -149,7 +151,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-13 — Gantt public JSON import/export compatibility completed
+Last activity: 2026-07-13 — Gantt clear all data button completed
 
 ## Operator Next Steps
 
