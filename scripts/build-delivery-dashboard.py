@@ -2213,6 +2213,15 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           label.className = 'palette-label';
           label.textContent = options.palette.label;
           actions.append(label);
+          if (options.palette.onReset) {
+            const reset = document.createElement('button');
+            reset.className = 'action-button';
+            reset.type = 'button';
+            reset.textContent = options.palette.resetLabel || '恢复默认颜色';
+            reset.setAttribute('aria-pressed', options.palette.value ? 'false' : 'true');
+            reset.addEventListener('click', options.palette.onReset);
+            actions.append(reset);
+          }
           const palette = document.createElement('div');
           palette.className = 'palette-grid';
           for (const color of options.palette.colors) {
@@ -2277,7 +2286,14 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           { label: '导出任务报告（含子任务）', onClick: () => exportTaskReport(task) },
           { label: '编辑任务字段', onClick: () => editTaskFields(task) }
         ],
-        palette: { label: '任务条颜色', value: task.color, colors: taskColorPalette, onSelect: color => setTaskColor(task, color) },
+        palette: {
+          label: '任务条颜色',
+          value: task.color,
+          colors: taskColorPalette,
+          resetLabel: '恢复默认颜色',
+          onSelect: color => setTaskColor(task, color),
+          onReset: () => setTaskColor(task, null)
+        },
         dangerAction: { label: '删除任务', onClick: () => deleteTask(task) }
       });
     }
@@ -2330,7 +2346,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         .filter(Boolean);
     }
     function setTaskColor(task, color) {
-      task.color = color;
+      task.color = color || null;
       persistEdits();
       render();
       showTask(task);
