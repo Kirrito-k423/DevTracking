@@ -827,6 +827,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .tool-button { min-width:36px; min-height:32px; border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:6px; padding:0 10px; cursor:pointer; }
     .tool-button[aria-pressed="true"] { border-color:var(--blue); color:var(--blue); box-shadow:0 0 0 2px rgba(47,111,237,.12); }
+    .tool-button.danger { border-color:#e49a9a; color:var(--red); background:#fff5f5; }
+    .tool-button.danger:hover { background:#ffecec; }
     .autosave-status { color:var(--muted); font-size:12px; white-space:nowrap; }
     .autosave-status[data-state="saved"] { color:var(--green); }
     .autosave-status[data-state="saving"] { color:var(--amber); }
@@ -949,6 +951,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       <button class="tool-button" id="export-report" type="button">报告</button>
       <button class="tool-button" id="add-task" type="button">新增任务条</button>
       <button class="tool-button" id="add-event" type="button">新增事件</button>
+      <button class="tool-button danger" id="clear-data" type="button" title="清除当前 Gantt 全部任务和事件">Clear</button>
       <button class="tool-button" id="marker-demo" type="button">Demo markers</button>
       <button class="tool-button" id="expand-all" type="button" title="Expand all">Expand</button>
       <button class="tool-button" id="collapse-all" type="button" title="Collapse all">Collapse</button>
@@ -1237,13 +1240,15 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       autosaveEnabled = true;
       setAutosaveStatus(selected ? `Restored ${selected.source}` : 'Autosave ready', selected ? 'saved' : 'idle');
     }
-    function persistEdits() {
+    function persistEdits(options = {}) {
+      const extraDeletedTaskIds = options.deletedTaskIds || [];
+      const extraDeletedEventIds = options.deletedEventIds || [];
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         saved_at: new Date().toISOString(),
         tasks: tasks.map((task, index) => taskStorageRecord(task, index)),
         events,
-        deleted_task_ids: deletedTaskIds(),
-        deleted_event_ids: deletedEventIds()
+        deleted_task_ids: [...new Set([...deletedTaskIds(), ...extraDeletedTaskIds])],
+        deleted_event_ids: [...new Set([...deletedEventIds(), ...extraDeletedEventIds])]
       }));
       scheduleAutosave();
     }
@@ -2571,6 +2576,22 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       persistEdits();
       render();
     }
+    function clearAllData() {
+      const confirmation = prompt('这会清除当前 Gantt 的全部任务和事件，并写入本地保存与 autosave。请输入 CLEAR 确认。', '');
+      if (confirmation !== 'CLEAR') return;
+      const removedTaskIds = tasks.map(task => task.id).filter(Boolean);
+      const removedEventIds = events.map(event => event.id).filter(Boolean);
+      tasks = [];
+      events = [];
+      selectedTaskId = null;
+      collapsed.clear();
+      expandedEventStacks.clear();
+      rebuildTaskIndex();
+      closeDetail();
+      persistEdits({ deletedTaskIds: removedTaskIds, deletedEventIds: removedEventIds });
+      render();
+      alert('已清除全部 Gantt 数据。可以通过导入迁移包或 Git 历史恢复旧快照。');
+    }
     function deleteTask(task) {
       if (!task || !tasksById.has(task.id)) return;
       if (!confirm(`删除任务「${text(task.title)}」？子任务会保留并上移一层。`)) return;
@@ -3152,6 +3173,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     setupPortableImportDrop();
     document.getElementById('add-task').addEventListener('click', addTaskBar);
     document.getElementById('add-event').addEventListener('click', addEventFromButton);
+    document.getElementById('clear-data').addEventListener('click', clearAllData);
     document.getElementById('marker-demo').addEventListener('click', addDemoEvents);
     document.getElementById('reset-edits').addEventListener('click', () => {
       if (!confirm('清除本页本地修改？不会影响 Plane 数据。')) return;
