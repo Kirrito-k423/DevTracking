@@ -945,7 +945,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       <button class="tool-button" id="reset-edits" type="button">Reset local edits</button>
       <button class="tool-button" id="push-edits" type="button">Push changes</button>
       <button class="tool-button" id="export-portable" type="button" title="导出迁移包">导出</button>
-      <button class="tool-button" id="import-portable" type="button" title="导入迁移包">导入</button>
+      <button class="tool-button" id="import-portable" type="button" title="导入 JSON 变化集或 ZIP 迁移包">导入</button>
       <button class="tool-button" id="export-report" type="button">报告</button>
       <button class="tool-button" id="add-task" type="button">新增任务条</button>
       <button class="tool-button" id="add-event" type="button">新增事件</button>
@@ -955,10 +955,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       <button class="tool-button" id="density-dense" type="button" aria-pressed="true">Dense</button>
       <button class="tool-button" id="density-present" type="button" aria-pressed="false">Present</button>
       <span class="autosave-status" id="autosave-status" data-state="idle">Autosave idle</span>
-      <input class="hidden-file-input" id="import-portable-file" type="file" accept=".zip,application/zip">
+      <input class="hidden-file-input" id="import-portable-file" type="file" accept=".json,application/json,.zip,application/zip">
     </div>
   </header>
-  <div class="drop-overlay" id="drop-overlay">释放导入迁移包</div>
+  <div class="drop-overlay" id="drop-overlay">释放导入 JSON 或 ZIP 迁移包</div>
   <main>
     <section class="summary" id="summary"></section>
     <section class="gantt-layout" aria-label="Gantt chart">
@@ -989,6 +989,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
   <script id="gantt-data" type="application/json">__DATA__</script>
   <script>
     const gantt = JSON.parse(document.getElementById('gantt-data').textContent);
+    let activeSnapshotGeneratedAt = gantt.generated_at;
     const STORAGE_KEY = 'plane-demand-hub-gantt-local-edits-v1';
     const AUTOSAVE_DELAY_MS = 900;
     const collapsed = new Set();
@@ -1222,9 +1223,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const local = localStorageCandidate();
       const autosave = await fetchChangesetCandidate('/api/gantt-autosave/latest', 'autosave', 25);
       const pushed = await fetchChangesetCandidate('/api/gantt-edits/latest', 'pushed changes', 20);
-      const portable = await fetchChangesetCandidate('/api/gantt-portable/latest', 'portable snapshot', 10);
+      const portable = await fetchChangesetCandidate('/api/gantt-portable/latest', 'portable snapshot', 10)
+        || await fetchChangesetCandidate('/gantt-local-edits.json', 'portable snapshot', 10);
       const selected = selectRestoreCandidate(local, autosave, pushed, portable);
-      if (selected) applySnapshot(selected.snapshot);
+      if (selected) {
+        applySnapshot(selected.snapshot);
+        activeSnapshotGeneratedAt = selected.generatedAt || activeSnapshotGeneratedAt;
+      }
       const migratedLocalTaskKeys = normalizeLocalTaskKeys();
       rebuildTaskIndex();
       if (selected || migratedLocalTaskKeys) persistEdits();
@@ -1624,10 +1629,30 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         alert('当前服务器不支持迁移包下载，已下载快照 JSON。');
       }
     }
+    function applyImportedChangeset(changeset, label) {
+      if (!applyChangesetSnapshot(changeset)) throw new Error('missing snapshot');
+      activeSnapshotGeneratedAt = changeset.saved_at || changeset.generated_at || activeSnapshotGeneratedAt;
+      normalizeLocalTaskKeys();
+      rebuildTaskIndex();
+      closeDetail();
+      persistEdits();
+      render();
+      alert(`已导入${label}：任务 ${tasks.length}，事件 ${events.length}。`);
+    }
     async function importPortablePackage(file) {
       if (!file) return;
-      if (!/\\.zip$/i.test(file.name || '')) {
-        alert('请选择 .zip 迁移包。');
+      const filename = file.name || '';
+      if (/\\.json$/i.test(filename) || file.type === 'application/json') {
+        try {
+          const payload = JSON.parse(await file.text());
+          applyImportedChangeset(payload.changeset || payload, 'JSON 变化集');
+        } catch (error) {
+          alert('导入失败：请选择由本看板导出的有效 JSON 变化集。');
+        }
+        return;
+      }
+      if (!/\\.zip$/i.test(filename)) {
+        alert('请选择 .json 变化集或 .zip 迁移包。');
         return;
       }
       try {
@@ -1638,24 +1663,17 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const result = await response.json();
-        if (!applyChangesetSnapshot(result.changeset)) throw new Error('missing snapshot');
-        normalizeLocalTaskKeys();
-        rebuildTaskIndex();
-        closeDetail();
-        persistEdits();
-        render();
-        const counts = result.counts || {};
-        alert(`已导入迁移包：任务 ${counts.tasks ?? tasks.length}，事件 ${counts.events ?? events.length}。`);
+        applyImportedChangeset(result.changeset, 'ZIP 迁移包');
       } catch (error) {
-        alert('导入失败：迁移包无效，或当前服务器不支持导入。');
+        alert('导入失败：迁移包无效，或当前服务器不支持 ZIP 导入。');
       }
     }
     function setupPortableImportDrop() {
       const input = document.getElementById('import-portable-file');
       let dragDepth = 0;
-      const zipFromTransfer = event => {
+      const importFileFromTransfer = event => {
         const files = [...(event.dataTransfer?.files || [])];
-        return files.find(file => /\\.zip$/i.test(file.name || '')) || files[0] || null;
+        return files.find(file => /\\.(json|zip)$/i.test(file.name || '')) || files[0] || null;
       };
       const hasFiles = event => Array.from(event.dataTransfer?.types || []).includes('Files');
       document.getElementById('import-portable').addEventListener('click', () => input.click());
@@ -1683,7 +1701,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         event.preventDefault();
         dragDepth = 0;
         document.body.classList.remove('drag-import');
-        importPortablePackage(zipFromTransfer(event));
+        importPortablePackage(importFileFromTransfer(event));
       });
     }
     function rebuildTaskIndex() {
@@ -2848,7 +2866,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const chartWidth = Math.max(720, (activeMaxOrd - activeMinOrd + 1) * dayWidth());
       const summary = summarize();
       const byTask = eventsByTask();
-      document.getElementById('generated').textContent = `Generated ${text(gantt.generated_at)} · ${gantt.sources.timeline_rows} timeline rows · ${gantt.sources.progress_audits} progress audits`;
+      document.getElementById('generated').textContent = `快照生成：${text(activeSnapshotGeneratedAt)} · ${summary.tasks} 个任务 · ${summary.events} 个事件`;
       document.getElementById('summary').replaceChildren(...[
         `Tasks ${summary.tasks}`,
         `Links ${summary.parent_links}`,
