@@ -164,7 +164,7 @@
     }
   ],
   "event_changes": [],
-  "generated_at": "2026-07-14T14:10:30.125Z",
+  "generated_at": "2026-07-15T09:12:34.558Z",
   "new_events": [
     {
       "compact_label": "功能开发完成，显",
@@ -2023,6 +2023,86 @@
       "summary": "A5等实际优化场景多问一嘴来验证: 公式建模",
       "task_id": "local-task:1783475477048",
       "type": "todo"
+    },
+    {
+      "compact_label": "推理对比标准不同",
+      "date": "2026-07-15",
+      "id": "local:local-task:1783586259471:todo:2026-07-15:1784099963700",
+      "source_refs": [
+        {
+          "event_time": "2026-07-15T07:19:23.701Z",
+          "event_type": "local_edit",
+          "source": {
+            "id": "local-task:1783586259471",
+            "table": "localStorage"
+          }
+        },
+        {
+          "event_time": "2026-07-15T07:19:53.338Z",
+          "event_type": "local_event_edit",
+          "source": {
+            "id": "local:local-task:1783586259471:todo:2026-07-15:1784099963700",
+            "table": "localStorage"
+          }
+        }
+      ],
+      "summary": "推理对比标准不同: A5 Qwen3.5 高性能",
+      "task_id": "local-task:1783586259471",
+      "type": "in_progress"
+    },
+    {
+      "compact_label": "下需求",
+      "date": "2026-07-15",
+      "id": "local:06890a67-07fc-4317-a641-6cd17ea21dd0:in_progress:2026-07-15:1784099983219",
+      "source_refs": [
+        {
+          "event_time": "2026-07-15T07:19:43.219Z",
+          "event_type": "local_edit",
+          "source": {
+            "id": "06890a67-07fc-4317-a641-6cd17ea21dd0",
+            "table": "localStorage"
+          }
+        }
+      ],
+      "summary": "下需求: 数据集评测需求跟踪",
+      "task_id": "06890a67-07fc-4317-a641-6cd17ea21dd0",
+      "type": "in_progress"
+    },
+    {
+      "compact_label": "verl-omn",
+      "date": "2026-07-15",
+      "id": "local:local-task:1784106280383:in_progress:2026-07-15:1784106303174",
+      "source_refs": [
+        {
+          "event_time": "2026-07-15T09:05:03.174Z",
+          "event_type": "local_edit",
+          "source": {
+            "id": "local-task:1784106280383",
+            "table": "localStorage"
+          }
+        }
+      ],
+      "summary": "verl-omni任务: 谢若槐",
+      "task_id": "local-task:1784106280383",
+      "type": "in_progress"
+    },
+    {
+      "compact_label": "需求串讲",
+      "date": "2026-07-22",
+      "id": "local:20cff7b4-f999-4075-a50b-e0217094204d:todo:2026-07-22:1784106335247",
+      "source_refs": [
+        {
+          "event_time": "2026-07-15T09:05:35.247Z",
+          "event_type": "local_edit",
+          "source": {
+            "id": "20cff7b4-f999-4075-a50b-e0217094204d",
+            "table": "localStorage"
+          }
+        }
+      ],
+      "summary": "需求串讲: 26Q3 季度需求跟踪",
+      "task_id": "20cff7b4-f999-4075-a50b-e0217094204d",
+      "type": "todo"
     }
   ],
   "new_tasks": [
@@ -2513,10 +2593,10 @@
       "title": "RL MS-Agent 优化"
     },
     {
-      "color": "#E42320",
+      "color": "#CC5B45",
       "compact_label": "Profilin",
       "delivery_summary": {
-        "date_range": "2026-07-08 - 2026-07-14",
+        "date_range": "2026-07-08 - 2026-07-15",
         "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
         "title": "Profiling诉求"
       },
@@ -2544,8 +2624,43 @@
       ],
       "start_date": "2026-07-08",
       "state": "draft",
-      "target_date": "2026-07-14",
+      "target_date": "2026-07-15",
       "title": "Profiling诉求"
+    },
+    {
+      "color": "#E42320",
+      "compact_label": "agent 提效",
+      "delivery_summary": {
+        "date_range": "2026-07-08 - 2026-07-22",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "agent 提效"
+      },
+      "id": "local-task:1784106749774",
+      "issue_id": null,
+      "issue_key": "N-85",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 24,
+      "owner": null,
+      "parent_id": "20cff7b4-f999-4075-a50b-e0217094204d",
+      "progress": 0,
+      "project": "本地新增",
+      "source_refs": [
+        {
+          "event_time": "2026-07-15T09:12:29.775Z",
+          "event_type": "local_task_created",
+          "source": {
+            "id": "local-task:1784106749774",
+            "table": "localStorage"
+          }
+        }
+      ],
+      "start_date": "2026-07-08",
+      "state": "draft",
+      "target_date": "2026-07-22",
+      "title": "agent 提效"
     },
     {
       "color": null,
@@ -2562,7 +2677,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 24,
+      "order_index": 25,
       "owner": null,
       "parent_id": null,
       "progress": 0,
@@ -2588,7 +2703,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 25,
+      "order_index": 26,
       "owner": "周洋",
       "parent_id": "local-task:1783581806975",
       "progress": 0,
@@ -2614,7 +2729,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 26,
+      "order_index": 27,
       "owner": "张敏杰/陈润平",
       "parent_id": "local-task:1783581806975",
       "progress": 0,
@@ -2640,7 +2755,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 27,
+      "order_index": 28,
       "owner": "景思语",
       "parent_id": "local-task:1783581806975",
       "progress": 0,
@@ -2666,7 +2781,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 28,
+      "order_index": 29,
       "owner": "白江",
       "parent_id": "local-task:1783581806975",
       "progress": 0,
@@ -2692,7 +2807,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 29,
+      "order_index": 30,
       "owner": null,
       "parent_id": "local-task:1783581806975",
       "progress": 0,
@@ -2718,7 +2833,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 30,
+      "order_index": 31,
       "owner": "邓述民",
       "parent_id": "local-task:1783581806975",
       "progress": 0,
@@ -2728,6 +2843,180 @@
       "state": "draft",
       "target_date": "2026-07-15",
       "title": "ray多机慢启动问题"
+    },
+    {
+      "color": null,
+      "compact_label": "新员工/实习生辅",
+      "delivery_summary": {
+        "date_range": "2026-06-18 - 2026-07-13",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "新员工/实习生辅导"
+      },
+      "id": "local-task:1783417260092",
+      "issue_id": null,
+      "issue_key": "N-22",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 32,
+      "owner": "谭邵杰",
+      "parent_id": null,
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-18",
+      "state": "draft",
+      "target_date": "2026-07-13",
+      "title": "新员工/实习生辅导"
+    },
+    {
+      "color": null,
+      "compact_label": "李翰文",
+      "delivery_summary": {
+        "date_range": "2026-06-19 - 2026-07-23",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "李翰文"
+      },
+      "id": "local-task:1783425949862",
+      "issue_id": null,
+      "issue_key": "N-23",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 33,
+      "owner": null,
+      "parent_id": "local-task:1783417260092",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-19",
+      "state": "draft",
+      "target_date": "2026-07-23",
+      "title": "李翰文"
+    },
+    {
+      "color": null,
+      "compact_label": "张皓琰",
+      "delivery_summary": {
+        "date_range": "2026-06-19 - 2026-07-22",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "张皓琰"
+      },
+      "id": "local-task:1783425999202",
+      "issue_id": null,
+      "issue_key": "N-24",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 34,
+      "owner": null,
+      "parent_id": "local-task:1783417260092",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-19",
+      "state": "draft",
+      "target_date": "2026-07-22",
+      "title": "张皓琰"
+    },
+    {
+      "color": "#CC5B45",
+      "compact_label": "卢昱辰",
+      "delivery_summary": {
+        "date_range": "2026-06-19 - 2026-07-13",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "卢昱辰"
+      },
+      "id": "local-task:1783426060796",
+      "issue_id": null,
+      "issue_key": "N-25",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 35,
+      "owner": null,
+      "parent_id": "local-task:1783417260092",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-19",
+      "state": "draft",
+      "target_date": "2026-07-13",
+      "title": "卢昱辰"
+    },
+    {
+      "color": null,
+      "compact_label": "谢若槐",
+      "delivery_summary": {
+        "date_range": "2026-07-15 - 2026-07-16",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "谢若槐"
+      },
+      "id": "local-task:1784106280383",
+      "issue_id": null,
+      "issue_key": "N-83",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 36,
+      "owner": null,
+      "parent_id": "local-task:1783417260092",
+      "progress": 0,
+      "project": "本地新增",
+      "source_refs": [
+        {
+          "event_time": "2026-07-15T09:04:40.386Z",
+          "event_type": "local_task_created",
+          "source": {
+            "id": "local-task:1784106280383",
+            "table": "localStorage"
+          }
+        }
+      ],
+      "start_date": "2026-07-15",
+      "state": "draft",
+      "target_date": "2026-07-16",
+      "title": "谢若槐"
+    },
+    {
+      "color": null,
+      "compact_label": "杨雨涵",
+      "delivery_summary": {
+        "date_range": "2026-07-15 - 2026-07-16",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "杨雨涵"
+      },
+      "id": "local-task:1784106629196",
+      "issue_id": null,
+      "issue_key": "N-84",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 37,
+      "owner": null,
+      "parent_id": "local-task:1783417260092",
+      "progress": 0,
+      "project": "本地新增",
+      "source_refs": [
+        {
+          "event_time": "2026-07-15T09:10:29.197Z",
+          "event_type": "local_task_created",
+          "source": {
+            "id": "local-task:1784106629196",
+            "table": "localStorage"
+          }
+        }
+      ],
+      "start_date": "2026-07-15",
+      "state": "draft",
+      "target_date": "2026-07-16",
+      "title": "杨雨涵"
     },
     {
       "color": null,
@@ -2744,7 +3033,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 31,
+      "order_index": 38,
       "owner": "谭邵杰",
       "parent_id": null,
       "progress": 0,
@@ -2770,7 +3059,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 32,
+      "order_index": 39,
       "owner": null,
       "parent_id": "local-task:1783473976604",
       "progress": 0,
@@ -2796,7 +3085,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 33,
+      "order_index": 40,
       "owner": null,
       "parent_id": "local-task:1783906772460",
       "progress": 0,
@@ -2822,7 +3111,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 34,
+      "order_index": 41,
       "owner": null,
       "parent_id": "local-task:1783906772460",
       "progress": 0,
@@ -2857,7 +3146,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 35,
+      "order_index": 42,
       "owner": null,
       "parent_id": "local-task:1783473976604",
       "progress": 0,
@@ -2883,7 +3172,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 36,
+      "order_index": 43,
       "owner": null,
       "parent_id": "local-task:1783474822539",
       "progress": 0,
@@ -2909,7 +3198,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 37,
+      "order_index": 44,
       "owner": null,
       "parent_id": "local-task:1783474822539",
       "progress": 0,
@@ -2935,7 +3224,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 38,
+      "order_index": 45,
       "owner": null,
       "parent_id": "local-task:1783474822539",
       "progress": 0,
@@ -2960,7 +3249,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 39,
+      "order_index": 46,
       "owner": "王开源",
       "parent_id": "local-task:1783475508490",
       "progress": 0,
@@ -2986,7 +3275,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 40,
+      "order_index": 47,
       "owner": "常翔宇/许亦铭",
       "parent_id": "local-task:1783475508490",
       "progress": 0,
@@ -3012,7 +3301,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 41,
+      "order_index": 48,
       "owner": null,
       "parent_id": "local-task:1783474822539",
       "progress": 0,
@@ -3038,7 +3327,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 42,
+      "order_index": 49,
       "owner": null,
       "parent_id": "local-task:1783473976604",
       "progress": 0,
@@ -3064,7 +3353,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 43,
+      "order_index": 50,
       "owner": null,
       "parent_id": "local-task:1783473976604",
       "progress": 0,
@@ -3090,7 +3379,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 44,
+      "order_index": 51,
       "owner": null,
       "parent_id": "local-task:1783475552796",
       "progress": 0,
@@ -3116,7 +3405,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 45,
+      "order_index": 52,
       "owner": null,
       "parent_id": "local-task:1783475552796",
       "progress": 0,
@@ -3142,7 +3431,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 46,
+      "order_index": 53,
       "owner": null,
       "parent_id": "local-task:1783475552796",
       "progress": 0,
@@ -3168,7 +3457,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 47,
+      "order_index": 54,
       "owner": null,
       "parent_id": "local-task:1783475552796",
       "progress": 0,
@@ -3194,7 +3483,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 48,
+      "order_index": 55,
       "owner": null,
       "parent_id": "local-task:1783475552796",
       "progress": 0,
@@ -3220,7 +3509,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 49,
+      "order_index": 56,
       "owner": null,
       "parent_id": "local-task:1783475552796",
       "progress": 0,
@@ -3230,678 +3519,6 @@
       "state": "draft",
       "target_date": "2026-08-14",
       "title": "EP/SP特性"
-    },
-    {
-      "color": null,
-      "compact_label": "交付实际问题",
-      "delivery_summary": {
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "交付实际问题"
-      },
-      "id": "local-task:1783413733185",
-      "issue_id": null,
-      "issue_key": "N-18",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 51,
-      "owner": null,
-      "parent_id": "534f110e-1401-4546-b84f-aeeec0008cb1",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-02",
-      "state": "draft",
-      "target_date": "2026-07-15",
-      "title": "交付实际问题"
-    },
-    {
-      "color": "#458A74",
-      "compact_label": "长跑偶现EP内显",
-      "delivery_summary": {
-        "date_range": "2026-07-08 - 2026-07-10",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "长跑偶现EP内显存暴增"
-      },
-      "id": "local-task:1783474260513",
-      "issue_id": null,
-      "issue_key": "N-19",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 52,
-      "owner": "侯玉峰",
-      "parent_id": "local-task:1783413733185",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-07-08",
-      "state": "draft",
-      "target_date": "2026-07-10",
-      "title": "长跑偶现EP内显存暴增"
-    },
-    {
-      "color": null,
-      "compact_label": "优化特性",
-      "delivery_summary": {
-        "date_range": "2026-06-02 - 2026-07-15",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "优化特性"
-      },
-      "id": "local-task:1783562941265",
-      "issue_id": null,
-      "issue_key": "N-29",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 55,
-      "owner": null,
-      "parent_id": "534f110e-1401-4546-b84f-aeeec0008cb1",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-02",
-      "state": "draft",
-      "target_date": "2026-07-15",
-      "title": "优化特性"
-    },
-    {
-      "color": "#848484",
-      "compact_label": "EP1",
-      "delivery_summary": {
-        "date_range": "2026-06-25 - 2026-07-10",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "EP1"
-      },
-      "id": "local-task:1783563294148",
-      "issue_id": null,
-      "issue_key": "N-30",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 57,
-      "owner": null,
-      "parent_id": "local-task:1783562941265",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-25",
-      "state": "draft",
-      "target_date": "2026-07-10",
-      "title": "EP1"
-    },
-    {
-      "color": null,
-      "compact_label": "数据加载优化",
-      "delivery_summary": {
-        "date_range": "2026-06-24 - 2026-07-15",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "数据加载优化"
-      },
-      "id": "local-task:1783589802919",
-      "issue_id": null,
-      "issue_key": "N-43",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 58,
-      "owner": "刘强伟",
-      "parent_id": "local-task:1783562941265",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-24",
-      "state": "draft",
-      "target_date": "2026-07-15",
-      "title": "数据加载优化"
-    },
-    {
-      "color": null,
-      "compact_label": "RL",
-      "delivery_summary": {
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "RL"
-      },
-      "id": "local-task:1783566550049",
-      "issue_id": null,
-      "issue_key": "N-32",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 60,
-      "owner": null,
-      "parent_id": "b24ba519-fce5-4448-800c-364aea71812d",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-23",
-      "state": "draft",
-      "target_date": "2026-07-15",
-      "title": "RL"
-    },
-    {
-      "color": "#848484",
-      "compact_label": "基于生成的图文交",
-      "delivery_summary": {
-        "date_range": "2026-06-26 - 2026-07-14",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "基于生成的图文交错推理"
-      },
-      "id": "local-task:1783589699034",
-      "issue_id": null,
-      "issue_key": "N-42",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 62,
-      "owner": null,
-      "parent_id": "0dce8040-4d8b-4583-b9f4-ff6c46905733",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-26",
-      "state": "draft",
-      "target_date": "2026-07-14",
-      "title": "基于生成的图文交错推理"
-    },
-    {
-      "color": "#848484",
-      "compact_label": "音视频同出生成O",
-      "delivery_summary": {
-        "date_range": "2026-06-26 - 2026-07-15",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "音视频同出生成OmniNFT"
-      },
-      "id": "local-task:1783567131217",
-      "issue_id": null,
-      "issue_key": "N-35",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 64,
-      "owner": null,
-      "parent_id": "f1406290-c5c6-40e2-ab63-935965a29b14",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-26",
-      "state": "draft",
-      "target_date": "2026-07-15",
-      "title": "音视频同出生成OmniNFT"
-    },
-    {
-      "color": null,
-      "compact_label": "SFT",
-      "delivery_summary": {
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "SFT"
-      },
-      "id": "local-task:1783566558777",
-      "issue_id": null,
-      "issue_key": "N-33",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 65,
-      "owner": null,
-      "parent_id": "b24ba519-fce5-4448-800c-364aea71812d",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-23",
-      "state": "draft",
-      "target_date": "2026-07-15",
-      "title": "SFT"
-    },
-    {
-      "color": null,
-      "compact_label": "猛犸3Omni(",
-      "delivery_summary": {
-        "date_range": "2026-06-25 - 2026-07-15",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "猛犸3Omni(音频理解？)"
-      },
-      "id": "local-task:1783566628736",
-      "issue_id": null,
-      "issue_key": "N-34",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 66,
-      "owner": "刘明阳",
-      "parent_id": "local-task:1783566558777",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-25",
-      "state": "draft",
-      "target_date": "2026-07-15",
-      "title": "猛犸3Omni(音频理解？)"
-    },
-    {
-      "color": "#57AF37",
-      "compact_label": "verl/veo",
-      "delivery_summary": {
-        "date_range": "2026-07-08 - 2026-07-11",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "verl/veomni opd qwen35 35Bto2B 当前SMA26%"
-      },
-      "id": "local-task:1783494417561",
-      "issue_id": null,
-      "issue_key": "N-26",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 68,
-      "owner": null,
-      "parent_id": "63bb653a-3989-47b4-9061-0608b86640c5",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-07-08",
-      "state": "draft",
-      "target_date": "2026-07-11",
-      "title": "verl/veomni opd qwen35 35Bto2B 当前SMA26%"
-    },
-    {
-      "color": "#008B8B",
-      "compact_label": "Qwen3.5 ",
-      "delivery_summary": {
-        "date_range": "2026-07-06 - 2026-07-13",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "Qwen3.5 122B/35B SFT VeOmni"
-      },
-      "id": "local-task:1783667501733",
-      "issue_id": null,
-      "issue_key": "N-49",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 69,
-      "owner": null,
-      "parent_id": "63bb653a-3989-47b4-9061-0608b86640c5",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-07-06",
-      "state": "draft",
-      "target_date": "2026-07-13",
-      "title": "Qwen3.5 122B/35B SFT VeOmni"
-    },
-    {
-      "color": null,
-      "compact_label": "VeOmni专项",
-      "delivery_summary": {
-        "date_range": "2026-06-18 - 2026-08-13",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "VeOmni专项"
-      },
-      "id": "local-task:1783417210241",
-      "issue_id": null,
-      "issue_key": "N-20",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 71,
-      "owner": null,
-      "parent_id": null,
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-18",
-      "state": "draft",
-      "target_date": "2026-08-13",
-      "title": "VeOmni专项"
-    },
-    {
-      "color": null,
-      "compact_label": "易用与看护",
-      "delivery_summary": {
-        "date_range": "2026-06-22 - 2026-08-13",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "易用与看护"
-      },
-      "id": "local-task:1783941808961",
-      "issue_id": null,
-      "issue_key": "N-63",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 72,
-      "owner": "李翰文",
-      "parent_id": "local-task:1783417210241",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-22",
-      "state": "draft",
-      "target_date": "2026-08-13",
-      "title": "易用与看护"
-    },
-    {
-      "color": null,
-      "compact_label": "新模型开发",
-      "delivery_summary": {
-        "date_range": "2026-06-22 - 2026-08-13",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "新模型开发"
-      },
-      "id": "local-task:1783914681262",
-      "issue_id": null,
-      "issue_key": "N-57",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 73,
-      "owner": null,
-      "parent_id": "local-task:1783417210241",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-22",
-      "state": "draft",
-      "target_date": "2026-08-13",
-      "title": "新模型开发"
-    },
-    {
-      "color": null,
-      "compact_label": "Bagel",
-      "delivery_summary": {
-        "date_range": "2026-06-24 - 2026-08-13",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "Bagel"
-      },
-      "id": "local-task:1783914722367",
-      "issue_id": null,
-      "issue_key": "N-58",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 74,
-      "owner": "宋鑫雅/闻江",
-      "parent_id": "local-task:1783914681262",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-24",
-      "state": "draft",
-      "target_date": "2026-08-13",
-      "title": "Bagel"
-    },
-    {
-      "color": null,
-      "compact_label": "DeepSeek",
-      "delivery_summary": {
-        "date_range": "2026-06-24 - 2026-08-13",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "DeepSeek V4"
-      },
-      "id": "local-task:1783914871632",
-      "issue_id": null,
-      "issue_key": "N-59",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 75,
-      "owner": "叶平/蓓蓉",
-      "parent_id": "local-task:1783914681262",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-24",
-      "state": "draft",
-      "target_date": "2026-08-13",
-      "title": "DeepSeek V4"
-    },
-    {
-      "color": null,
-      "compact_label": "LTX-2-3",
-      "delivery_summary": {
-        "date_range": "2026-06-24 - 2026-08-13",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "LTX-2-3"
-      },
-      "id": "local-task:1783941968403",
-      "issue_id": null,
-      "issue_key": "N-64",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 76,
-      "owner": "马家园/闻江",
-      "parent_id": "local-task:1783914681262",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-24",
-      "state": "draft",
-      "target_date": "2026-08-13",
-      "title": "LTX-2-3"
-    },
-    {
-      "color": null,
-      "compact_label": "wan2.2",
-      "delivery_summary": {
-        "date_range": "2026-06-24 - 2026-08-13",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "wan2.2"
-      },
-      "id": "local-task:1783942638298",
-      "issue_id": null,
-      "issue_key": "N-65",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 77,
-      "owner": "段仲钰",
-      "parent_id": "local-task:1783914681262",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-24",
-      "state": "draft",
-      "target_date": "2026-08-13",
-      "title": "wan2.2"
-    },
-    {
-      "color": null,
-      "compact_label": "GLM-5",
-      "delivery_summary": {
-        "date_range": "2026-06-24 - 2026-08-13",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "GLM-5"
-      },
-      "id": "local-task:1783943337221",
-      "issue_id": null,
-      "issue_key": "N-66",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 78,
-      "owner": "刘浩",
-      "parent_id": "local-task:1783914681262",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-24",
-      "state": "draft",
-      "target_date": "2026-08-13",
-      "title": "GLM-5"
-    },
-    {
-      "color": null,
-      "compact_label": "优化+特性",
-      "delivery_summary": {
-        "date_range": "2026-06-22 - 2026-08-13",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "优化+特性"
-      },
-      "id": "local-task:1783941682027",
-      "issue_id": null,
-      "issue_key": "N-62",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 79,
-      "owner": null,
-      "parent_id": "local-task:1783417210241",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-22",
-      "state": "draft",
-      "target_date": "2026-08-13",
-      "title": "优化+特性"
-    },
-    {
-      "color": null,
-      "compact_label": "异步激活值卸载",
-      "delivery_summary": {
-        "date_range": "2026-06-24 - 2026-07-15",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "异步激活值卸载"
-      },
-      "id": "local-task:1783943453901",
-      "issue_id": null,
-      "issue_key": "N-67",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 80,
-      "owner": "张盛",
-      "parent_id": "local-task:1783941682027",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-24",
-      "state": "draft",
-      "target_date": "2026-07-15",
-      "title": "异步激活值卸载"
-    },
-    {
-      "color": null,
-      "compact_label": "Qwen3.5+",
-      "delivery_summary": {
-        "date_range": "2026-06-24 - 2026-08-13",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "Qwen3.5+GDN"
-      },
-      "id": "local-task:1783943627586",
-      "issue_id": null,
-      "issue_key": "N-68",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 81,
-      "owner": "张皓琰",
-      "parent_id": "local-task:1783941682027",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-24",
-      "state": "draft",
-      "target_date": "2026-08-13",
-      "title": "Qwen3.5+GDN"
-    },
-    {
-      "color": null,
-      "compact_label": "接入FLA",
-      "delivery_summary": {
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "接入FLA"
-      },
-      "id": "local-task:1783907108962",
-      "issue_id": null,
-      "issue_key": "N-55",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 82,
-      "owner": null,
-      "parent_id": "local-task:1783943627586",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-07-13",
-      "state": "draft",
-      "target_date": "2026-08-01",
-      "title": "接入FLA"
-    },
-    {
-      "color": null,
-      "compact_label": "Qwen3omn",
-      "delivery_summary": {
-        "date_range": "2026-06-24 - 2026-08-13",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "Qwen3omni"
-      },
-      "id": "local-task:1783943888784",
-      "issue_id": null,
-      "issue_key": "N-69",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 83,
-      "owner": "臧宇",
-      "parent_id": "local-task:1783941682027",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-24",
-      "state": "draft",
-      "target_date": "2026-08-13",
-      "title": "Qwen3omni"
-    },
-    {
-      "color": null,
-      "compact_label": "v^2+qwen",
-      "delivery_summary": {
-        "date_range": "2026-06-22 - 2026-08-13",
-        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "v^2+qwen3.5"
-      },
-      "id": "local-task:1783944076958",
-      "issue_id": null,
-      "issue_key": "N-70",
-      "labels": [
-        "local"
-      ],
-      "modules": [],
-      "order_index": 84,
-      "owner": "李翰文",
-      "parent_id": "local-task:1783417210241",
-      "progress": 0,
-      "project": null,
-      "source_refs": [],
-      "start_date": "2026-06-22",
-      "state": "draft",
-      "target_date": "2026-08-13",
-      "title": "v^2+qwen3.5"
     },
     {
       "color": "#CC5B45",
@@ -3918,7 +3535,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 85,
+      "order_index": 57,
       "owner": "王子豪",
       "parent_id": null,
       "progress": 0,
@@ -3944,7 +3561,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 86,
+      "order_index": 58,
       "owner": null,
       "parent_id": "local-task:1783417236282",
       "progress": 0,
@@ -3969,7 +3586,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 87,
+      "order_index": 59,
       "owner": null,
       "parent_id": "local-task:1783417236282",
       "progress": 0,
@@ -3995,7 +3612,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 88,
+      "order_index": 60,
       "owner": "王子豪",
       "parent_id": "local-task:1783417236282",
       "progress": 0,
@@ -4008,107 +3625,675 @@
     },
     {
       "color": null,
-      "compact_label": "新员工/实习生辅",
+      "compact_label": "交付实际问题",
       "delivery_summary": {
-        "date_range": "2026-06-18 - 2026-07-13",
         "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "新员工/实习生辅导"
+        "title": "交付实际问题"
       },
-      "id": "local-task:1783417260092",
+      "id": "local-task:1783413733185",
       "issue_id": null,
-      "issue_key": "N-22",
+      "issue_key": "N-18",
       "labels": [
         "local"
       ],
       "modules": [],
-      "order_index": 89,
-      "owner": "谭邵杰",
+      "order_index": 62,
+      "owner": null,
+      "parent_id": "534f110e-1401-4546-b84f-aeeec0008cb1",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-02",
+      "state": "draft",
+      "target_date": "2026-07-15",
+      "title": "交付实际问题"
+    },
+    {
+      "color": "#458A74",
+      "compact_label": "长跑偶现EP内显",
+      "delivery_summary": {
+        "date_range": "2026-07-08 - 2026-07-10",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "长跑偶现EP内显存暴增"
+      },
+      "id": "local-task:1783474260513",
+      "issue_id": null,
+      "issue_key": "N-19",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 63,
+      "owner": "侯玉峰",
+      "parent_id": "local-task:1783413733185",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-07-08",
+      "state": "draft",
+      "target_date": "2026-07-10",
+      "title": "长跑偶现EP内显存暴增"
+    },
+    {
+      "color": null,
+      "compact_label": "优化特性",
+      "delivery_summary": {
+        "date_range": "2026-06-02 - 2026-07-15",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "优化特性"
+      },
+      "id": "local-task:1783562941265",
+      "issue_id": null,
+      "issue_key": "N-29",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 66,
+      "owner": null,
+      "parent_id": "534f110e-1401-4546-b84f-aeeec0008cb1",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-02",
+      "state": "draft",
+      "target_date": "2026-07-15",
+      "title": "优化特性"
+    },
+    {
+      "color": "#848484",
+      "compact_label": "EP1",
+      "delivery_summary": {
+        "date_range": "2026-06-25 - 2026-07-10",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "EP1"
+      },
+      "id": "local-task:1783563294148",
+      "issue_id": null,
+      "issue_key": "N-30",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 68,
+      "owner": null,
+      "parent_id": "local-task:1783562941265",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-25",
+      "state": "draft",
+      "target_date": "2026-07-10",
+      "title": "EP1"
+    },
+    {
+      "color": null,
+      "compact_label": "数据加载优化",
+      "delivery_summary": {
+        "date_range": "2026-06-24 - 2026-07-15",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "数据加载优化"
+      },
+      "id": "local-task:1783589802919",
+      "issue_id": null,
+      "issue_key": "N-43",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 69,
+      "owner": "刘强伟",
+      "parent_id": "local-task:1783562941265",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-24",
+      "state": "draft",
+      "target_date": "2026-07-15",
+      "title": "数据加载优化"
+    },
+    {
+      "color": null,
+      "compact_label": "RL",
+      "delivery_summary": {
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "RL"
+      },
+      "id": "local-task:1783566550049",
+      "issue_id": null,
+      "issue_key": "N-32",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 71,
+      "owner": null,
+      "parent_id": "b24ba519-fce5-4448-800c-364aea71812d",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-23",
+      "state": "draft",
+      "target_date": "2026-07-15",
+      "title": "RL"
+    },
+    {
+      "color": "#848484",
+      "compact_label": "基于生成的图文交",
+      "delivery_summary": {
+        "date_range": "2026-06-26 - 2026-07-14",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "基于生成的图文交错推理"
+      },
+      "id": "local-task:1783589699034",
+      "issue_id": null,
+      "issue_key": "N-42",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 73,
+      "owner": null,
+      "parent_id": "0dce8040-4d8b-4583-b9f4-ff6c46905733",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-26",
+      "state": "draft",
+      "target_date": "2026-07-14",
+      "title": "基于生成的图文交错推理"
+    },
+    {
+      "color": "#848484",
+      "compact_label": "音视频同出生成O",
+      "delivery_summary": {
+        "date_range": "2026-06-26 - 2026-07-15",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "音视频同出生成OmniNFT"
+      },
+      "id": "local-task:1783567131217",
+      "issue_id": null,
+      "issue_key": "N-35",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 75,
+      "owner": null,
+      "parent_id": "f1406290-c5c6-40e2-ab63-935965a29b14",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-26",
+      "state": "draft",
+      "target_date": "2026-07-15",
+      "title": "音视频同出生成OmniNFT"
+    },
+    {
+      "color": null,
+      "compact_label": "SFT",
+      "delivery_summary": {
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "SFT"
+      },
+      "id": "local-task:1783566558777",
+      "issue_id": null,
+      "issue_key": "N-33",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 76,
+      "owner": null,
+      "parent_id": "b24ba519-fce5-4448-800c-364aea71812d",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-23",
+      "state": "draft",
+      "target_date": "2026-07-15",
+      "title": "SFT"
+    },
+    {
+      "color": null,
+      "compact_label": "猛犸3Omni(",
+      "delivery_summary": {
+        "date_range": "2026-06-25 - 2026-07-15",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "猛犸3Omni(音频理解？)"
+      },
+      "id": "local-task:1783566628736",
+      "issue_id": null,
+      "issue_key": "N-34",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 77,
+      "owner": "刘明阳",
+      "parent_id": "local-task:1783566558777",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-25",
+      "state": "draft",
+      "target_date": "2026-07-15",
+      "title": "猛犸3Omni(音频理解？)"
+    },
+    {
+      "color": "#57AF37",
+      "compact_label": "verl/veo",
+      "delivery_summary": {
+        "date_range": "2026-07-08 - 2026-07-11",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "verl/veomni opd qwen35 35Bto2B 当前SMA26%"
+      },
+      "id": "local-task:1783494417561",
+      "issue_id": null,
+      "issue_key": "N-26",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 79,
+      "owner": null,
+      "parent_id": "63bb653a-3989-47b4-9061-0608b86640c5",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-07-08",
+      "state": "draft",
+      "target_date": "2026-07-11",
+      "title": "verl/veomni opd qwen35 35Bto2B 当前SMA26%"
+    },
+    {
+      "color": "#008B8B",
+      "compact_label": "Qwen3.5 ",
+      "delivery_summary": {
+        "date_range": "2026-07-06 - 2026-07-13",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "Qwen3.5 122B/35B SFT VeOmni"
+      },
+      "id": "local-task:1783667501733",
+      "issue_id": null,
+      "issue_key": "N-49",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 80,
+      "owner": null,
+      "parent_id": "63bb653a-3989-47b4-9061-0608b86640c5",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-07-06",
+      "state": "draft",
+      "target_date": "2026-07-13",
+      "title": "Qwen3.5 122B/35B SFT VeOmni"
+    },
+    {
+      "color": null,
+      "compact_label": "VeOmni专项",
+      "delivery_summary": {
+        "date_range": "2026-06-18 - 2026-08-13",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "VeOmni专项"
+      },
+      "id": "local-task:1783417210241",
+      "issue_id": null,
+      "issue_key": "N-20",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 82,
+      "owner": null,
       "parent_id": null,
       "progress": 0,
       "project": null,
       "source_refs": [],
       "start_date": "2026-06-18",
       "state": "draft",
-      "target_date": "2026-07-13",
-      "title": "新员工/实习生辅导"
+      "target_date": "2026-08-13",
+      "title": "VeOmni专项"
     },
     {
       "color": null,
-      "compact_label": "李翰文",
+      "compact_label": "易用与看护",
       "delivery_summary": {
-        "date_range": "2026-06-19 - 2026-07-23",
+        "date_range": "2026-06-22 - 2026-08-13",
         "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "李翰文"
+        "title": "易用与看护"
       },
-      "id": "local-task:1783425949862",
+      "id": "local-task:1783941808961",
       "issue_id": null,
-      "issue_key": "N-23",
+      "issue_key": "N-63",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 83,
+      "owner": "李翰文",
+      "parent_id": "local-task:1783417210241",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-22",
+      "state": "draft",
+      "target_date": "2026-08-13",
+      "title": "易用与看护"
+    },
+    {
+      "color": null,
+      "compact_label": "新模型开发",
+      "delivery_summary": {
+        "date_range": "2026-06-22 - 2026-08-13",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "新模型开发"
+      },
+      "id": "local-task:1783914681262",
+      "issue_id": null,
+      "issue_key": "N-57",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 84,
+      "owner": null,
+      "parent_id": "local-task:1783417210241",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-22",
+      "state": "draft",
+      "target_date": "2026-08-13",
+      "title": "新模型开发"
+    },
+    {
+      "color": null,
+      "compact_label": "Bagel",
+      "delivery_summary": {
+        "date_range": "2026-06-24 - 2026-08-13",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "Bagel"
+      },
+      "id": "local-task:1783914722367",
+      "issue_id": null,
+      "issue_key": "N-58",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 85,
+      "owner": "宋鑫雅/闻江",
+      "parent_id": "local-task:1783914681262",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-24",
+      "state": "draft",
+      "target_date": "2026-08-13",
+      "title": "Bagel"
+    },
+    {
+      "color": null,
+      "compact_label": "DeepSeek",
+      "delivery_summary": {
+        "date_range": "2026-06-24 - 2026-08-13",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "DeepSeek V4"
+      },
+      "id": "local-task:1783914871632",
+      "issue_id": null,
+      "issue_key": "N-59",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 86,
+      "owner": "叶平/蓓蓉",
+      "parent_id": "local-task:1783914681262",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-24",
+      "state": "draft",
+      "target_date": "2026-08-13",
+      "title": "DeepSeek V4"
+    },
+    {
+      "color": null,
+      "compact_label": "LTX-2-3",
+      "delivery_summary": {
+        "date_range": "2026-06-24 - 2026-08-13",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "LTX-2-3"
+      },
+      "id": "local-task:1783941968403",
+      "issue_id": null,
+      "issue_key": "N-64",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 87,
+      "owner": "马家园/闻江",
+      "parent_id": "local-task:1783914681262",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-24",
+      "state": "draft",
+      "target_date": "2026-08-13",
+      "title": "LTX-2-3"
+    },
+    {
+      "color": null,
+      "compact_label": "wan2.2",
+      "delivery_summary": {
+        "date_range": "2026-06-24 - 2026-08-13",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "wan2.2"
+      },
+      "id": "local-task:1783942638298",
+      "issue_id": null,
+      "issue_key": "N-65",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 88,
+      "owner": "段仲钰",
+      "parent_id": "local-task:1783914681262",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-24",
+      "state": "draft",
+      "target_date": "2026-08-13",
+      "title": "wan2.2"
+    },
+    {
+      "color": null,
+      "compact_label": "GLM-5",
+      "delivery_summary": {
+        "date_range": "2026-06-24 - 2026-08-13",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "GLM-5"
+      },
+      "id": "local-task:1783943337221",
+      "issue_id": null,
+      "issue_key": "N-66",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 89,
+      "owner": "刘浩",
+      "parent_id": "local-task:1783914681262",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-24",
+      "state": "draft",
+      "target_date": "2026-08-13",
+      "title": "GLM-5"
+    },
+    {
+      "color": null,
+      "compact_label": "优化+特性",
+      "delivery_summary": {
+        "date_range": "2026-06-22 - 2026-08-13",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "优化+特性"
+      },
+      "id": "local-task:1783941682027",
+      "issue_id": null,
+      "issue_key": "N-62",
       "labels": [
         "local"
       ],
       "modules": [],
       "order_index": 90,
       "owner": null,
-      "parent_id": "local-task:1783417260092",
+      "parent_id": "local-task:1783417210241",
       "progress": 0,
       "project": null,
       "source_refs": [],
-      "start_date": "2026-06-19",
+      "start_date": "2026-06-22",
       "state": "draft",
-      "target_date": "2026-07-23",
-      "title": "李翰文"
+      "target_date": "2026-08-13",
+      "title": "优化+特性"
     },
     {
       "color": null,
-      "compact_label": "张皓琰",
+      "compact_label": "异步激活值卸载",
       "delivery_summary": {
-        "date_range": "2026-06-19 - 2026-07-22",
+        "date_range": "2026-06-24 - 2026-07-15",
         "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "张皓琰"
+        "title": "异步激活值卸载"
       },
-      "id": "local-task:1783425999202",
+      "id": "local-task:1783943453901",
       "issue_id": null,
-      "issue_key": "N-24",
+      "issue_key": "N-67",
       "labels": [
         "local"
       ],
       "modules": [],
       "order_index": 91,
-      "owner": null,
-      "parent_id": "local-task:1783417260092",
+      "owner": "张盛",
+      "parent_id": "local-task:1783941682027",
       "progress": 0,
       "project": null,
       "source_refs": [],
-      "start_date": "2026-06-19",
+      "start_date": "2026-06-24",
       "state": "draft",
-      "target_date": "2026-07-22",
-      "title": "张皓琰"
+      "target_date": "2026-07-15",
+      "title": "异步激活值卸载"
     },
     {
-      "color": "#CC5B45",
-      "compact_label": "卢昱辰",
+      "color": null,
+      "compact_label": "Qwen3.5+",
       "delivery_summary": {
-        "date_range": "2026-06-19 - 2026-07-13",
+        "date_range": "2026-06-24 - 2026-08-13",
         "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-        "title": "卢昱辰"
+        "title": "Qwen3.5+GDN"
       },
-      "id": "local-task:1783426060796",
+      "id": "local-task:1783943627586",
       "issue_id": null,
-      "issue_key": "N-25",
+      "issue_key": "N-68",
       "labels": [
         "local"
       ],
       "modules": [],
       "order_index": 92,
-      "owner": null,
-      "parent_id": "local-task:1783417260092",
+      "owner": "张皓琰",
+      "parent_id": "local-task:1783941682027",
       "progress": 0,
       "project": null,
       "source_refs": [],
-      "start_date": "2026-06-19",
+      "start_date": "2026-06-24",
       "state": "draft",
-      "target_date": "2026-07-13",
-      "title": "卢昱辰"
+      "target_date": "2026-08-13",
+      "title": "Qwen3.5+GDN"
+    },
+    {
+      "color": null,
+      "compact_label": "接入FLA",
+      "delivery_summary": {
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "接入FLA"
+      },
+      "id": "local-task:1783907108962",
+      "issue_id": null,
+      "issue_key": "N-55",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 93,
+      "owner": null,
+      "parent_id": "local-task:1783943627586",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-07-13",
+      "state": "draft",
+      "target_date": "2026-08-01",
+      "title": "接入FLA"
+    },
+    {
+      "color": null,
+      "compact_label": "Qwen3omn",
+      "delivery_summary": {
+        "date_range": "2026-06-24 - 2026-08-13",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "Qwen3omni"
+      },
+      "id": "local-task:1783943888784",
+      "issue_id": null,
+      "issue_key": "N-69",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 94,
+      "owner": "臧宇",
+      "parent_id": "local-task:1783941682027",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-24",
+      "state": "draft",
+      "target_date": "2026-08-13",
+      "title": "Qwen3omni"
+    },
+    {
+      "color": null,
+      "compact_label": "v^2+qwen",
+      "delivery_summary": {
+        "date_range": "2026-06-22 - 2026-08-13",
+        "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+        "title": "v^2+qwen3.5"
+      },
+      "id": "local-task:1783944076958",
+      "issue_id": null,
+      "issue_key": "N-70",
+      "labels": [
+        "local"
+      ],
+      "modules": [],
+      "order_index": 95,
+      "owner": "李翰文",
+      "parent_id": "local-task:1783417210241",
+      "progress": 0,
+      "project": null,
+      "source_refs": [],
+      "start_date": "2026-06-22",
+      "state": "draft",
+      "target_date": "2026-08-13",
+      "title": "v^2+qwen3.5"
     },
     {
       "color": null,
@@ -4125,7 +4310,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 93,
+      "order_index": 96,
       "owner": null,
       "parent_id": null,
       "progress": 0,
@@ -4151,7 +4336,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 94,
+      "order_index": 97,
       "owner": null,
       "parent_id": null,
       "progress": 0,
@@ -4176,7 +4361,7 @@
         "local"
       ],
       "modules": [],
-      "order_index": 95,
+      "order_index": 98,
       "owner": null,
       "parent_id": "local-task:1783648970871",
       "progress": 0,
@@ -6085,6 +6270,86 @@
         "summary": "A5等实际优化场景多问一嘴来验证: 公式建模",
         "task_id": "local-task:1783475477048",
         "type": "todo"
+      },
+      {
+        "compact_label": "推理对比标准不同",
+        "date": "2026-07-15",
+        "id": "local:local-task:1783586259471:todo:2026-07-15:1784099963700",
+        "source_refs": [
+          {
+            "event_time": "2026-07-15T07:19:23.701Z",
+            "event_type": "local_edit",
+            "source": {
+              "id": "local-task:1783586259471",
+              "table": "localStorage"
+            }
+          },
+          {
+            "event_time": "2026-07-15T07:19:53.338Z",
+            "event_type": "local_event_edit",
+            "source": {
+              "id": "local:local-task:1783586259471:todo:2026-07-15:1784099963700",
+              "table": "localStorage"
+            }
+          }
+        ],
+        "summary": "推理对比标准不同: A5 Qwen3.5 高性能",
+        "task_id": "local-task:1783586259471",
+        "type": "in_progress"
+      },
+      {
+        "compact_label": "下需求",
+        "date": "2026-07-15",
+        "id": "local:06890a67-07fc-4317-a641-6cd17ea21dd0:in_progress:2026-07-15:1784099983219",
+        "source_refs": [
+          {
+            "event_time": "2026-07-15T07:19:43.219Z",
+            "event_type": "local_edit",
+            "source": {
+              "id": "06890a67-07fc-4317-a641-6cd17ea21dd0",
+              "table": "localStorage"
+            }
+          }
+        ],
+        "summary": "下需求: 数据集评测需求跟踪",
+        "task_id": "06890a67-07fc-4317-a641-6cd17ea21dd0",
+        "type": "in_progress"
+      },
+      {
+        "compact_label": "verl-omn",
+        "date": "2026-07-15",
+        "id": "local:local-task:1784106280383:in_progress:2026-07-15:1784106303174",
+        "source_refs": [
+          {
+            "event_time": "2026-07-15T09:05:03.174Z",
+            "event_type": "local_edit",
+            "source": {
+              "id": "local-task:1784106280383",
+              "table": "localStorage"
+            }
+          }
+        ],
+        "summary": "verl-omni任务: 谢若槐",
+        "task_id": "local-task:1784106280383",
+        "type": "in_progress"
+      },
+      {
+        "compact_label": "需求串讲",
+        "date": "2026-07-22",
+        "id": "local:20cff7b4-f999-4075-a50b-e0217094204d:todo:2026-07-22:1784106335247",
+        "source_refs": [
+          {
+            "event_time": "2026-07-15T09:05:35.247Z",
+            "event_type": "local_edit",
+            "source": {
+              "id": "20cff7b4-f999-4075-a50b-e0217094204d",
+              "table": "localStorage"
+            }
+          }
+        ],
+        "summary": "需求串讲: 26Q3 季度需求跟踪",
+        "task_id": "20cff7b4-f999-4075-a50b-e0217094204d",
+        "type": "todo"
       }
     ],
     "tasks": [
@@ -6524,7 +6789,7 @@
         "color": "#E42320",
         "compact_label": "26Q3 季度需",
         "delivery_summary": {
-          "date_range": "2026-06-23 - 2026-07-14",
+          "date_range": "2026-06-23 - 2026-07-22",
           "issue_key": "1-9",
           "next_action": "按最新 Plane 状态继续跟进",
           "owner": null,
@@ -6550,7 +6815,7 @@
         "progress": 50,
         "start_date": "2026-06-23",
         "state": "In Progress",
-        "target_date": "2026-07-14",
+        "target_date": "2026-07-22",
         "title": "26Q3 季度需求跟踪"
       },
       {
@@ -6687,10 +6952,10 @@
         "title": "vllm（Omni）-ascend 需求跟踪"
       },
       {
-        "color": "#E42320",
+        "color": "#CC5B45",
         "compact_label": "Profilin",
         "delivery_summary": {
-          "date_range": "2026-07-08 - 2026-07-14",
+          "date_range": "2026-07-08 - 2026-07-15",
           "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
           "title": "Profiling诉求"
         },
@@ -6707,8 +6972,32 @@
         "progress": 0,
         "start_date": "2026-07-08",
         "state": "draft",
-        "target_date": "2026-07-14",
+        "target_date": "2026-07-15",
         "title": "Profiling诉求"
+      },
+      {
+        "color": "#E42320",
+        "compact_label": "agent 提效",
+        "delivery_summary": {
+          "date_range": "2026-07-08 - 2026-07-22",
+          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+          "title": "agent 提效"
+        },
+        "id": "local-task:1784106749774",
+        "issue_id": null,
+        "issue_key": "N-85",
+        "labels": [
+          "local"
+        ],
+        "modules": [],
+        "order_index": 24,
+        "owner": null,
+        "parent_id": "20cff7b4-f999-4075-a50b-e0217094204d",
+        "progress": 0,
+        "start_date": "2026-07-08",
+        "state": "draft",
+        "target_date": "2026-07-22",
+        "title": "agent 提效"
       },
       {
         "color": null,
@@ -6725,7 +7014,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 24,
+        "order_index": 25,
         "owner": null,
         "parent_id": null,
         "progress": 0,
@@ -6749,7 +7038,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 25,
+        "order_index": 26,
         "owner": "周洋",
         "parent_id": "local-task:1783581806975",
         "progress": 0,
@@ -6773,7 +7062,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 26,
+        "order_index": 27,
         "owner": "张敏杰/陈润平",
         "parent_id": "local-task:1783581806975",
         "progress": 0,
@@ -6797,7 +7086,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 27,
+        "order_index": 28,
         "owner": "景思语",
         "parent_id": "local-task:1783581806975",
         "progress": 0,
@@ -6821,7 +7110,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 28,
+        "order_index": 29,
         "owner": "白江",
         "parent_id": "local-task:1783581806975",
         "progress": 0,
@@ -6845,7 +7134,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 29,
+        "order_index": 30,
         "owner": null,
         "parent_id": "local-task:1783581806975",
         "progress": 0,
@@ -6869,7 +7158,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 30,
+        "order_index": 31,
         "owner": "邓述民",
         "parent_id": "local-task:1783581806975",
         "progress": 0,
@@ -6877,6 +7166,150 @@
         "state": "draft",
         "target_date": "2026-07-15",
         "title": "ray多机慢启动问题"
+      },
+      {
+        "color": null,
+        "compact_label": "新员工/实习生辅",
+        "delivery_summary": {
+          "date_range": "2026-06-18 - 2026-07-13",
+          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+          "title": "新员工/实习生辅导"
+        },
+        "id": "local-task:1783417260092",
+        "issue_id": null,
+        "issue_key": "N-22",
+        "labels": [
+          "local"
+        ],
+        "modules": [],
+        "order_index": 32,
+        "owner": "谭邵杰",
+        "parent_id": null,
+        "progress": 0,
+        "start_date": "2026-06-18",
+        "state": "draft",
+        "target_date": "2026-07-13",
+        "title": "新员工/实习生辅导"
+      },
+      {
+        "color": null,
+        "compact_label": "李翰文",
+        "delivery_summary": {
+          "date_range": "2026-06-19 - 2026-07-23",
+          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+          "title": "李翰文"
+        },
+        "id": "local-task:1783425949862",
+        "issue_id": null,
+        "issue_key": "N-23",
+        "labels": [
+          "local"
+        ],
+        "modules": [],
+        "order_index": 33,
+        "owner": null,
+        "parent_id": "local-task:1783417260092",
+        "progress": 0,
+        "start_date": "2026-06-19",
+        "state": "draft",
+        "target_date": "2026-07-23",
+        "title": "李翰文"
+      },
+      {
+        "color": null,
+        "compact_label": "张皓琰",
+        "delivery_summary": {
+          "date_range": "2026-06-19 - 2026-07-22",
+          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+          "title": "张皓琰"
+        },
+        "id": "local-task:1783425999202",
+        "issue_id": null,
+        "issue_key": "N-24",
+        "labels": [
+          "local"
+        ],
+        "modules": [],
+        "order_index": 34,
+        "owner": null,
+        "parent_id": "local-task:1783417260092",
+        "progress": 0,
+        "start_date": "2026-06-19",
+        "state": "draft",
+        "target_date": "2026-07-22",
+        "title": "张皓琰"
+      },
+      {
+        "color": "#CC5B45",
+        "compact_label": "卢昱辰",
+        "delivery_summary": {
+          "date_range": "2026-06-19 - 2026-07-13",
+          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+          "title": "卢昱辰"
+        },
+        "id": "local-task:1783426060796",
+        "issue_id": null,
+        "issue_key": "N-25",
+        "labels": [
+          "local"
+        ],
+        "modules": [],
+        "order_index": 35,
+        "owner": null,
+        "parent_id": "local-task:1783417260092",
+        "progress": 0,
+        "start_date": "2026-06-19",
+        "state": "draft",
+        "target_date": "2026-07-13",
+        "title": "卢昱辰"
+      },
+      {
+        "color": null,
+        "compact_label": "谢若槐",
+        "delivery_summary": {
+          "date_range": "2026-07-15 - 2026-07-16",
+          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+          "title": "谢若槐"
+        },
+        "id": "local-task:1784106280383",
+        "issue_id": null,
+        "issue_key": "N-83",
+        "labels": [
+          "local"
+        ],
+        "modules": [],
+        "order_index": 36,
+        "owner": null,
+        "parent_id": "local-task:1783417260092",
+        "progress": 0,
+        "start_date": "2026-07-15",
+        "state": "draft",
+        "target_date": "2026-07-16",
+        "title": "谢若槐"
+      },
+      {
+        "color": null,
+        "compact_label": "杨雨涵",
+        "delivery_summary": {
+          "date_range": "2026-07-15 - 2026-07-16",
+          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+          "title": "杨雨涵"
+        },
+        "id": "local-task:1784106629196",
+        "issue_id": null,
+        "issue_key": "N-84",
+        "labels": [
+          "local"
+        ],
+        "modules": [],
+        "order_index": 37,
+        "owner": null,
+        "parent_id": "local-task:1783417260092",
+        "progress": 0,
+        "start_date": "2026-07-15",
+        "state": "draft",
+        "target_date": "2026-07-16",
+        "title": "杨雨涵"
       },
       {
         "color": null,
@@ -6893,7 +7326,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 31,
+        "order_index": 38,
         "owner": "谭邵杰",
         "parent_id": null,
         "progress": 0,
@@ -6917,7 +7350,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 32,
+        "order_index": 39,
         "owner": null,
         "parent_id": "local-task:1783473976604",
         "progress": 0,
@@ -6941,7 +7374,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 33,
+        "order_index": 40,
         "owner": null,
         "parent_id": "local-task:1783906772460",
         "progress": 0,
@@ -6965,7 +7398,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 34,
+        "order_index": 41,
         "owner": null,
         "parent_id": "local-task:1783906772460",
         "progress": 0,
@@ -6989,7 +7422,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 35,
+        "order_index": 42,
         "owner": null,
         "parent_id": "local-task:1783473976604",
         "progress": 0,
@@ -7013,7 +7446,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 36,
+        "order_index": 43,
         "owner": null,
         "parent_id": "local-task:1783474822539",
         "progress": 0,
@@ -7037,7 +7470,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 37,
+        "order_index": 44,
         "owner": null,
         "parent_id": "local-task:1783474822539",
         "progress": 0,
@@ -7061,7 +7494,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 38,
+        "order_index": 45,
         "owner": null,
         "parent_id": "local-task:1783474822539",
         "progress": 0,
@@ -7084,7 +7517,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 39,
+        "order_index": 46,
         "owner": "王开源",
         "parent_id": "local-task:1783475508490",
         "progress": 0,
@@ -7108,7 +7541,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 40,
+        "order_index": 47,
         "owner": "常翔宇/许亦铭",
         "parent_id": "local-task:1783475508490",
         "progress": 0,
@@ -7132,7 +7565,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 41,
+        "order_index": 48,
         "owner": null,
         "parent_id": "local-task:1783474822539",
         "progress": 0,
@@ -7156,7 +7589,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 42,
+        "order_index": 49,
         "owner": null,
         "parent_id": "local-task:1783473976604",
         "progress": 0,
@@ -7180,7 +7613,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 43,
+        "order_index": 50,
         "owner": null,
         "parent_id": "local-task:1783473976604",
         "progress": 0,
@@ -7204,7 +7637,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 44,
+        "order_index": 51,
         "owner": null,
         "parent_id": "local-task:1783475552796",
         "progress": 0,
@@ -7228,7 +7661,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 45,
+        "order_index": 52,
         "owner": null,
         "parent_id": "local-task:1783475552796",
         "progress": 0,
@@ -7252,7 +7685,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 46,
+        "order_index": 53,
         "owner": null,
         "parent_id": "local-task:1783475552796",
         "progress": 0,
@@ -7276,7 +7709,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 47,
+        "order_index": 54,
         "owner": null,
         "parent_id": "local-task:1783475552796",
         "progress": 0,
@@ -7300,7 +7733,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 48,
+        "order_index": 55,
         "owner": null,
         "parent_id": "local-task:1783475552796",
         "progress": 0,
@@ -7324,7 +7757,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 49,
+        "order_index": 56,
         "owner": null,
         "parent_id": "local-task:1783475552796",
         "progress": 0,
@@ -7332,6 +7765,101 @@
         "state": "draft",
         "target_date": "2026-08-14",
         "title": "EP/SP特性"
+      },
+      {
+        "color": "#CC5B45",
+        "compact_label": "VeRL-Omn",
+        "delivery_summary": {
+          "date_range": "2026-06-18 - 2026-07-13",
+          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+          "title": "VeRL-Omni专项"
+        },
+        "id": "local-task:1783417236282",
+        "issue_id": null,
+        "issue_key": "N-21",
+        "labels": [
+          "local"
+        ],
+        "modules": [],
+        "order_index": 57,
+        "owner": "王子豪",
+        "parent_id": null,
+        "progress": 0,
+        "start_date": "2026-06-18",
+        "state": "draft",
+        "target_date": "2026-07-13",
+        "title": "VeRL-Omni专项"
+      },
+      {
+        "color": null,
+        "compact_label": "vllm-Omn",
+        "delivery_summary": {
+          "date_range": "2026-06-19 - 2026-07-13",
+          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+          "title": "vllm-Omni"
+        },
+        "id": "local-task:1783581693377",
+        "issue_id": null,
+        "issue_key": "N-36",
+        "labels": [
+          "local"
+        ],
+        "modules": [],
+        "order_index": 58,
+        "owner": null,
+        "parent_id": "local-task:1783417236282",
+        "progress": 0,
+        "start_date": "2026-06-19",
+        "state": "draft",
+        "target_date": "2026-07-13",
+        "title": "vllm-Omni"
+      },
+      {
+        "color": "#41B9C1",
+        "compact_label": "深圳河套UniM",
+        "delivery_summary": {
+          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+          "title": "深圳河套UniMoe"
+        },
+        "id": "local-task:1783907029025",
+        "issue_id": null,
+        "issue_key": "N-54",
+        "labels": [
+          "local"
+        ],
+        "modules": [],
+        "order_index": 59,
+        "owner": null,
+        "parent_id": "local-task:1783417236282",
+        "progress": 0,
+        "start_date": "2026-07-13",
+        "state": "draft",
+        "target_date": "2026-08-10",
+        "title": "深圳河套UniMoe"
+      },
+      {
+        "color": "#018B38",
+        "compact_label": "相对性能摸底",
+        "delivery_summary": {
+          "date_range": "2026-06-19 - 2026-07-14",
+          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
+          "title": "相对性能摸底"
+        },
+        "id": "local-task:1783923537750",
+        "issue_id": null,
+        "issue_key": "N-60",
+        "labels": [
+          "local"
+        ],
+        "modules": [],
+        "order_index": 60,
+        "owner": "王子豪",
+        "parent_id": "local-task:1783417236282",
+        "progress": 0,
+        "start_date": "2026-06-19",
+        "state": "draft",
+        "target_date": "2026-07-14",
+        "title": "相对性能摸底"
       },
       {
         "color": null,
@@ -7355,7 +7883,7 @@
         "modules": [
           "SFT 交付"
         ],
-        "order_index": 50,
+        "order_index": 61,
         "owner": "于家硕",
         "parent_id": null,
         "progress": 50,
@@ -7378,7 +7906,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 51,
+        "order_index": 62,
         "owner": null,
         "parent_id": "534f110e-1401-4546-b84f-aeeec0008cb1",
         "progress": 0,
@@ -7402,7 +7930,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 52,
+        "order_index": 63,
         "owner": "侯玉峰",
         "parent_id": "local-task:1783413733185",
         "progress": 0,
@@ -7435,7 +7963,7 @@
         "modules": [
           "SFT 交付"
         ],
-        "order_index": 53,
+        "order_index": 64,
         "owner": "于家硕",
         "parent_id": "local-task:1783413733185",
         "progress": 25,
@@ -7468,7 +7996,7 @@
         "modules": [
           "SFT 交付"
         ],
-        "order_index": 54,
+        "order_index": 65,
         "owner": "于家硕",
         "parent_id": "local-task:1783413733185",
         "progress": 25,
@@ -7492,7 +8020,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 55,
+        "order_index": 66,
         "owner": null,
         "parent_id": "534f110e-1401-4546-b84f-aeeec0008cb1",
         "progress": 0,
@@ -7524,7 +8052,7 @@
           "SFT 交付",
           "chunkmoe"
         ],
-        "order_index": 56,
+        "order_index": 67,
         "owner": "侯玉峰",
         "parent_id": "local-task:1783562941265",
         "progress": 50,
@@ -7548,7 +8076,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 57,
+        "order_index": 68,
         "owner": null,
         "parent_id": "local-task:1783562941265",
         "progress": 0,
@@ -7572,7 +8100,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 58,
+        "order_index": 69,
         "owner": "刘强伟",
         "parent_id": "local-task:1783562941265",
         "progress": 0,
@@ -7604,7 +8132,7 @@
         "modules": [
           "字节猛犸系列模型训练专项"
         ],
-        "order_index": 59,
+        "order_index": 70,
         "owner": null,
         "parent_id": null,
         "progress": 50,
@@ -7627,7 +8155,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 60,
+        "order_index": 71,
         "owner": null,
         "parent_id": "b24ba519-fce5-4448-800c-364aea71812d",
         "progress": 0,
@@ -7659,7 +8187,7 @@
         "modules": [
           "字节猛犸系列模型训练专项"
         ],
-        "order_index": 61,
+        "order_index": 72,
         "owner": "吴媛媛/潘俊文",
         "parent_id": "local-task:1783566550049",
         "progress": 50,
@@ -7683,7 +8211,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 62,
+        "order_index": 73,
         "owner": null,
         "parent_id": "0dce8040-4d8b-4583-b9f4-ff6c46905733",
         "progress": 0,
@@ -7715,7 +8243,7 @@
         "modules": [
           "字节猛犸系列模型训练专项"
         ],
-        "order_index": 63,
+        "order_index": 74,
         "owner": "尤澍/沈涛",
         "parent_id": "local-task:1783566550049",
         "progress": 50,
@@ -7739,7 +8267,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 64,
+        "order_index": 75,
         "owner": null,
         "parent_id": "f1406290-c5c6-40e2-ab63-935965a29b14",
         "progress": 0,
@@ -7762,7 +8290,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 65,
+        "order_index": 76,
         "owner": null,
         "parent_id": "b24ba519-fce5-4448-800c-364aea71812d",
         "progress": 0,
@@ -7786,7 +8314,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 66,
+        "order_index": 77,
         "owner": "刘明阳",
         "parent_id": "local-task:1783566558777",
         "progress": 0,
@@ -7820,7 +8348,7 @@
           "字节 veomni 专项",
           "Q3 需求"
         ],
-        "order_index": 67,
+        "order_index": 78,
         "owner": "张盛",
         "parent_id": null,
         "progress": 50,
@@ -7844,7 +8372,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 68,
+        "order_index": 79,
         "owner": null,
         "parent_id": "63bb653a-3989-47b4-9061-0608b86640c5",
         "progress": 0,
@@ -7868,7 +8396,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 69,
+        "order_index": 80,
         "owner": null,
         "parent_id": "63bb653a-3989-47b4-9061-0608b86640c5",
         "progress": 0,
@@ -7900,7 +8428,7 @@
         "modules": [
           "字节 veomni 专项"
         ],
-        "order_index": 70,
+        "order_index": 81,
         "owner": null,
         "parent_id": null,
         "progress": 100,
@@ -7924,7 +8452,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 71,
+        "order_index": 82,
         "owner": null,
         "parent_id": null,
         "progress": 0,
@@ -7948,7 +8476,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 72,
+        "order_index": 83,
         "owner": "李翰文",
         "parent_id": "local-task:1783417210241",
         "progress": 0,
@@ -7972,7 +8500,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 73,
+        "order_index": 84,
         "owner": null,
         "parent_id": "local-task:1783417210241",
         "progress": 0,
@@ -7996,7 +8524,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 74,
+        "order_index": 85,
         "owner": "宋鑫雅/闻江",
         "parent_id": "local-task:1783914681262",
         "progress": 0,
@@ -8020,7 +8548,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 75,
+        "order_index": 86,
         "owner": "叶平/蓓蓉",
         "parent_id": "local-task:1783914681262",
         "progress": 0,
@@ -8044,7 +8572,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 76,
+        "order_index": 87,
         "owner": "马家园/闻江",
         "parent_id": "local-task:1783914681262",
         "progress": 0,
@@ -8068,7 +8596,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 77,
+        "order_index": 88,
         "owner": "段仲钰",
         "parent_id": "local-task:1783914681262",
         "progress": 0,
@@ -8092,7 +8620,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 78,
+        "order_index": 89,
         "owner": "刘浩",
         "parent_id": "local-task:1783914681262",
         "progress": 0,
@@ -8116,7 +8644,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 79,
+        "order_index": 90,
         "owner": null,
         "parent_id": "local-task:1783417210241",
         "progress": 0,
@@ -8140,7 +8668,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 80,
+        "order_index": 91,
         "owner": "张盛",
         "parent_id": "local-task:1783941682027",
         "progress": 0,
@@ -8164,7 +8692,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 81,
+        "order_index": 92,
         "owner": "张皓琰",
         "parent_id": "local-task:1783941682027",
         "progress": 0,
@@ -8187,7 +8715,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 82,
+        "order_index": 93,
         "owner": null,
         "parent_id": "local-task:1783943627586",
         "progress": 0,
@@ -8211,7 +8739,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 83,
+        "order_index": 94,
         "owner": "臧宇",
         "parent_id": "local-task:1783941682027",
         "progress": 0,
@@ -8235,7 +8763,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 84,
+        "order_index": 95,
         "owner": "李翰文",
         "parent_id": "local-task:1783417210241",
         "progress": 0,
@@ -8243,197 +8771,6 @@
         "state": "draft",
         "target_date": "2026-08-13",
         "title": "v^2+qwen3.5"
-      },
-      {
-        "color": "#CC5B45",
-        "compact_label": "VeRL-Omn",
-        "delivery_summary": {
-          "date_range": "2026-06-18 - 2026-07-13",
-          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-          "title": "VeRL-Omni专项"
-        },
-        "id": "local-task:1783417236282",
-        "issue_id": null,
-        "issue_key": "N-21",
-        "labels": [
-          "local"
-        ],
-        "modules": [],
-        "order_index": 85,
-        "owner": "王子豪",
-        "parent_id": null,
-        "progress": 0,
-        "start_date": "2026-06-18",
-        "state": "draft",
-        "target_date": "2026-07-13",
-        "title": "VeRL-Omni专项"
-      },
-      {
-        "color": null,
-        "compact_label": "vllm-Omn",
-        "delivery_summary": {
-          "date_range": "2026-06-19 - 2026-07-13",
-          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-          "title": "vllm-Omni"
-        },
-        "id": "local-task:1783581693377",
-        "issue_id": null,
-        "issue_key": "N-36",
-        "labels": [
-          "local"
-        ],
-        "modules": [],
-        "order_index": 86,
-        "owner": null,
-        "parent_id": "local-task:1783417236282",
-        "progress": 0,
-        "start_date": "2026-06-19",
-        "state": "draft",
-        "target_date": "2026-07-13",
-        "title": "vllm-Omni"
-      },
-      {
-        "color": "#41B9C1",
-        "compact_label": "深圳河套UniM",
-        "delivery_summary": {
-          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-          "title": "深圳河套UniMoe"
-        },
-        "id": "local-task:1783907029025",
-        "issue_id": null,
-        "issue_key": "N-54",
-        "labels": [
-          "local"
-        ],
-        "modules": [],
-        "order_index": 87,
-        "owner": null,
-        "parent_id": "local-task:1783417236282",
-        "progress": 0,
-        "start_date": "2026-07-13",
-        "state": "draft",
-        "target_date": "2026-08-10",
-        "title": "深圳河套UniMoe"
-      },
-      {
-        "color": "#018B38",
-        "compact_label": "相对性能摸底",
-        "delivery_summary": {
-          "date_range": "2026-06-19 - 2026-07-14",
-          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-          "title": "相对性能摸底"
-        },
-        "id": "local-task:1783923537750",
-        "issue_id": null,
-        "issue_key": "N-60",
-        "labels": [
-          "local"
-        ],
-        "modules": [],
-        "order_index": 88,
-        "owner": "王子豪",
-        "parent_id": "local-task:1783417236282",
-        "progress": 0,
-        "start_date": "2026-06-19",
-        "state": "draft",
-        "target_date": "2026-07-14",
-        "title": "相对性能摸底"
-      },
-      {
-        "color": null,
-        "compact_label": "新员工/实习生辅",
-        "delivery_summary": {
-          "date_range": "2026-06-18 - 2026-07-13",
-          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-          "title": "新员工/实习生辅导"
-        },
-        "id": "local-task:1783417260092",
-        "issue_id": null,
-        "issue_key": "N-22",
-        "labels": [
-          "local"
-        ],
-        "modules": [],
-        "order_index": 89,
-        "owner": "谭邵杰",
-        "parent_id": null,
-        "progress": 0,
-        "start_date": "2026-06-18",
-        "state": "draft",
-        "target_date": "2026-07-13",
-        "title": "新员工/实习生辅导"
-      },
-      {
-        "color": null,
-        "compact_label": "李翰文",
-        "delivery_summary": {
-          "date_range": "2026-06-19 - 2026-07-23",
-          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-          "title": "李翰文"
-        },
-        "id": "local-task:1783425949862",
-        "issue_id": null,
-        "issue_key": "N-23",
-        "labels": [
-          "local"
-        ],
-        "modules": [],
-        "order_index": 90,
-        "owner": null,
-        "parent_id": "local-task:1783417260092",
-        "progress": 0,
-        "start_date": "2026-06-19",
-        "state": "draft",
-        "target_date": "2026-07-23",
-        "title": "李翰文"
-      },
-      {
-        "color": null,
-        "compact_label": "张皓琰",
-        "delivery_summary": {
-          "date_range": "2026-06-19 - 2026-07-22",
-          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-          "title": "张皓琰"
-        },
-        "id": "local-task:1783425999202",
-        "issue_id": null,
-        "issue_key": "N-24",
-        "labels": [
-          "local"
-        ],
-        "modules": [],
-        "order_index": 91,
-        "owner": null,
-        "parent_id": "local-task:1783417260092",
-        "progress": 0,
-        "start_date": "2026-06-19",
-        "state": "draft",
-        "target_date": "2026-07-22",
-        "title": "张皓琰"
-      },
-      {
-        "color": "#CC5B45",
-        "compact_label": "卢昱辰",
-        "delivery_summary": {
-          "date_range": "2026-06-19 - 2026-07-13",
-          "next_action": "本地新增任务条，Push changes 后由受控写回流程处理。",
-          "title": "卢昱辰"
-        },
-        "id": "local-task:1783426060796",
-        "issue_id": null,
-        "issue_key": "N-25",
-        "labels": [
-          "local"
-        ],
-        "modules": [],
-        "order_index": 92,
-        "owner": null,
-        "parent_id": "local-task:1783417260092",
-        "progress": 0,
-        "start_date": "2026-06-19",
-        "state": "draft",
-        "target_date": "2026-07-13",
-        "title": "卢昱辰"
       },
       {
         "color": null,
@@ -8450,7 +8787,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 93,
+        "order_index": 96,
         "owner": null,
         "parent_id": null,
         "progress": 0,
@@ -8474,7 +8811,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 94,
+        "order_index": 97,
         "owner": null,
         "parent_id": null,
         "progress": 0,
@@ -8497,7 +8834,7 @@
           "local"
         ],
         "modules": [],
-        "order_index": 95,
+        "order_index": 98,
         "owner": null,
         "parent_id": "local-task:1783648970871",
         "progress": 0,
@@ -8515,7 +8852,7 @@
         "color": "#E42320",
         "compact_label": "26Q3 季度需",
         "delivery_summary": {
-          "date_range": "2026-06-23 - 2026-07-14",
+          "date_range": "2026-06-23 - 2026-07-22",
           "issue_key": "1-9",
           "next_action": "按最新 Plane 状态继续跟进",
           "owner": null,
@@ -8525,7 +8862,7 @@
         },
         "order_index": 18,
         "start_date": "2026-06-23",
-        "target_date": "2026-07-14",
+        "target_date": "2026-07-22",
         "title": "26Q3 季度需求跟踪"
       },
       "id": "20cff7b4-f999-4075-a50b-e0217094204d",
@@ -8633,7 +8970,7 @@
           "state": "In Progress",
           "title": "浦江 InternS2 SFT"
         },
-        "order_index": 50,
+        "order_index": 61,
         "title": "浦江 InternS2 SFT"
       },
       "id": "534f110e-1401-4546-b84f-aeeec0008cb1",
@@ -8653,7 +8990,7 @@
           "state": "Todo",
           "title": "任务排队等待资源"
         },
-        "order_index": 53,
+        "order_index": 64,
         "parent_id": "local-task:1783413733185",
         "start_date": "2026-06-30",
         "title": "任务排队等待资源"
@@ -8675,7 +9012,7 @@
           "state": "Todo",
           "title": "保存权重卡住（2000 步）"
         },
-        "order_index": 54,
+        "order_index": 65,
         "parent_id": "local-task:1783413733185",
         "start_date": "2026-07-03",
         "target_date": "2026-07-06",
@@ -8687,7 +9024,7 @@
     },
     {
       "changes": {
-        "order_index": 56,
+        "order_index": 67,
         "parent_id": "local-task:1783562941265"
       },
       "id": "c83d2690-d6c1-4839-9d25-b45043a1387d",
@@ -8706,7 +9043,7 @@
           "state": "In Progress",
           "title": "字节猛犸专项"
         },
-        "order_index": 59,
+        "order_index": 70,
         "start_date": "2026-06-20",
         "target_date": "2026-07-15",
         "title": "字节猛犸专项"
@@ -8727,7 +9064,7 @@
           "state": "In Progress",
           "title": "理解模型训练"
         },
-        "order_index": 61,
+        "order_index": 72,
         "owner": "吴媛媛/潘俊文",
         "parent_id": "local-task:1783566550049",
         "start_date": "2026-06-25",
@@ -8749,7 +9086,7 @@
           "state": "In Progress",
           "title": "生成模型训练"
         },
-        "order_index": 63,
+        "order_index": 74,
         "owner": "尤澍/沈涛",
         "parent_id": "local-task:1783566550049",
         "start_date": "2026-06-25",
@@ -8771,7 +9108,7 @@
           "state": "In Progress",
           "title": "字节 veomni 专项"
         },
-        "order_index": 67,
+        "order_index": 78,
         "owner": "张盛",
         "start_date": "2026-06-28",
         "target_date": "2026-07-13",
@@ -8794,7 +9131,7 @@
           "state": "Done",
           "title": "京东 OPD"
         },
-        "order_index": 70,
+        "order_index": 81,
         "start_date": "2026-06-23",
         "title": "京东 OPD"
       },
