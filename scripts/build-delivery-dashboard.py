@@ -869,8 +869,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .tick.weekend, .tick.holiday { background:#eef1f4; color:#7b8794; }
     .tick.holiday { box-shadow:inset 0 -2px 0 rgba(123,135,148,.34); }
     .tick.today { background:#fff3bf; color:#7a5a00; font-weight:700; box-shadow:inset 0 -2px 0 rgba(217,164,33,.46); }
+    .tick.event-warning { background:rgba(255,59,48,var(--event-warning-alpha)); color:#8f1510; font-weight:700; box-shadow:inset 0 -2px 0 rgba(228,35,25,.68); }
     .timeline-row { height:var(--row-h); position:relative; border-bottom:1px solid var(--line); background-image:linear-gradient(to right, rgba(217,222,231,.72) 1px, transparent 1px); background-size:var(--day-w) 100%; }
     .timeline-row.today-highlight::before { content:""; position:absolute; top:0; bottom:0; left:var(--today-left); width:var(--day-w); background:rgba(255,236,153,.42); pointer-events:none; z-index:0; }
+    .future-event-column { position:absolute; top:0; bottom:0; width:var(--day-w); background:rgba(255,59,48,var(--event-warning-alpha)); pointer-events:none; z-index:0; }
     .bar { position:absolute; top:calc((var(--row-h) - var(--bar-h)) / 2); height:var(--bar-h); min-width:18px; border:0; border-radius:5px; background:var(--task-color,var(--blue)); color:#fff; padding:0 8px; display:flex; align-items:center; justify-content:flex-start; font-weight:650; font-size:var(--font-label); overflow:hidden; white-space:nowrap; cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.18); z-index:2; }
     .bar-label { position:sticky; left:8px; max-width:calc(100% - 16px); z-index:1; overflow:hidden; text-overflow:ellipsis; pointer-events:none; }
     .bar.drop-parent { transform:scaleY(1.28); transform-origin:center; box-shadow:0 0 0 2px rgba(47,111,237,.22), inset 0 -1px 0 rgba(0,0,0,.18); }
@@ -1046,6 +1048,9 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     const staleStartDays = 2;
     const staleMinimumOpacity = 0.1;
     const staleFullFadeDays = 6;
+    const futureEventWarningDays = 14;
+    const futureEventWarningMinAlpha = 0.08;
+    const futureEventWarningMaxAlpha = 0.52;
     const holidayDates = new Set([
       '2026-01-01', '2026-01-02', '2026-01-03',
       '2026-02-15', '2026-02-16', '2026-02-17', '2026-02-18', '2026-02-19', '2026-02-20', '2026-02-21', '2026-02-22', '2026-02-23',
@@ -1092,6 +1097,30 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     }
     function isHolidayDate(isoDate) {
       return holidayDates.has(isoDate) || fixedHolidayMonthDays.has(isoDate.slice(5));
+    }
+    function futureEventWarningAlpha(daysAway) {
+      if (daysAway < 1 || daysAway > futureEventWarningDays) return 0;
+      const progress = (futureEventWarningDays - daysAway) / Math.max(1, futureEventWarningDays - 1);
+      return futureEventWarningMinAlpha + progress * (futureEventWarningMaxAlpha - futureEventWarningMinAlpha);
+    }
+    function futureEventWarnings() {
+      const today = todayOrd();
+      const warnings = new Map();
+      for (const event of events) {
+        const ord = dateOrd(event.date);
+        if (ord === null) continue;
+        const daysAway = ord - today;
+        const alpha = futureEventWarningAlpha(daysAway);
+        if (!alpha) continue;
+        const current = warnings.get(ord);
+        warnings.set(ord, {
+          ord,
+          daysAway,
+          alpha,
+          count: (current?.count || 0) + 1
+        });
+      }
+      return warnings;
     }
     function updateBounds() {
       const ords = [];
@@ -2025,6 +2054,17 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       if (left === null) return;
       element.classList.add('today-highlight');
       element.style.setProperty('--today-left', `${left}px`);
+    }
+    function applyFutureEventColumns(element, warnings) {
+      for (const warning of warnings.values()) {
+        if (warning.ord < activeMinOrd || warning.ord > activeMaxOrd) continue;
+        const highlight = document.createElement('span');
+        highlight.className = 'future-event-column';
+        highlight.style.left = `${(warning.ord - activeMinOrd) * dayWidth()}px`;
+        highlight.style.setProperty('--event-warning-alpha', warning.alpha.toFixed(3));
+        highlight.setAttribute('aria-hidden', 'true');
+        element.append(highlight);
+      }
     }
     function stateText(value) {
       const raw = text(value);
@@ -3219,6 +3259,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const chartWidth = Math.max(720, (activeMaxOrd - activeMinOrd + 1) * dayWidth());
       const summary = summarize();
       const byTask = eventsByTask();
+      const futureWarnings = futureEventWarnings();
       document.getElementById('generated').textContent = `快照生成：${text(activeSnapshotGeneratedAt)} · ${summary.tasks} 个任务 · ${summary.events} 个事件`;
       document.getElementById('summary').replaceChildren(...[
         `Tasks ${summary.tasks}`,
@@ -3252,11 +3293,17 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         if (weekend) classes.push('weekend');
         if (holiday) classes.push('holiday');
         if (isToday) classes.push('today');
+        const warning = futureWarnings.get(ord);
+        if (warning) {
+          classes.push('event-warning');
+          tick.style.setProperty('--event-warning-alpha', warning.alpha.toFixed(3));
+        }
         tick.className = classes.join(' ');
         const titleParts = [];
         if (isToday) titleParts.push('今天');
         if (holiday) titleParts.push('节假日');
         else if (weekend) titleParts.push('周末');
+        if (warning) titleParts.push(`${warning.daysAway} 天后 · ${warning.count} 个事件`);
         tick.title = `${isoDate}${titleParts.length ? ` · ${titleParts.join(' · ')}` : ''}`;
         tick.textContent = shortDate(isoDate);
         head.append(tick);
@@ -3303,6 +3350,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           track.dataset.taskId = item.target.id;
           track.style.width = `${chartWidth}px`;
           applyTodayColumn(track, todayLeft);
+          applyFutureEventColumns(track, futureWarnings);
           timelineRows.append(track);
           return;
         }
@@ -3319,6 +3367,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           track.className = 'timeline-row placeholder';
           track.style.width = `${chartWidth}px`;
           applyTodayColumn(track, todayLeft);
+          applyFutureEventColumns(track, futureWarnings);
           timelineRows.append(track);
           return;
         }
@@ -3360,6 +3409,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         track.dataset.taskId = task.id;
         track.style.width = `${chartWidth}px`;
         applyTodayColumn(track, todayLeft);
+        applyFutureEventColumns(track, futureWarnings);
         const left = offsetForDate(task.start_date);
         const width = widthForTask(task);
         const taskEvents = sortedEvents(byTask.get(task.id) || []);
