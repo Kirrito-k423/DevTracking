@@ -858,7 +858,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .row-button { width:100%; min-height:calc(var(--row-h) - 6px); display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--ink); text-align:left; cursor:pointer; padding:0 4px; border-radius:4px; overflow:hidden; }
     .task-row span:not(.task-main):not(.editable-cell) { cursor:pointer; }
     .editable-cell { cursor:text; }
-    .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible, .action-button:focus-visible, .danger-button:focus-visible, .palette-swatch:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+    .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible, .action-button:focus-visible, .danger-button:focus-visible, .palette-swatch:focus-visible, .attachment-card:focus-visible, .attachment-upload-button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
     .chevron { width:14px; flex:0 0 14px; color:var(--muted); text-align:center; }
     .task-key { color:var(--muted); flex:0 0 34px; width:34px; padding:0; font-size:11px; text-align:right; overflow:hidden; text-overflow:ellipsis; }
     .task-label { flex:1 1 auto; min-width:0; font-weight:600; font-size:var(--font-label); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -904,11 +904,13 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .drag-ghost { position:fixed; left:0; top:0; z-index:20; pointer-events:none; min-width:240px; max-width:420px; padding:8px 10px; background:#fff; border:1px solid #aeb8c7; border-radius:6px; box-shadow:0 12px 30px rgba(32,36,42,.22); font-weight:700; opacity:.96; transform:translate(-9999px,-9999px); }
     body.dragging-row { user-select:none; cursor:grabbing; }
     .empty { padding:24px; color:var(--muted); }
-    .detail { position:fixed; top:0; right:0; width:min(420px,100vw); height:100vh; background:#fff; border-left:1px solid var(--line); box-shadow:-12px 0 24px rgba(32,36,42,.12); transform:translateX(105%); transition:transform .16s ease; z-index:8; display:flex; flex-direction:column; }
-    .detail.open { transform:translateX(0); }
-    .detail header { padding:16px; border-bottom:1px solid var(--line); }
+    .detail { position:fixed; left:0; right:0; bottom:0; width:100%; max-height:min(58vh,620px); min-height:300px; background:#fff; border-top:1px solid var(--line); box-shadow:0 -12px 28px rgba(32,36,42,.16); transform:translateY(105%); transition:transform .18s ease; z-index:8; display:flex; flex-direction:column; }
+    .detail.open { transform:translateY(0); }
+    .detail header { display:grid; grid-template-columns:36px minmax(0,1fr); align-items:center; justify-content:initial; gap:12px; padding:10px 18px; border-bottom:1px solid var(--line); }
+    .detail-close { width:32px; min-width:32px; padding:0; font-size:20px; line-height:1; }
     .detail h2 { margin:0; font-size:18px; line-height:1.25; letter-spacing:0; }
-    .detail-body { padding:16px; overflow:auto; }
+    .detail-body { padding:16px 20px 20px; overflow:auto; display:grid; grid-template-columns:minmax(300px,.9fr) minmax(440px,1.1fr); gap:22px; align-items:start; }
+    .detail-info { min-width:0; }
     .kv { display:grid; grid-template-columns:120px 1fr; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); }
     .kv b { color:var(--muted); font-weight:600; }
     .source-list { margin:8px 0 0; padding-left:18px; color:var(--muted); }
@@ -929,10 +931,38 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .palette-swatch[aria-pressed="true"] { box-shadow:0 0 0 2px rgba(47,111,237,.26), inset 0 -1px 0 rgba(0,0,0,.16); }
     .danger-button { width:100%; min-height:36px; border:1px solid #e49a9a; background:#fff5f5; color:var(--red); border-radius:6px; padding:0 12px; font-weight:700; cursor:pointer; }
     .danger-button:hover { background:#ffecec; }
+    .attachment-section { min-width:0; padding-left:22px; border-left:1px solid var(--line); }
+    .attachment-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    .attachment-head h3 { margin:0; font-size:14px; }
+    .attachment-count { color:var(--muted); font-size:12px; white-space:nowrap; }
+    .attachment-dropzone { min-height:82px; display:flex; align-items:center; justify-content:center; gap:10px; border:1px dashed #9eb2d0; border-radius:7px; background:#f7faff; color:var(--muted); padding:12px; transition:border-color .14s ease, background .14s ease; }
+    .attachment-dropzone.drag-over { border-color:var(--blue); background:#edf4ff; box-shadow:inset 0 0 0 1px rgba(47,111,237,.14); }
+    .attachment-upload-button { min-height:34px; border:1px solid #bfd0ef; border-radius:6px; background:#fff; color:var(--blue); padding:0 12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+    .attachment-drop-copy { min-width:0; font-size:12px; line-height:1.4; }
+    .attachment-status { min-height:18px; margin:7px 0 2px; color:var(--muted); font-size:12px; }
+    .attachment-status.error { color:var(--red); }
+    .attachment-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px; margin-top:8px; }
+    .attachment-empty { margin-top:10px; padding:14px 0; color:var(--muted); font-size:12px; }
+    .attachment-item { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) 30px; align-items:stretch; border:1px solid var(--line); border-radius:7px; background:#fff; overflow:hidden; }
+    .attachment-card { min-width:0; min-height:62px; display:grid; grid-template-columns:50px minmax(0,1fr); align-items:center; gap:9px; border:0; background:#fff; color:var(--ink); padding:6px 8px; text-align:left; cursor:pointer; }
+    .attachment-thumb, .attachment-type { width:50px; height:50px; border-radius:5px; background:#eef2f7; object-fit:cover; display:flex; align-items:center; justify-content:center; color:#526174; font-size:11px; font-weight:800; text-transform:uppercase; overflow:hidden; }
+    .attachment-name { font-size:12px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .attachment-meta { margin-top:4px; color:var(--muted); font-size:11px; }
+    .attachment-delete { width:30px; border:0; border-left:1px solid var(--line); background:#fff; color:var(--red); cursor:pointer; font-size:16px; }
+    .attachment-delete:hover { background:#fff1f1; }
+    .image-lightbox { position:fixed; inset:0; z-index:40; display:grid; grid-template-rows:44px minmax(0,1fr) 38px; background:rgba(15,18,23,.9); color:#fff; }
+    .image-lightbox[hidden] { display:none; }
+    .lightbox-close { justify-self:end; width:40px; border:0; background:transparent; color:#fff; font-size:28px; cursor:pointer; }
+    .image-lightbox img { align-self:center; justify-self:center; max-width:94vw; max-height:calc(100vh - 100px); object-fit:contain; }
+    .lightbox-caption { padding:8px 18px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; }
     @media (max-width: 760px) {
       header, main { padding-left:12px; padding-right:12px; }
       .gantt-layout { grid-template-columns:minmax(430px,78vw) minmax(520px,1fr); overflow:auto; }
       .timeline-pane { overflow:visible; }
+      .detail { max-height:76vh; }
+      .detail-body { grid-template-columns:1fr; padding:12px; gap:16px; }
+      .attachment-section { order:-1; padding:0 0 16px; border-left:0; border-top:0; border-bottom:1px solid var(--line); }
+      .attachment-dropzone { align-items:stretch; flex-direction:column; }
     }
   </style>
 </head>
@@ -982,19 +1012,28 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       <p>Run the timeline and progress export commands, then rebuild the Gantt view.</p>
     </section>
   </main>
-  <aside class="detail" id="detail" aria-label="Delivery summary" aria-hidden="true">
+  <aside class="detail" id="detail" aria-label="任务详情与相关资料" aria-hidden="true">
     <header>
-      <button class="tool-button" id="detail-close" type="button">Close</button>
+      <button class="tool-button detail-close" id="detail-close" type="button" title="关闭" aria-label="关闭">×</button>
       <h2 id="detail-title">Delivery summary</h2>
     </header>
     <div class="detail-body" id="detail-body"></div>
   </aside>
+  <div class="image-lightbox" id="image-lightbox" role="dialog" aria-modal="true" aria-label="图片预览" hidden>
+    <button class="lightbox-close" id="lightbox-close" type="button" title="关闭" aria-label="关闭图片预览">×</button>
+    <img id="lightbox-image" alt="">
+    <div class="lightbox-caption" id="lightbox-caption"></div>
+  </div>
   <script id="gantt-data" type="application/json">__DATA__</script>
   <script>
     const gantt = JSON.parse(document.getElementById('gantt-data').textContent);
     let activeSnapshotGeneratedAt = gantt.generated_at;
     const STORAGE_KEY = 'plane-demand-hub-gantt-local-edits-v1';
     const AUTOSAVE_DELAY_MS = 900;
+    const ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
+    const ATTACHMENT_ACCEPT = '.zip,.png,.jpg,.jpeg,.gif,.webp,.bmp,.txt,.ppt,.pptx,.doc,.docx';
+    const ATTACHMENT_EXTENSIONS = new Set(ATTACHMENT_ACCEPT.split(',').map(value => value.slice(1)));
+    const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']);
     const collapsed = new Set();
     const DAY_MS = 86400000;
     const PAD_DAYS = 30;
@@ -1020,6 +1059,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     const clone = value => JSON.parse(JSON.stringify(value));
     let tasks = clone(gantt.tasks);
     let events = clone(gantt.events);
+    let attachments = clone(gantt.attachments || []);
+    let deletedAttachmentIds = new Set();
     let tasksById = new Map();
     let dragState = null;
     let suppressNextClick = false;
@@ -1027,6 +1068,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     let activeMinOrd = 0;
     let activeMaxOrd = 0;
     let selectedTaskId = null;
+    let activeDetailOwner = null;
     let didCenterToday = false;
     let autosaveEnabled = false;
     let autosaveTimer = null;
@@ -1067,16 +1109,20 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       if (!snapshot || !Array.isArray(snapshot.tasks) || !Array.isArray(snapshot.events)) return false;
       tasks = clone(snapshot.tasks).map((task, index) => Object.assign({ children: [], order: index }, task));
       events = clone(snapshot.events);
+      attachments = Array.isArray(snapshot.attachments) ? clone(snapshot.attachments) : [];
       return true;
     }
     function applyChangesetSnapshot(changeset) {
-      return applySnapshot(changeset?.snapshot);
+      const applied = applySnapshot(changeset?.snapshot);
+      if (applied) deletedAttachmentIds = new Set((changeset?.deleted_attachments || []).map(item => item.id).filter(Boolean));
+      return applied;
     }
     function snapshotCandidate(source, snapshot, generatedAt = null, priority = 0, options = {}) {
       if (!snapshot || !Array.isArray(snapshot.tasks) || !Array.isArray(snapshot.events)) return null;
       const parsed = Date.parse(generatedAt || '');
       const taskIds = new Set(snapshot.tasks.map(task => task.id).filter(Boolean));
       const eventIds = new Set(snapshot.events.map(event => event.id).filter(Boolean));
+      const attachmentIds = new Set((snapshot.attachments || []).map(attachment => attachment.id).filter(Boolean));
       return {
         source,
         snapshot,
@@ -1085,14 +1131,17 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         priority,
         taskIds,
         eventIds,
+        attachmentIds,
         deletedTaskIds: new Set(options.deletedTaskIds || []),
-        deletedEventIds: new Set(options.deletedEventIds || [])
+        deletedEventIds: new Set(options.deletedEventIds || []),
+        deletedAttachmentIds: new Set(options.deletedAttachmentIds || [])
       };
     }
     function changesetCandidate(source, changeset, priority = 0) {
       return snapshotCandidate(source, changeset?.snapshot, changeset?.saved_at || changeset?.generated_at || null, priority, {
         deletedTaskIds: (changeset?.deleted_tasks || []).map(task => task.id).filter(Boolean),
-        deletedEventIds: (changeset?.deleted_events || []).map(event => event.id).filter(Boolean)
+        deletedEventIds: (changeset?.deleted_events || []).map(event => event.id).filter(Boolean),
+        deletedAttachmentIds: (changeset?.deleted_attachments || []).map(attachment => attachment.id).filter(Boolean)
       });
     }
     async function fetchChangesetCandidate(url, source, priority = 0) {
@@ -1112,10 +1161,12 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         if (saved.snapshot) return changesetCandidate('localStorage', saved, 30);
         return snapshotCandidate('localStorage', {
           tasks: saved.tasks || [],
-          events: saved.events || []
+          events: saved.events || [],
+          attachments: saved.attachments || []
         }, saved.saved_at || saved.generated_at || null, 30, {
           deletedTaskIds: saved.deleted_task_ids || [],
-          deletedEventIds: saved.deleted_event_ids || []
+          deletedEventIds: saved.deleted_event_ids || [],
+          deletedAttachmentIds: saved.deleted_attachment_ids || []
         });
       } catch {
         localStorage.removeItem(STORAGE_KEY);
@@ -1129,6 +1180,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       try {
         const deletedTaskIds = new Set(saved.deleted_task_ids || []);
         const deletedEventIds = new Set(saved.deleted_event_ids || []);
+        deletedAttachmentIds = new Set(saved.deleted_attachment_ids || []);
         const baseTasks = tasks.filter(task => !deletedTaskIds.has(task.id));
         const baseTaskIds = new Set(baseTasks.map(task => task.id));
         const savedTasks = new Map((saved.tasks || []).map(task => [task.id, task]));
@@ -1154,6 +1206,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           if (!deletedEventIds.has(event.id)) baseEvents.set(event.id, event);
         }
         events = [...baseEvents.values()];
+        attachments = clone(saved.attachments || []);
         return true;
       } catch {
         localStorage.removeItem(STORAGE_KEY);
@@ -1167,6 +1220,9 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       }
       for (const id of fileCandidate.eventIds || []) {
         if (!local.eventIds.has(id) && !local.deletedEventIds.has(id)) return false;
+      }
+      for (const id of fileCandidate.attachmentIds || []) {
+        if (!local.attachmentIds.has(id) && !local.deletedAttachmentIds.has(id)) return false;
       }
       return true;
     }
@@ -1231,6 +1287,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const selected = selectRestoreCandidate(local, autosave, pushed, portable);
       if (selected) {
         applySnapshot(selected.snapshot);
+        deletedAttachmentIds = new Set(selected.deletedAttachmentIds || []);
         activeSnapshotGeneratedAt = selected.generatedAt || activeSnapshotGeneratedAt;
       }
       const migratedLocalTaskKeys = normalizeLocalTaskKeys();
@@ -1243,12 +1300,15 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     function persistEdits(options = {}) {
       const extraDeletedTaskIds = options.deletedTaskIds || [];
       const extraDeletedEventIds = options.deletedEventIds || [];
+      const extraDeletedAttachmentIds = options.deletedAttachmentIds || [];
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         saved_at: new Date().toISOString(),
         tasks: tasks.map((task, index) => taskStorageRecord(task, index)),
         events,
+        attachments,
         deleted_task_ids: [...new Set([...deletedTaskIds(), ...extraDeletedTaskIds])],
-        deleted_event_ids: [...new Set([...deletedEventIds(), ...extraDeletedEventIds])]
+        deleted_event_ids: [...new Set([...deletedEventIds(), ...extraDeletedEventIds])],
+        deleted_attachment_ids: [...new Set([...deletedAttachmentIds, ...extraDeletedAttachmentIds])]
       }));
       scheduleAutosave();
     }
@@ -1406,6 +1466,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         new_events: newEventRecords(),
         deleted_tasks: deletedTaskRecords(),
         deleted_events: deletedEventRecords(),
+        deleted_attachments: [...deletedAttachmentIds].map(id => ({ id })),
         snapshot: {
           tasks: tasks.map((task, index) => ({
             id: task.id,
@@ -1425,7 +1486,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
             start_date: task.start_date,
             target_date: task.target_date
           })),
-          events
+          events,
+          attachments
         }
       };
     }
@@ -1596,7 +1658,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     async function pushEdits() {
       persistEdits();
       const changeset = buildChangeset();
-      if (!changeset.new_tasks.length && !changeset.task_changes.length && !changeset.event_changes.length && !changeset.new_events.length && !changeset.deleted_tasks.length && !changeset.deleted_events.length) {
+      if (!changeset.new_tasks.length && !changeset.task_changes.length && !changeset.event_changes.length && !changeset.new_events.length && !changeset.deleted_tasks.length && !changeset.deleted_events.length && !changeset.snapshot.attachments.length && !changeset.deleted_attachments.length) {
         alert('没有可 Push 的本地修改。');
         return;
       }
@@ -1628,7 +1690,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         const result = await response.json();
         const counts = result.manifest?.counts || {};
         downloadUrl(`/api/gantt-portable/download?t=${Date.now()}`);
-        alert(`已导出迁移包：${result.directory || 'portable/gantt/latest'}\\n任务 ${counts.tasks ?? '-'}，事件 ${counts.events ?? '-'}。`);
+        alert(`已导出迁移包：${result.directory || 'portable/gantt/latest'}\\n任务 ${counts.tasks ?? '-'}，事件 ${counts.events ?? '-'}，资料 ${counts.attachments ?? 0}。`);
       } catch (error) {
         downloadJson('gantt-portable-local-edits.json', changeset);
         alert('当前服务器不支持迁移包下载，已下载快照 JSON。');
@@ -1642,7 +1704,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       closeDetail();
       persistEdits();
       render();
-      alert(`已导入${label}：任务 ${tasks.length}，事件 ${events.length}。`);
+      alert(`已导入${label}：任务 ${tasks.length}，事件 ${events.length}，资料 ${attachments.length}。`);
     }
     async function importPortablePackage(file) {
       if (!file) return;
@@ -1681,6 +1743,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         return files.find(file => /\\.(json|zip)$/i.test(file.name || '')) || files[0] || null;
       };
       const hasFiles = event => Array.from(event.dataTransfer?.types || []).includes('Files');
+      const targetsAttachmentZone = event => event.target instanceof Element && Boolean(event.target.closest('.attachment-dropzone'));
       document.getElementById('import-portable').addEventListener('click', () => input.click());
       input.addEventListener('change', () => {
         const file = input.files?.[0] || null;
@@ -1688,21 +1751,21 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         importPortablePackage(file);
       });
       window.addEventListener('dragenter', event => {
-        if (!hasFiles(event)) return;
+        if (!hasFiles(event) || targetsAttachmentZone(event)) return;
         dragDepth += 1;
         document.body.classList.add('drag-import');
       });
       window.addEventListener('dragover', event => {
-        if (!hasFiles(event)) return;
+        if (!hasFiles(event) || targetsAttachmentZone(event)) return;
         event.preventDefault();
       });
       window.addEventListener('dragleave', event => {
-        if (!hasFiles(event)) return;
+        if (!hasFiles(event) || targetsAttachmentZone(event)) return;
         dragDepth = Math.max(0, dragDepth - 1);
         if (!dragDepth) document.body.classList.remove('drag-import');
       });
       window.addEventListener('drop', event => {
-        if (!hasFiles(event)) return;
+        if (!hasFiles(event) || targetsAttachmentZone(event)) return;
         event.preventDefault();
         dragDepth = 0;
         document.body.classList.remove('drag-import');
@@ -2137,6 +2200,235 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       const detail = document.getElementById('detail');
       detail.classList.remove('open');
       detail.setAttribute('aria-hidden', 'true');
+      activeDetailOwner = null;
+    }
+    function attachmentExtension(name) {
+      const parts = String(name || '').toLowerCase().split('.');
+      return parts.length > 1 ? parts.pop() : '';
+    }
+    function attachmentIsImage(attachment) {
+      return IMAGE_EXTENSIONS.has(attachmentExtension(attachment.name || attachment.storage_name));
+    }
+    function attachmentUrl(attachment) {
+      const storageName = encodeURIComponent(attachment.storage_name || '');
+      const version = encodeURIComponent(String(attachment.sha256 || '').slice(0, 12));
+      return `/api/gantt-attachments/${storageName}${version ? `?v=${version}` : ''}`;
+    }
+    function formatFileSize(size) {
+      const bytes = Number(size) || 0;
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+    function attachmentsForOwner(owner) {
+      return attachments
+        .filter(attachment => attachment.owner_type === owner.type && attachment.owner_id === owner.id)
+        .sort((a, b) => String(b.uploaded_at || '').localeCompare(String(a.uploaded_at || '')));
+    }
+    function openImagePreview(attachment) {
+      const lightbox = document.getElementById('image-lightbox');
+      const image = document.getElementById('lightbox-image');
+      image.src = attachmentUrl(attachment);
+      image.alt = attachment.name || '图片预览';
+      document.getElementById('lightbox-caption').textContent = attachment.name || '';
+      lightbox.hidden = false;
+      document.getElementById('lightbox-close').focus();
+    }
+    function closeImagePreview() {
+      const lightbox = document.getElementById('image-lightbox');
+      lightbox.hidden = true;
+      document.getElementById('lightbox-image').removeAttribute('src');
+    }
+    function downloadAttachment(attachment) {
+      const link = document.createElement('a');
+      link.href = attachmentUrl(attachment);
+      link.download = attachment.name || attachment.storage_name;
+      document.body.append(link);
+      link.click();
+      link.remove();
+    }
+    function refreshActiveDetail() {
+      if (!activeDetailOwner) return;
+      const owner = { ...activeDetailOwner };
+      if (owner.type === 'task') {
+        const task = tasksById.get(owner.id);
+        if (task) showTask(task);
+        return;
+      }
+      const event = events.find(item => item.id === owner.id);
+      if (event) showEvent(event);
+    }
+    async function removeAttachment(attachment) {
+      if (!confirm(`删除资料「${attachment.name || attachment.storage_name}」？`)) return;
+      try {
+        const response = await fetch(`/api/gantt-attachments/${encodeURIComponent(attachment.storage_name)}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        attachments = attachments.filter(item => item.id !== attachment.id);
+        deletedAttachmentIds.add(attachment.id);
+        persistEdits();
+        refreshActiveDetail();
+      } catch (error) {
+        alert('资料删除失败，请确认本地服务仍在运行。');
+      }
+    }
+    async function uploadAttachmentFiles(fileList, owner, status) {
+      const files = [...fileList];
+      if (!files.length) return;
+      const errors = [];
+      let uploaded = 0;
+      for (const file of files) {
+        const extension = attachmentExtension(file.name);
+        if (!ATTACHMENT_EXTENSIONS.has(extension)) {
+          errors.push(`${file.name}：不支持的文件类型`);
+          continue;
+        }
+        if (!file.size || file.size > ATTACHMENT_MAX_BYTES) {
+          errors.push(`${file.name}：单文件不能超过 10MB`);
+          continue;
+        }
+        status.classList.remove('error');
+        status.textContent = `正在上传 ${file.name}…`;
+        const attachmentId = `att-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+        const query = new URLSearchParams({
+          id: attachmentId,
+          name: file.name,
+          content_type: file.type || 'application/octet-stream'
+        });
+        try {
+          const response = await fetch(`/api/gantt-attachments?${query}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: file
+          });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.attachment) throw new Error(result.reason || `HTTP ${response.status}`);
+          attachments.push(Object.assign({}, result.attachment, {
+            owner_type: owner.type,
+            owner_id: owner.id,
+            uploaded_at: new Date().toISOString()
+          }));
+          deletedAttachmentIds.delete(attachmentId);
+          uploaded += 1;
+        } catch (error) {
+          errors.push(`${file.name}：上传失败`);
+        }
+      }
+      if (uploaded) persistEdits();
+      status.textContent = errors.length ? errors.join('；') : `已保存 ${uploaded} 个资料`;
+      status.classList.toggle('error', Boolean(errors.length));
+      if (uploaded) refreshActiveDetail();
+      if (errors.length) alert(errors.join('\\n'));
+    }
+    function appendAttachmentSection(body, owner) {
+      const section = document.createElement('section');
+      section.className = 'attachment-section';
+      const head = document.createElement('div');
+      head.className = 'attachment-head';
+      const heading = document.createElement('h3');
+      heading.textContent = '相关资料';
+      const current = attachmentsForOwner(owner);
+      const count = document.createElement('span');
+      count.className = 'attachment-count';
+      count.textContent = `${current.length} 个文件`;
+      head.append(heading, count);
+
+      const dropzone = document.createElement('div');
+      dropzone.className = 'attachment-dropzone';
+      const input = document.createElement('input');
+      input.className = 'hidden-file-input';
+      input.type = 'file';
+      input.multiple = true;
+      input.accept = ATTACHMENT_ACCEPT;
+      const upload = document.createElement('button');
+      upload.className = 'attachment-upload-button';
+      upload.type = 'button';
+      upload.textContent = '+ 添加资料';
+      const copy = document.createElement('div');
+      copy.className = 'attachment-drop-copy';
+      copy.textContent = '拖拽到此处 · ZIP / 图片 / PPT / TXT / Word · 单文件不超过 10MB';
+      const status = document.createElement('div');
+      status.className = 'attachment-status';
+      upload.addEventListener('click', () => input.click());
+      input.addEventListener('change', () => {
+        const files = input.files || [];
+        input.value = '';
+        uploadAttachmentFiles(files, owner, status);
+      });
+      for (const type of ['dragenter', 'dragover']) {
+        dropzone.addEventListener(type, event => {
+          event.preventDefault();
+          event.stopPropagation();
+          document.body.classList.remove('drag-import');
+          dropzone.classList.add('drag-over');
+        });
+      }
+      dropzone.addEventListener('dragleave', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        dropzone.classList.remove('drag-over');
+      });
+      dropzone.addEventListener('drop', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        document.body.classList.remove('drag-import');
+        dropzone.classList.remove('drag-over');
+        uploadAttachmentFiles(event.dataTransfer?.files || [], owner, status);
+      });
+      dropzone.append(upload, copy, input);
+      section.append(head, dropzone, status);
+
+      if (!current.length) {
+        const empty = document.createElement('div');
+        empty.className = 'attachment-empty';
+        empty.textContent = '暂无相关资料';
+        section.append(empty);
+      } else {
+        const list = document.createElement('div');
+        list.className = 'attachment-list';
+        for (const attachment of current) {
+          const item = document.createElement('div');
+          item.className = 'attachment-item';
+          const card = document.createElement('button');
+          card.className = 'attachment-card';
+          card.type = 'button';
+          card.title = attachmentIsImage(attachment) ? '放大预览' : '下载文件';
+          if (attachmentIsImage(attachment)) {
+            const image = document.createElement('img');
+            image.className = 'attachment-thumb';
+            image.src = attachmentUrl(attachment);
+            image.alt = '';
+            image.loading = 'lazy';
+            card.append(image);
+            card.addEventListener('click', () => openImagePreview(attachment));
+          } else {
+            const type = document.createElement('div');
+            type.className = 'attachment-type';
+            type.textContent = attachmentExtension(attachment.name) || 'file';
+            card.append(type);
+            card.addEventListener('click', () => downloadAttachment(attachment));
+          }
+          const info = document.createElement('div');
+          const name = document.createElement('div');
+          name.className = 'attachment-name';
+          name.textContent = attachment.name || attachment.storage_name;
+          const meta = document.createElement('div');
+          meta.className = 'attachment-meta';
+          meta.textContent = formatFileSize(attachment.size);
+          info.append(name, meta);
+          card.append(info);
+          const remove = document.createElement('button');
+          remove.className = 'attachment-delete';
+          remove.type = 'button';
+          remove.title = '删除资料';
+          remove.setAttribute('aria-label', `删除 ${attachment.name || '资料'}`);
+          remove.textContent = '×';
+          remove.addEventListener('click', () => removeAttachment(attachment));
+          item.append(card, remove);
+          list.append(item);
+        }
+        section.append(list);
+      }
+      body.append(section);
     }
     function appendEventPreviewSection(body, task, scopedEvents) {
       const section = document.createElement('section');
@@ -2182,6 +2474,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       document.getElementById('detail-title').textContent = title || 'Delivery summary';
       const body = document.getElementById('detail-body');
       body.replaceChildren();
+      const info = document.createElement('div');
+      info.className = 'detail-info';
       for (const [key, value] of rows) {
         const row = document.createElement('div');
         row.className = 'kv';
@@ -2190,10 +2484,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         const content = document.createElement('span');
         content.textContent = text(value);
         row.append(label, content);
-        body.append(row);
+        info.append(row);
       }
       for (const section of options.sections || []) {
-        if (section.type === 'event-preview') appendEventPreviewSection(body, section.task, section.events || []);
+        if (section.type === 'event-preview') appendEventPreviewSection(info, section.task, section.events || []);
       }
       const actionsList = options.actions || [];
       const dangerAction = options.dangerAction;
@@ -2245,11 +2539,11 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
           danger.addEventListener('click', dangerAction.onClick);
           actions.append(danger);
         }
-        body.append(actions);
+        info.append(actions);
       }
       const heading = document.createElement('h3');
       heading.textContent = 'Source evidence';
-      body.append(heading);
+      info.append(heading);
       const list = document.createElement('ul');
       list.className = 'source-list';
       for (const ref of (refs || []).slice(0, 12)) {
@@ -2258,7 +2552,10 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         item.textContent = `${text(ref.event_time)} · ${text(ref.event_type)} · ${text(source.table)} ${text(source.field || source.id)}`;
         list.append(item);
       }
-      body.append(list);
+      info.append(list);
+      body.append(info);
+      activeDetailOwner = options.attachmentOwner ? { ...options.attachmentOwner } : null;
+      if (activeDetailOwner) appendAttachmentSection(body, activeDetailOwner);
       const detail = document.getElementById('detail');
       detail.classList.add('open');
       detail.setAttribute('aria-hidden', 'false');
@@ -2281,6 +2578,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         ['Modules', (task.modules || []).join(', ')],
         ['Color', task.color || '默认']
       ], task.source_refs, {
+        attachmentOwner: { type: 'task', id: task.id },
         sections: [{ type: 'event-preview', task, events: previewEvents }],
         actions: [
           { label: '导出任务报告（含子任务）', onClick: () => exportTaskReport(task) },
@@ -2309,6 +2607,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         ['State', stateText(task.state)],
         ['Next action', (task.delivery_summary || {}).next_action]
       ], event.source_refs, {
+        attachmentOwner: { type: 'event', id: event.id },
         actions: [{ label: '修改事件', onClick: () => editEvent(event) }],
         dangerAction: { label: '删除事件', onClick: () => deleteEvent(event) }
       });
@@ -2592,11 +2891,22 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       persistEdits();
       render();
     }
+    function purgeAttachments(predicate) {
+      const removed = attachments.filter(predicate);
+      if (!removed.length) return [];
+      attachments = attachments.filter(attachment => !predicate(attachment));
+      for (const attachment of removed) {
+        deletedAttachmentIds.add(attachment.id);
+        fetch(`/api/gantt-attachments/${encodeURIComponent(attachment.storage_name)}`, { method: 'DELETE' }).catch(() => {});
+      }
+      return removed.map(attachment => attachment.id);
+    }
     function clearAllData() {
       const confirmation = prompt('这会清除当前 Gantt 的全部任务和事件，并写入本地保存与 autosave。请输入 CLEAR 确认。', '');
       if (confirmation !== 'CLEAR') return;
       const removedTaskIds = tasks.map(task => task.id).filter(Boolean);
       const removedEventIds = events.map(event => event.id).filter(Boolean);
+      const removedAttachmentIds = purgeAttachments(() => true);
       tasks = [];
       events = [];
       selectedTaskId = null;
@@ -2604,7 +2914,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       expandedEventStacks.clear();
       rebuildTaskIndex();
       closeDetail();
-      persistEdits({ deletedTaskIds: removedTaskIds, deletedEventIds: removedEventIds });
+      persistEdits({ deletedTaskIds: removedTaskIds, deletedEventIds: removedEventIds, deletedAttachmentIds: removedAttachmentIds });
       render();
       alert('已清除全部 Gantt 数据。可以通过导入迁移包或 Git 历史恢复旧快照。');
     }
@@ -2612,6 +2922,11 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       if (!task || !tasksById.has(task.id)) return;
       if (!confirm(`删除任务「${text(task.title)}」？子任务会保留并上移一层。`)) return;
       const parentId = task.parent_id || null;
+      const removedEventIds = new Set(events.filter(event => event.task_id === task.id).map(event => event.id));
+      purgeAttachments(attachment => (
+        (attachment.owner_type === 'task' && attachment.owner_id === task.id)
+        || (attachment.owner_type === 'event' && removedEventIds.has(attachment.owner_id))
+      ));
       tasks = tasks
         .filter(item => item.id !== task.id)
         .map(item => item.parent_id === task.id ? Object.assign(item, { parent_id: parentId }) : item);
@@ -2628,6 +2943,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     function deleteEvent(event) {
       if (!event) return;
       if (!confirm(`删除事件「${eventLabel(event.type)} · ${text(event.summary)}」？`)) return;
+      purgeAttachments(attachment => attachment.owner_type === 'event' && attachment.owner_id === event.id);
       events = events.filter(item => item.id !== event.id);
       expandedEventStacks.delete(eventStackKey(event.task_id, event.date));
       persistEdits();
@@ -3196,12 +3512,24 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       localStorage.removeItem(STORAGE_KEY);
       tasks = clone(gantt.tasks);
       events = clone(gantt.events);
+      attachments = clone(gantt.attachments || []);
+      deletedAttachmentIds.clear();
       selectedTaskId = null;
       collapsed.clear();
+      closeDetail();
       render();
     });
     document.getElementById('detail-close').addEventListener('click', () => {
       closeDetail();
+    });
+    document.getElementById('lightbox-close').addEventListener('click', closeImagePreview);
+    document.getElementById('image-lightbox').addEventListener('click', event => {
+      if (event.target.id === 'image-lightbox') closeImagePreview();
+    });
+    window.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      if (!document.getElementById('image-lightbox').hidden) closeImagePreview();
+      else closeDetail();
     });
     document.getElementById('timeline-scroll').addEventListener('scroll', updateBarLabelPositions);
     document.querySelector('.gantt-layout').addEventListener('scroll', updateBarLabelPositions);

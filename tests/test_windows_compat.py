@@ -32,6 +32,7 @@ progress_module = load_script("progress_to_plane", "progress-to-plane.py")
 timeline_module = load_script("export_plane_timeline", "export-plane-timeline.py")
 portable_module = load_script("export_gantt_portable", "export-gantt-portable.py")
 daily_module = load_script("apply_plane_daily_record", "apply-plane-daily-record.py")
+gantt_app_module = load_script("gantt_desktop_app", "gantt_app.py")
 
 
 class QuietDeliveryHandler(server_module.DeliveryHandler):
@@ -135,6 +136,24 @@ class WindowsCompatibilityTests(unittest.TestCase):
         self.assertEqual((portable / "start-windows.bat").read_text(encoding="utf-8"), portable_module.windows_bat())
         self.assertEqual((portable / "start-windows.ps1").read_text(encoding="utf-8"), portable_module.windows_ps1())
 
+    def test_desktop_seed_copy_includes_attachment_directory(self):
+        with tempfile.TemporaryDirectory(prefix="gantt desktop seed ") as temp_dir:
+            root = Path(temp_dir)
+            seed = root / "portable/gantt/latest"
+            seed.mkdir(parents=True)
+            seed.joinpath("gantt-local-edits.json").write_text("{}", encoding="utf-8")
+            attachment_dir = seed / "gantt-attachments"
+            attachment_dir.mkdir()
+            attachment_dir.joinpath("att-test.txt").write_text("desktop attachment", encoding="utf-8")
+            target = root / "runtime/portable/gantt/latest"
+
+            gantt_app_module.copy_seed_portable(root, target)
+
+            self.assertEqual(
+                (target / "gantt-attachments/att-test.txt").read_text(encoding="utf-8"),
+                "desktop attachment",
+            )
+
     def test_pyinstaller_spec_resolves_repository_from_spec_path(self):
         spec_path = ROOT / "packaging/plane-demand-hub-gantt.spec"
         captured_analysis = {}
@@ -155,6 +174,8 @@ class WindowsCompatibilityTests(unittest.TestCase):
             self.assertTrue(Path(source).is_file(), source)
         self.assertIn("json", captured_analysis["hiddenimports"])
         self.assertIn("http.server", captured_analysis["hiddenimports"])
+        self.assertIn("hashlib", captured_analysis["hiddenimports"])
+        self.assertIn("mimetypes", captured_analysis["hiddenimports"])
 
 
 if __name__ == "__main__":

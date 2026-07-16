@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import stat
 from datetime import datetime, timezone
@@ -17,6 +18,11 @@ DEFAULT_DELIVERY_DIR = ROOT_DIR / "exports/delivery"
 DEFAULT_OUTPUT_DIR = ROOT_DIR / "portable/gantt/latest"
 PORTABLE_SCHEMA = "plane-demand-hub.gantt-portable.v1"
 EDIT_SCHEMA = "plane-demand-hub.gantt-edits.v1"
+ATTACHMENT_DIRECTORY = "gantt-attachments"
+ATTACHMENT_EXTENSIONS = {
+    ".zip", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp",
+    ".txt", ".ppt", ".pptx", ".doc", ".docx",
+}
 
 
 def utc_now() -> str:
@@ -53,6 +59,7 @@ def baseline_changeset(gantt: dict[str, Any]) -> dict[str, Any]:
         "snapshot": {
             "tasks": gantt.get("tasks", []),
             "events": gantt.get("events", []),
+            "attachments": [],
         },
     }
 
@@ -60,13 +67,67 @@ def baseline_changeset(gantt: dict[str, Any]) -> dict[str, Any]:
 def ensure_snapshot(changeset: dict[str, Any], gantt: dict[str, Any]) -> dict[str, Any]:
     snapshot = changeset.get("snapshot")
     if isinstance(snapshot, dict) and isinstance(snapshot.get("tasks"), list) and isinstance(snapshot.get("events"), list):
-        return changeset
+        next_changeset = dict(changeset)
+        next_snapshot = dict(snapshot)
+        if not isinstance(next_snapshot.get("attachments"), list):
+            next_snapshot["attachments"] = []
+        next_changeset["snapshot"] = next_snapshot
+        return next_changeset
     next_changeset = dict(changeset)
     next_changeset["snapshot"] = {
         "tasks": gantt.get("tasks", []),
         "events": gantt.get("events", []),
+        "attachments": [],
     }
     return next_changeset
+
+
+def attachment_storage_name(value: Any) -> str | None:
+    name = str(value or "")
+    if not name or Path(name).name != name:
+        return None
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,119}\.[A-Za-z0-9]{1,8}", name):
+        return None
+    if Path(name).suffix.lower() not in ATTACHMENT_EXTENSIONS:
+        return None
+    return name
+
+
+def export_attachments(delivery: Path, output: Path, attachments: list[dict[str, Any]]) -> tuple[list[str], int]:
+    source_dir = delivery / ATTACHMENT_DIRECTORY
+    target_dir = output / ATTACHMENT_DIRECTORY
+    seen: set[str] = set()
+    ordered_names: list[str] = []
+    for attachment in attachments:
+        name = attachment_storage_name(attachment.get("storage_name"))
+        if not name:
+            raise ValueError(f"Invalid attachment storage name: {attachment.get('storage_name')}")
+        if name in seen:
+            raise ValueError(f"Duplicate attachment storage name: {name}")
+        seen.add(name)
+        ordered_names.append(name)
+    if source_dir.resolve() == target_dir.resolve():
+        names = ordered_names
+        missing = [name for name in names if not (source_dir / name).is_file()]
+        if missing:
+            raise FileNotFoundError(f"Missing attachment files: {', '.join(missing)}")
+        return [f"{ATTACHMENT_DIRECTORY}/{name}" for name in names], sum((source_dir / name).stat().st_size for name in names)
+
+    if target_dir.exists():
+        shutil.rmtree(target_dir)
+    exported: list[str] = []
+    total_bytes = 0
+    for attachment in attachments:
+        name = attachment_storage_name(attachment.get("storage_name"))
+        assert name is not None
+        source = source_dir / name
+        if not source.is_file():
+            raise FileNotFoundError(f"Missing attachment file: {source}")
+        target_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target_dir / name)
+        exported.append(f"{ATTACHMENT_DIRECTORY}/{name}")
+        total_bytes += source.stat().st_size
+    return exported, total_bytes
 
 
 def read_changeset(delivery_dir: Path, changeset_path: Path | None, gantt: dict[str, Any]) -> dict[str, Any]:
@@ -126,6 +187,7 @@ def readme_text(manifest: dict[str, Any]) -> str:
     exported_at = manifest.get("exported_at", "")
     task_count = manifest.get("counts", {}).get("tasks", 0)
     event_count = manifest.get("counts", {}).get("events", 0)
+    attachment_count = manifest.get("counts", {}).get("attachments", 0)
     return f"""# Portable Gantt Snapshot
 
 This directory is safe to commit. It captures the current Plane Demand Hub Gantt state for another machine.
@@ -137,6 +199,7 @@ Snapshot contents:
 - `gantt.html`: portable Gantt page
 - `gantt.json`: generated base Gantt data
 - `gantt-local-edits.json`: current local edits plus full task/event snapshot
+- `gantt-attachments/`: files bound to tasks and events
 - `manifest.json`: export metadata
 - `start-windows.bat` / `start-windows.ps1`: Windows launch helpers
 
@@ -144,6 +207,7 @@ Counts:
 
 - Tasks: {task_count}
 - Events: {event_count}
+- Attachments: {attachment_count}
 
 ## Windows Quick Start
 
@@ -208,12 +272,14 @@ def export_portable(
     gantt = read_json(gantt_json_path)
     portable_changeset = ensure_snapshot(changeset or read_changeset(delivery, changeset_file, gantt), gantt)
     snapshot = portable_changeset.get("snapshot") or {}
+    attachments = snapshot.get("attachments") or []
     exported_at = utc_now()
 
     output.mkdir(parents=True, exist_ok=True)
     shutil.copy2(gantt_json_path, output / "gantt.json")
     shutil.copy2(gantt_html_path, output / "gantt.html")
     write_json(output / "gantt-local-edits.json", portable_changeset)
+    attachment_files, attachment_bytes = export_attachments(delivery, output, attachments)
 
     manifest = {
         "schema": PORTABLE_SCHEMA,
@@ -230,10 +296,12 @@ def export_portable(
             "start-windows.bat",
             "start-windows.ps1",
             "start-macos-linux.sh",
-        ],
+        ] + attachment_files,
         "counts": {
             "tasks": len(snapshot.get("tasks") or gantt.get("tasks") or []),
             "events": len(snapshot.get("events") or gantt.get("events") or []),
+            "attachments": len(attachments),
+            "attachment_bytes": attachment_bytes,
             "new_tasks": len(portable_changeset.get("new_tasks") or []),
             "new_events": len(portable_changeset.get("new_events") or []),
             "task_changes": len(portable_changeset.get("task_changes") or []),

@@ -53,8 +53,11 @@ def copy_seed_portable(root: Path, portable_dir: Path, reset: bool = False) -> N
         return
     portable_dir.mkdir(parents=True, exist_ok=True)
     for item in seed.iterdir():
-        if item.is_file():
-            shutil.copy2(item, portable_dir / item.name)
+        target = portable_dir / item.name
+        if item.is_dir():
+            shutil.copytree(item, target, dirs_exist_ok=True)
+        elif item.is_file():
+            shutil.copy2(item, target)
 
 
 def bind_server(server_module, host: str, preferred_port: int, delivery_dir: Path, portable_dir: Path):
