@@ -2,20 +2,22 @@
 
 This directory is safe to commit. It captures the current Plane Demand Hub Gantt state for another machine.
 
-Exported at: `2026-07-15T21:01:34.229839Z`
+Exported at: `2026-07-17T21:00:34.706913Z`
 
 Snapshot contents:
 
 - `gantt.html`: portable Gantt page
 - `gantt.json`: generated base Gantt data
 - `gantt-local-edits.json`: current local edits plus full task/event snapshot
+- `gantt-attachments/`: files bound to tasks and events
 - `manifest.json`: export metadata
 - `start-windows.bat` / `start-windows.ps1`: Windows launch helpers
 
 Counts:
 
-- Tasks: 99
-- Events: 103
+- Tasks: 101
+- Events: 106
+- Attachments: 0
 
 ## Windows Quick Start
 
