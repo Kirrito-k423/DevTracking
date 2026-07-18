@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-16T04:27:58Z"
-last_activity: 2026-07-16 — Gantt future event proximity warning columns completed
+last_updated: "2026-07-18T00:09:18Z"
+last_activity: 2026-07-18 — Gantt right-side two-level detail drawer completed
 progress:
   total_phases: 6
   completed_phases: 6
@@ -77,8 +77,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Gantt public JSON import/export compatibility completed: public static pages can import their exported JSON changesets, while local Gantt servers keep ZIP migration-package import.
 - Gantt clear all data button completed: toolbar now has a red `Clear` action that requires typing `CLEAR`, empties tasks/events, resets transient UI state, and persists the empty snapshot through localStorage and autosave.
 - Gantt task color reset option completed: task detail color palettes now include `恢复默认颜色`, clearing custom colors so task bars return to their computed default color.
-- Gantt attachment workspace completed: task and event details now open as a bottom panel with 10MB ZIP/image/PPT/TXT/Word uploads, image lightbox previews, persistent bindings, and portable ZIP round-trip support.
+- Gantt attachment workspace completed: task and event details support 10MB ZIP/image/PPT/TXT/Word uploads, image lightbox previews, persistent bindings, and portable ZIP round-trip.
 - Gantt future event proximity warning completed: event dates within the next 14 days now highlight full timeline columns in progressively brighter red while today remains light yellow.
+- Gantt right-side two-level detail drawer completed: first-level task/event summaries open on the right, while attachments are lazy-rendered in an internal second-level drawer.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -111,6 +112,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260718-b4e | Gantt right-side two-level detail drawer | 2026-07-18 | 677919a | [260718-b4e-gantt](./quick/260718-b4e-gantt/) |
 | 260716-h63 | Gantt future event proximity warning columns | 2026-07-16 | b9aa2c6 | [260716-h63-gantt-14](./quick/260716-h63-gantt-14/) |
 | 260716-gkw | Gantt task/event attachment workspace and portable ZIP migration | 2026-07-16 | c98ff65 | [260716-gkw-gantt-10mb-zip-ppt-txt-word-portable-zip](./quick/260716-gkw-gantt-10mb-zip-ppt-txt-word-portable-zip/) |
 | 260713-tb2 | Gantt task color reset option | 2026-07-13 | 8693919 | [260713-tb2-add-gantt-task-color-reset-option](./quick/260713-tb2-add-gantt-task-color-reset-option/) |
@@ -157,7 +159,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-16 — Gantt future event proximity warning columns completed
+Last activity: 2026-07-18 — Gantt right-side two-level detail drawer completed
 
 ## Operator Next Steps
 
