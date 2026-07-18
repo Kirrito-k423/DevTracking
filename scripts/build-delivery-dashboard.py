@@ -858,7 +858,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .row-button { width:100%; min-height:calc(var(--row-h) - 6px); display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--ink); text-align:left; cursor:pointer; padding:0 4px; border-radius:4px; overflow:hidden; }
     .task-row span:not(.task-main):not(.editable-cell) { cursor:pointer; }
     .editable-cell { cursor:text; }
-    .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible, .action-button:focus-visible, .danger-button:focus-visible, .palette-swatch:focus-visible, .attachment-card:focus-visible, .attachment-upload-button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+    .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible, .action-button:focus-visible, .danger-button:focus-visible, .palette-swatch:focus-visible, .detail-subnav:focus-visible, .attachment-card:focus-visible, .attachment-upload-button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
     .chevron { width:14px; flex:0 0 14px; color:var(--muted); text-align:center; }
     .task-key { color:var(--muted); flex:0 0 34px; width:34px; padding:0; font-size:11px; text-align:right; overflow:hidden; text-overflow:ellipsis; }
     .task-label { flex:1 1 auto; min-width:0; font-weight:600; font-size:var(--font-label); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -906,15 +906,16 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .drag-ghost { position:fixed; left:0; top:0; z-index:20; pointer-events:none; min-width:240px; max-width:420px; padding:8px 10px; background:#fff; border:1px solid #aeb8c7; border-radius:6px; box-shadow:0 12px 30px rgba(32,36,42,.22); font-weight:700; opacity:.96; transform:translate(-9999px,-9999px); }
     body.dragging-row { user-select:none; cursor:grabbing; }
     .empty { padding:24px; color:var(--muted); }
-    .detail { position:fixed; left:0; right:0; bottom:0; width:100%; max-height:min(58vh,620px); min-height:300px; background:#fff; border-top:1px solid var(--line); box-shadow:0 -12px 28px rgba(32,36,42,.16); transform:translateY(105%); transition:transform .18s ease; z-index:8; display:flex; flex-direction:column; }
-    .detail.open { transform:translateY(0); }
-    .detail header { display:grid; grid-template-columns:36px minmax(0,1fr); align-items:center; justify-content:initial; gap:12px; padding:10px 18px; border-bottom:1px solid var(--line); }
+    .detail { position:fixed; top:0; right:0; bottom:0; width:min(440px,calc(100vw - 24px)); background:#fff; border-left:1px solid var(--line); box-shadow:-12px 0 28px rgba(32,36,42,.16); transform:translateX(105%); transition:transform .18s ease; z-index:8; display:flex; flex-direction:column; overflow:hidden; }
+    .detail.open { transform:translateX(0); }
+    .detail header { flex:0 0 auto; display:grid; grid-template-columns:36px minmax(0,1fr); align-items:center; justify-content:initial; gap:12px; padding:10px 14px; border-bottom:1px solid var(--line); background:#fff; }
     .detail-close { width:32px; min-width:32px; padding:0; font-size:20px; line-height:1; }
-    .detail h2 { margin:0; font-size:18px; line-height:1.25; letter-spacing:0; }
-    .detail-body { padding:16px 20px 20px; overflow:auto; display:grid; grid-template-columns:minmax(300px,.9fr) minmax(440px,1.1fr); gap:22px; align-items:start; }
+    .detail h2 { min-width:0; margin:0; font-size:17px; line-height:1.3; letter-spacing:0; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+    .detail-body { flex:1 1 auto; min-height:0; padding:14px 18px 20px; overflow:auto; }
     .detail-info { min-width:0; }
-    .kv { display:grid; grid-template-columns:120px 1fr; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); }
+    .kv { display:grid; grid-template-columns:102px minmax(0,1fr); gap:8px; padding:7px 0; border-bottom:1px solid var(--line); }
     .kv b { color:var(--muted); font-weight:600; }
+    .kv span, .source-list li { min-width:0; overflow-wrap:anywhere; }
     .source-list { margin:8px 0 0; padding-left:18px; color:var(--muted); }
     .detail-section { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
     .detail-section h3 { margin:0 0 8px; font-size:13px; letter-spacing:0; }
@@ -933,17 +934,28 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     .palette-swatch[aria-pressed="true"] { box-shadow:0 0 0 2px rgba(47,111,237,.26), inset 0 -1px 0 rgba(0,0,0,.16); }
     .danger-button { width:100%; min-height:36px; border:1px solid #e49a9a; background:#fff5f5; color:var(--red); border-radius:6px; padding:0 12px; font-weight:700; cursor:pointer; }
     .danger-button:hover { background:#ffecec; }
-    .attachment-section { min-width:0; padding-left:22px; border-left:1px solid var(--line); }
+    .detail-subnav { width:100%; min-height:48px; margin:14px 0 2px; display:grid; grid-template-columns:minmax(0,1fr) auto 18px; align-items:center; gap:8px; border:1px solid #bfd0ef; border-radius:7px; background:#f6f9ff; color:var(--ink); padding:8px 10px; text-align:left; cursor:pointer; }
+    .detail-subnav:hover { background:#edf4ff; }
+    .detail-subnav-title { min-width:0; font-weight:750; }
+    .detail-subnav-count { color:var(--muted); font-size:12px; white-space:nowrap; }
+    .detail-subnav-arrow { color:var(--blue); font-size:20px; line-height:1; text-align:right; }
+    .detail-subpanel { position:absolute; inset:0; z-index:2; display:flex; flex-direction:column; background:#fff; transform:translateX(105%); transition:transform .18s ease; box-shadow:-8px 0 20px rgba(32,36,42,.12); }
+    .detail-subpanel.open { transform:translateX(0); }
+    .detail-subpanel[aria-hidden="true"] { pointer-events:none; }
+    .detail-subpanel header { grid-template-columns:36px minmax(0,1fr) 36px; }
+    .detail-back { width:32px; min-width:32px; padding:0; font-size:18px; line-height:1; }
+    .detail-subpanel-body { flex:1 1 auto; min-height:0; overflow:auto; padding:14px 16px 20px; }
+    .attachment-section { min-width:0; }
     .attachment-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
     .attachment-head h3 { margin:0; font-size:14px; }
     .attachment-count { color:var(--muted); font-size:12px; white-space:nowrap; }
-    .attachment-dropzone { min-height:82px; display:flex; align-items:center; justify-content:center; gap:10px; border:1px dashed #9eb2d0; border-radius:7px; background:#f7faff; color:var(--muted); padding:12px; transition:border-color .14s ease, background .14s ease; }
+    .attachment-dropzone { min-height:104px; display:flex; align-items:stretch; justify-content:center; flex-direction:column; gap:8px; border:1px dashed #9eb2d0; border-radius:7px; background:#f7faff; color:var(--muted); padding:12px; transition:border-color .14s ease, background .14s ease; }
     .attachment-dropzone.drag-over { border-color:var(--blue); background:#edf4ff; box-shadow:inset 0 0 0 1px rgba(47,111,237,.14); }
     .attachment-upload-button { min-height:34px; border:1px solid #bfd0ef; border-radius:6px; background:#fff; color:var(--blue); padding:0 12px; font-weight:700; cursor:pointer; white-space:nowrap; }
     .attachment-drop-copy { min-width:0; font-size:12px; line-height:1.4; }
     .attachment-status { min-height:18px; margin:7px 0 2px; color:var(--muted); font-size:12px; }
     .attachment-status.error { color:var(--red); }
-    .attachment-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px; margin-top:8px; }
+    .attachment-list { display:grid; grid-template-columns:1fr; gap:8px; margin-top:8px; }
     .attachment-empty { margin-top:10px; padding:14px 0; color:var(--muted); font-size:12px; }
     .attachment-item { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) 30px; align-items:stretch; border:1px solid var(--line); border-radius:7px; background:#fff; overflow:hidden; }
     .attachment-card { min-width:0; min-height:62px; display:grid; grid-template-columns:50px minmax(0,1fr); align-items:center; gap:9px; border:0; background:#fff; color:var(--ink); padding:6px 8px; text-align:left; cursor:pointer; }
@@ -961,10 +973,8 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       header, main { padding-left:12px; padding-right:12px; }
       .gantt-layout { grid-template-columns:minmax(430px,78vw) minmax(520px,1fr); overflow:auto; }
       .timeline-pane { overflow:visible; }
-      .detail { max-height:76vh; }
-      .detail-body { grid-template-columns:1fr; padding:12px; gap:16px; }
-      .attachment-section { order:-1; padding:0 0 16px; border-left:0; border-top:0; border-bottom:1px solid var(--line); }
-      .attachment-dropzone { align-items:stretch; flex-direction:column; }
+      .detail { width:100vw; }
+      .detail-body, .detail-subpanel-body { padding:12px; }
     }
   </style>
 </head>
@@ -1014,12 +1024,20 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       <p>Run the timeline and progress export commands, then rebuild the Gantt view.</p>
     </section>
   </main>
-  <aside class="detail" id="detail" aria-label="任务详情与相关资料" aria-hidden="true">
+  <aside class="detail" id="detail" aria-label="任务或事件详情" aria-hidden="true">
     <header>
       <button class="tool-button detail-close" id="detail-close" type="button" title="关闭" aria-label="关闭">×</button>
       <h2 id="detail-title">Delivery summary</h2>
     </header>
     <div class="detail-body" id="detail-body"></div>
+    <section class="detail-subpanel" id="detail-subpanel" aria-label="资料与附件" aria-hidden="true">
+      <header>
+        <button class="tool-button detail-back" id="detail-subpanel-back" type="button" title="返回详情" aria-label="返回详情">←</button>
+        <h2 id="detail-subpanel-title">资料与附件</h2>
+        <button class="tool-button detail-close" id="detail-subpanel-close" type="button" title="关闭" aria-label="关闭详情">×</button>
+      </header>
+      <div class="detail-subpanel-body" id="detail-subpanel-body"></div>
+    </section>
   </aside>
   <div class="image-lightbox" id="image-lightbox" role="dialog" aria-modal="true" aria-label="图片预览" hidden>
     <button class="lightbox-close" id="lightbox-close" type="button" title="关闭" aria-label="关闭图片预览">×</button>
@@ -1074,6 +1092,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     let activeMaxOrd = 0;
     let selectedTaskId = null;
     let activeDetailOwner = null;
+    let detailSubpanelOpen = false;
     let didCenterToday = false;
     let autosaveEnabled = false;
     let autosaveTimer = null;
@@ -2238,9 +2257,18 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     }
     function closeDetail() {
       const detail = document.getElementById('detail');
+      closeDetailSubpanel(false);
+      document.getElementById('detail-subpanel-body').replaceChildren();
       detail.classList.remove('open');
       detail.setAttribute('aria-hidden', 'true');
       activeDetailOwner = null;
+    }
+    function closeDetailSubpanel(restoreFocus = true) {
+      const panel = document.getElementById('detail-subpanel');
+      panel.classList.remove('open');
+      panel.setAttribute('aria-hidden', 'true');
+      detailSubpanelOpen = false;
+      if (restoreFocus) document.querySelector('.detail-subnav')?.focus();
     }
     function attachmentExtension(name) {
       const parts = String(name || '').toLowerCase().split('.');
@@ -2290,6 +2318,11 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     function refreshActiveDetail() {
       if (!activeDetailOwner) return;
       const owner = { ...activeDetailOwner };
+      if (detailSubpanelOpen) {
+        renderAttachmentSubpanel(owner);
+        updateAttachmentNavigationCount(owner);
+        return;
+      }
       if (owner.type === 'task') {
         const task = tasksById.get(owner.id);
         if (task) showTask(task);
@@ -2470,6 +2503,47 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       }
       body.append(section);
     }
+    function updateAttachmentNavigationCount(owner) {
+      const button = document.querySelector('.detail-subnav');
+      if (!button || !owner) return;
+      const count = button.querySelector('.detail-subnav-count');
+      if (count) count.textContent = `${attachmentsForOwner(owner).length} 个文件`;
+    }
+    function appendAttachmentNavigation(body, owner) {
+      const button = document.createElement('button');
+      button.className = 'detail-subnav';
+      button.type = 'button';
+      button.title = '打开资料与附件';
+      const title = document.createElement('span');
+      title.className = 'detail-subnav-title';
+      title.textContent = '资料与附件';
+      const count = document.createElement('span');
+      count.className = 'detail-subnav-count';
+      count.textContent = `${attachmentsForOwner(owner).length} 个文件`;
+      const arrow = document.createElement('span');
+      arrow.className = 'detail-subnav-arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.textContent = '›';
+      button.append(title, count, arrow);
+      button.addEventListener('click', openAttachmentSubpanel);
+      body.append(button);
+    }
+    function renderAttachmentSubpanel(owner = activeDetailOwner) {
+      if (!owner) return;
+      document.getElementById('detail-subpanel-title').textContent = owner.type === 'task' ? '任务资料与附件' : '事件资料与附件';
+      const body = document.getElementById('detail-subpanel-body');
+      body.replaceChildren();
+      appendAttachmentSection(body, owner);
+    }
+    function openAttachmentSubpanel() {
+      if (!activeDetailOwner) return;
+      renderAttachmentSubpanel(activeDetailOwner);
+      const panel = document.getElementById('detail-subpanel');
+      panel.classList.add('open');
+      panel.setAttribute('aria-hidden', 'false');
+      detailSubpanelOpen = true;
+      document.getElementById('detail-subpanel-back').focus();
+    }
     function appendEventPreviewSection(body, task, scopedEvents) {
       const section = document.createElement('section');
       section.className = 'detail-section';
@@ -2511,11 +2585,14 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       body.append(section);
     }
     function openDetail(title, rows, refs, options = {}) {
+      closeDetailSubpanel(false);
+      document.getElementById('detail-subpanel-body').replaceChildren();
       document.getElementById('detail-title').textContent = title || 'Delivery summary';
       const body = document.getElementById('detail-body');
       body.replaceChildren();
       const info = document.createElement('div');
       info.className = 'detail-info';
+      activeDetailOwner = options.attachmentOwner ? { ...options.attachmentOwner } : null;
       for (const [key, value] of rows) {
         const row = document.createElement('div');
         row.className = 'kv';
@@ -2526,6 +2603,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
         row.append(label, content);
         info.append(row);
       }
+      if (activeDetailOwner) appendAttachmentNavigation(info, activeDetailOwner);
       for (const section of options.sections || []) {
         if (section.type === 'event-preview') appendEventPreviewSection(info, section.task, section.events || []);
       }
@@ -2594,8 +2672,6 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
       }
       info.append(list);
       body.append(info);
-      activeDetailOwner = options.attachmentOwner ? { ...options.attachmentOwner } : null;
-      if (activeDetailOwner) appendAttachmentSection(body, activeDetailOwner);
       const detail = document.getElementById('detail');
       detail.classList.add('open');
       detail.setAttribute('aria-hidden', 'false');
@@ -3572,6 +3648,12 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     document.getElementById('detail-close').addEventListener('click', () => {
       closeDetail();
     });
+    document.getElementById('detail-subpanel-back').addEventListener('click', () => {
+      closeDetailSubpanel();
+    });
+    document.getElementById('detail-subpanel-close').addEventListener('click', () => {
+      closeDetail();
+    });
     document.getElementById('lightbox-close').addEventListener('click', closeImagePreview);
     document.getElementById('image-lightbox').addEventListener('click', event => {
       if (event.target.id === 'image-lightbox') closeImagePreview();
@@ -3579,6 +3661,7 @@ def write_gantt_html(data: dict[str, Any], output_dir: Path) -> Path:
     window.addEventListener('keydown', event => {
       if (event.key !== 'Escape') return;
       if (!document.getElementById('image-lightbox').hidden) closeImagePreview();
+      else if (detailSubpanelOpen) closeDetailSubpanel();
       else closeDetail();
     });
     document.getElementById('timeline-scroll').addEventListener('scroll', updateBarLabelPositions);
