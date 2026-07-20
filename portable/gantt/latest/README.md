@@ -2,7 +2,7 @@
 
 This directory is safe to commit. It captures the current Plane Demand Hub Gantt state for another machine.
 
-Exported at: `2026-07-19T21:01:13.121262Z`
+Exported at: `2026-07-20T21:02:55.071916Z`
 
 Snapshot contents:
 
@@ -15,8 +15,8 @@ Snapshot contents:
 
 Counts:
 
-- Tasks: 101
-- Events: 106
+- Tasks: 105
+- Events: 109
 - Attachments: 0
 
 ## Windows Quick Start
