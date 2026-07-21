@@ -1,43 +1,46 @@
-# Plane Demand Hub
+# Delivery Gantt
 
-Plane Demand Hub 是一个围绕自托管 [Plane](https://plane.so/) 构建的本地优先交付协作系统。它把自然语言每日进展转换为可确认的 Plane 变更、时间线、交付看板、报告和可编辑甘特图，同时保持 Plane 为任务与项目管理界面。
+Delivery Gantt 是一个本地优先、无需 Docker 的可编辑交付甘特图。它使用 Python 标准库启动轻量 HTTP 服务，并把任务、事件、附件、自动保存和迁移快照保存在本地文件中。
 
-## 架构与设计
+## 本机启动
 
-- [交互式架构图](docs/architecture/plane-demand-hub-architecture.html) — 使用 Archify 生成，支持深浅主题以及 PNG、JPEG、WebP、SVG 导出；克隆仓库后可直接用浏览器打开。
-- [架构与设计文档](docs/ARCHITECTURE.md) — 运行模式、组件模型、数据流、信任边界、数据契约和关键设计决策。
-- [Archify JSON IR](docs/architecture/plane-demand-hub.architecture.json) — 可验证、可重新渲染的架构图源文件。
+在仓库根目录运行：
 
-## Windows 使用
+```bash
+portable/gantt/latest/start-macos-linux.sh
+```
 
-如果只使用已发布的桌面甘特图，**不需要安装 Docker**。从 [GitHub Releases](https://github.com/Kirrito-k423/DevTracking/releases) 下载 Windows ZIP，解压后运行其中的可执行文件即可。桌面程序会在本机启动轻量 HTTP 服务并打开浏览器。
+然后访问 [http://127.0.0.1:8090/gantt.html](http://127.0.0.1:8090/gantt.html)。
 
-Docker 仅用于运行可选的完整 Plane 自托管服务；源代码模式的甘特图边车同样可以直接通过 Python 运行。
+也可以直接运行：
 
-详细说明：
+```bash
+python3 scripts/serve-delivery-dashboard.py --host 127.0.0.1 --port 8090
+```
 
+## Windows 与桌面版
+
+- Windows 双击 `portable\gantt\latest\start-windows.bat`
+- 桌面启动器：`python scripts\gantt_app.py`
 - [Windows 运行指南](docs/WINDOWS.md)
 - [桌面版构建与发布](docs/GANTT-DESKTOP-RELEASE.md)
 - [便携快照与备份](docs/GANTT-PORTABLE-BACKUP.md)
-- [Plane 快速开始](docs/PLANE-QUICKSTART.md)
-
-## 核心数据边界
-
-- Plane PostgreSQL 仅用于只读分析与时间线抽取。
-- 常规 Plane 写入必须通过 API，并由 `--apply` 与 `PLANE_API_KEY` 显式授权。
-- 甘特图可变状态、自动保存和便携快照独立于 Plane 内部数据库结构。
-- 本地服务默认只监听 `127.0.0.1`。
 
 ## 主要目录
 
 | 路径 | 用途 |
 |---|---|
-| `scripts/` | 时间线抽取、进度解析、报告、甘特图生成与本地服务 |
-| `exports/` | 生成的交付看板、报告和运行时快照 |
-| `portable/gantt/latest/` | 可克隆、可迁移的甘特图快照 |
-| `docs/` | 使用说明、架构设计与运行指南 |
-| `.github/workflows/` | Windows/macOS 桌面版构建与 Release 发布 |
+| `scripts/serve-delivery-dashboard.py` | 本地 HTTP 服务、自动保存、附件和导入导出 API |
+| `scripts/export-gantt-portable.py` | 生成可提交、可迁移的甘特图快照 |
+| `scripts/backup-gantt-portable.py` | 选择最新本地状态并备份便携快照 |
+| `portable/gantt/latest/` | 甘特图页面、任务事件数据和跨平台启动脚本 |
+| `exports/delivery/` | 本机运行时数据与自动保存（默认不提交） |
 
-## 安全说明
+## 数据边界
 
-不要提交 `plane.env`、API Token、生成的 Secret、远程服务器密码或个人联系及支付标识。
+- 服务默认只监听 `127.0.0.1`。
+- 不依赖外部项目管理系统、数据库或 Docker。
+- `portable/gantt/latest/` 是可迁移快照；`exports/delivery/` 是本机可变运行数据。
+- 旧版 schema/localStorage 标识为兼容现有快照而保留，不代表仍依赖旧系统。
+
+不要提交 API Token、生成的 Secret、远程服务器密码或个人联系及支付标识。

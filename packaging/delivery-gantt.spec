@@ -8,7 +8,6 @@ ROOT = Path(SPEC).resolve().parent.parent
 DATA_FILES = [
     "scripts/serve-delivery-dashboard.py",
     "scripts/export-gantt-portable.py",
-    "scripts/build-delivery-dashboard.py",
     "portable/gantt/latest/README.md",
     "portable/gantt/latest/gantt-local-edits.json",
     "portable/gantt/latest/gantt.html",
@@ -49,7 +48,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="PlaneDemandHubGantt",
+    name="DeliveryGantt",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

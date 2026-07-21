@@ -8,7 +8,6 @@ import importlib.util
 import json
 import os
 import subprocess
-import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,7 +18,6 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_DELIVERY_DIR = ROOT_DIR / "exports/delivery"
 DEFAULT_OUTPUT_DIR = ROOT_DIR / "portable/gantt/latest"
 PORTABLE_EXPORT_SCRIPT = ROOT_DIR / "scripts/export-gantt-portable.py"
-DELIVERY_BUILD_SCRIPT = ROOT_DIR / "scripts/build-delivery-dashboard.py"
 DEFAULT_PROXY = "http://127.0.0.1:7890"
 
 
@@ -127,29 +125,6 @@ def load_portable_exporter():
     return module.export_portable
 
 
-def maybe_rebuild_delivery(delivery_dir: Path, skip_rebuild: bool) -> None:
-    if skip_rebuild:
-        return
-    timeline = ROOT_DIR / "exports/plane/timeline.jsonl"
-    progress_dir = ROOT_DIR / "exports/progress"
-    if not timeline.exists() or not progress_dir.exists():
-        print("Skipping delivery rebuild: exports/plane/timeline.jsonl or exports/progress is missing.")
-        return
-    run(
-        [
-            sys.executable,
-            str(DELIVERY_BUILD_SCRIPT),
-            "--timeline",
-            str(timeline),
-            "--progress-dir",
-            str(progress_dir),
-            "--output-dir",
-            str(delivery_dir),
-        ],
-        check=True,
-    )
-
-
 def export_portable(delivery_dir: Path, output_dir: Path, candidate: ChangesetCandidate | None) -> dict[str, Any]:
     exporter = load_portable_exporter()
     changeset = candidate.payload if candidate else None
@@ -230,7 +205,6 @@ def main() -> int:
     parser.add_argument("--branch", default=None, help="Expected branch to push. The script fails if the current branch differs.")
     parser.add_argument("--message", default=None, help="Optional commit message.")
     parser.add_argument("--proxy", default=DEFAULT_PROXY, help="Proxy used for GitHub push. Use empty string to disable.")
-    parser.add_argument("--skip-rebuild", action="store_true", help="Skip rebuilding exports/delivery before portable export.")
     parser.add_argument("--no-commit", dest="commit", action="store_false", help="Export portable files without committing.")
     parser.add_argument("--no-push", dest="push", action="store_false", help="Commit without pushing.")
     parser.add_argument("--dry-run", action="store_true", help="Export portable files, then stop before git add/commit/push.")
@@ -244,7 +218,6 @@ def main() -> int:
     if not output_dir.is_absolute():
         output_dir = ROOT_DIR / output_dir
 
-    maybe_rebuild_delivery(delivery_dir, args.skip_rebuild)
     candidate = choose_latest_changeset(delivery_dir, output_dir)
     export_result = export_portable(delivery_dir, output_dir, candidate)
     git_result = commit_and_push(output_dir, args)

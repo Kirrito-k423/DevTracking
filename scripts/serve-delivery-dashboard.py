@@ -234,7 +234,7 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
             "ok": True,
             "path": display_path(timestamped_path),
             "latest": display_path(latest_path),
-            "write_boundary": "Local changeset only. Applying to Plane requires a controlled API writer.",
+            "write_boundary": "Local changeset only; the standalone Gantt never writes to an external task system.",
         }
         self._send_json(200, response)
 
@@ -340,7 +340,7 @@ class DeliveryHandler(SimpleHTTPRequestHandler):
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         self.send_response(200)
         self.send_header("Content-Type", "application/zip")
-        self.send_header("Content-Disposition", f'attachment; filename="plane-demand-hub-gantt-{stamp}.zip"')
+        self.send_header("Content-Disposition", f'attachment; filename="delivery-gantt-{stamp}.zip"')
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -565,7 +565,7 @@ def prepare_directory_from_portable(directory: Path, portable_directory: Path = 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Serve delivery exports with a local Gantt changeset API.")
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8091)
+    parser.add_argument("--port", type=int, default=8090)
     parser.add_argument("--directory", default=str(DEFAULT_DIRECTORY))
     parser.add_argument("--portable-directory", default=str(PORTABLE_DIRECTORY))
     args = parser.parse_args()

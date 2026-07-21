@@ -10,7 +10,6 @@ import types
 import unittest
 import urllib.request
 from pathlib import Path
-from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,10 +27,7 @@ def load_script(module_name: str, filename: str):
 
 
 server_module = load_script("delivery_server", "serve-delivery-dashboard.py")
-progress_module = load_script("progress_to_plane", "progress-to-plane.py")
-timeline_module = load_script("export_plane_timeline", "export-plane-timeline.py")
 portable_module = load_script("export_gantt_portable", "export-gantt-portable.py")
-daily_module = load_script("apply_plane_daily_record", "apply-plane-daily-record.py")
 gantt_app_module = load_script("gantt_desktop_app", "gantt_app.py")
 
 
@@ -85,52 +81,6 @@ class WindowsCompatibilityTests(unittest.TestCase):
                 server.server_close()
                 thread.join(timeout=5)
 
-    def test_progress_export_uses_current_python_interpreter(self):
-        timeline = ROOT / "exports/plane/windows-test.jsonl"
-        with mock.patch.object(progress_module.subprocess, "run") as run:
-            progress_module.run_export(timeline)
-        command = run.call_args.args[0]
-        self.assertEqual(command[0], sys.executable)
-        self.assertEqual(Path(command[1]).name, "export-plane-timeline.py")
-        self.assertIn(str(timeline), command)
-
-    def test_python_child_tools_use_current_interpreter(self):
-        with mock.patch.object(daily_module.subprocess, "run") as run:
-            daily_module.run_bootstrap()
-        bootstrap_command = run.call_args.args[0]
-        self.assertEqual(bootstrap_command[0], sys.executable)
-        self.assertEqual(Path(bootstrap_command[1]).name, "bootstrap-plane-visual-constructs.py")
-
-        result = {
-            "planned_plane_changes": [
-                {
-                    "change_id": "windows-test",
-                    "operation": "plane_api_comment",
-                    "mode": "apply_ready",
-                    "target": {"workspace_slug": "test", "project_id": "project", "issue_id": "issue"},
-                    "body": "test",
-                    "external_id": "windows-test",
-                }
-            ],
-            "skipped_changes": [],
-            "applied_changes": [],
-        }
-        completed = types.SimpleNamespace(returncode=0, stdout="", stderr="")
-        with mock.patch.dict(progress_module.os.environ, {"PLANE_API_KEY": "test-only"}), mock.patch.object(
-            progress_module.subprocess, "run", return_value=completed
-        ) as run:
-            self.assertEqual(progress_module.apply_changes(result, dry_run=False), 0)
-        comment_command = run.call_args.args[0]
-        self.assertEqual(comment_command[0], sys.executable)
-        self.assertEqual(Path(comment_command[1]).name, "plane-api-comment.py")
-
-    def test_native_timeline_export_reuses_read_only_query(self):
-        query = timeline_module.timeline_query()
-        self.assertIn("begin read only;", query.lower())
-        self.assertIn("copy (", query.lower())
-        self.assertIn("commit;", query.lower())
-        self.assertNotIn("<<'SQL'", query)
-
     def test_committed_windows_launchers_match_export_templates(self):
         portable = ROOT / "portable/gantt/latest"
         self.assertEqual((portable / "start-windows.bat").read_text(encoding="utf-8"), portable_module.windows_bat())
@@ -155,7 +105,7 @@ class WindowsCompatibilityTests(unittest.TestCase):
             )
 
     def test_pyinstaller_spec_resolves_repository_from_spec_path(self):
-        spec_path = ROOT / "packaging/plane-demand-hub-gantt.spec"
+        spec_path = ROOT / "packaging/delivery-gantt.spec"
         captured_analysis = {}
 
         def analysis(*args, **kwargs):

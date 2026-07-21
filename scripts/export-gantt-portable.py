@@ -18,6 +18,8 @@ DEFAULT_DELIVERY_DIR = ROOT_DIR / "exports/delivery"
 DEFAULT_OUTPUT_DIR = ROOT_DIR / "portable/gantt/latest"
 PORTABLE_SCHEMA = "plane-demand-hub.gantt-portable.v1"
 EDIT_SCHEMA = "plane-demand-hub.gantt-edits.v1"
+# Legacy compatibility identifiers: changing them would orphan existing
+# browser storage and make committed snapshots fail import validation.
 ATTACHMENT_DIRECTORY = "gantt-attachments"
 ATTACHMENT_EXTENSIONS = {
     ".zip", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp",
@@ -141,14 +143,14 @@ def windows_bat() -> str:
     return """@echo off
 setlocal
 cd /d "%~dp0\\..\\..\\.."
-echo Starting Plane Demand Hub Gantt at http://127.0.0.1:8091/gantt.html
+echo Starting Delivery Gantt at http://127.0.0.1:8090/gantt.html
 where py >nul 2>nul
 if not errorlevel 1 (
-  py -3 scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8091
+  py -3 scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8090
 ) else (
   where python >nul 2>nul
   if not errorlevel 1 (
-    python scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8091
+    python scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8090
   ) else (
     echo Python 3 was not found. Install it from https://www.python.org/downloads/windows/ and enable "Add python.exe to PATH".
   )
@@ -161,15 +163,15 @@ def windows_ps1() -> str:
     return """$ErrorActionPreference = "Stop"
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..\\..\\..")
 Set-Location $Root
-Write-Host "Starting Plane Demand Hub Gantt at http://127.0.0.1:8091/gantt.html"
+Write-Host "Starting Delivery Gantt at http://127.0.0.1:8090/gantt.html"
 if (Get-Command py -ErrorAction SilentlyContinue) {
-  & py -3 scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8091
+  & py -3 scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8090
 } else {
   $Python = Get-Command python -ErrorAction SilentlyContinue
   if (-not $Python) {
     throw 'Python 3 was not found. Install it from https://www.python.org/downloads/windows/ and enable "Add python.exe to PATH".'
   }
-  & $Python.Source scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8091
+  & $Python.Source scripts\\serve-delivery-dashboard.py --host 127.0.0.1 --port 8090
 }
 """
 
@@ -178,8 +180,8 @@ def mac_linux_sh() -> str:
     return """#!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
-echo "Starting Plane Demand Hub Gantt at http://127.0.0.1:8091/gantt.html"
-python3 scripts/serve-delivery-dashboard.py --host 127.0.0.1 --port 8091
+echo "Starting Delivery Gantt at http://127.0.0.1:8090/gantt.html"
+python3 scripts/serve-delivery-dashboard.py --host 127.0.0.1 --port 8090
 """
 
 
@@ -190,7 +192,7 @@ def readme_text(manifest: dict[str, Any]) -> str:
     attachment_count = manifest.get("counts", {}).get("attachments", 0)
     return f"""# Portable Gantt Snapshot
 
-This directory is safe to commit. It captures the current Plane Demand Hub Gantt state for another machine.
+This directory is safe to commit. It captures the current Delivery Gantt state for another machine.
 
 Exported at: `{exported_at}`
 
@@ -213,12 +215,12 @@ Counts:
 
 1. Clone the repository.
 2. Double-click `portable\\gantt\\latest\\start-windows.bat`.
-3. Open `http://127.0.0.1:8091/gantt.html`.
+3. Open `http://127.0.0.1:8090/gantt.html`.
 
 If double-click is blocked by policy, open PowerShell at the repository root and run:
 
 ```powershell
-python scripts\\serve-delivery-dashboard.py --port 8091
+python scripts\\serve-delivery-dashboard.py --port 8090
 ```
 
 ## Updating This Snapshot

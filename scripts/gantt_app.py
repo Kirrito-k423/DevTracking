@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Desktop launcher for the Plane Demand Hub Gantt app."""
+"""Desktop launcher for the standalone Delivery Gantt app."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import webbrowser
 from pathlib import Path
 
 
-APP_NAME = "Plane Demand Hub Gantt"
+APP_NAME = "Delivery Gantt"
 
 
 def source_root() -> Path:
@@ -86,9 +86,9 @@ def wait_until_ready(host: str, port: int, timeout: float = 4.0) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Start the Plane Demand Hub Gantt desktop app.")
+    parser = argparse.ArgumentParser(description="Start the standalone Delivery Gantt desktop app.")
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8091)
+    parser.add_argument("--port", type=int, default=8090)
     parser.add_argument("--data-dir", default=None)
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--reset-data", action="store_true")

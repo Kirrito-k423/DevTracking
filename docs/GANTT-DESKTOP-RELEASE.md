@@ -16,10 +16,10 @@ Windows PowerShell:
 python scripts\gantt_app.py
 ```
 
-The launcher opens `http://127.0.0.1:8091/gantt.html` and stores runtime data outside the repository:
+The launcher opens `http://127.0.0.1:8090/gantt.html` and stores runtime data outside the repository:
 
-- macOS: `~/Library/Application Support/Plane Demand Hub Gantt`
-- Windows: `%APPDATA%\\Plane Demand Hub Gantt`
+- macOS: `~/Library/Application Support/Delivery Gantt`
+- Windows: `%APPDATA%\\Delivery Gantt`
 
 ## Local Package Build
 
@@ -27,10 +27,10 @@ Install PyInstaller, then build:
 
 ```powershell
 python -m pip install pyinstaller
-python -m PyInstaller packaging\plane-demand-hub-gantt.spec --noconfirm
+python -m PyInstaller packaging\delivery-gantt.spec --noconfirm
 ```
 
-The executable is written to `dist/PlaneDemandHubGantt` on macOS/Linux or `dist/PlaneDemandHubGantt.exe` on Windows.
+The executable is written to `dist/DeliveryGantt` on macOS/Linux or `dist/DeliveryGantt.exe` on Windows.
 
 ## GitHub Release
 
@@ -51,4 +51,4 @@ Current release:
 
 - `gantt-app-v0.1.1`
 - `https://github.com/Kirrito-k423/DevTracking/releases/tag/gantt-app-v0.1.1`
-- Assets: `PlaneDemandHubGantt-macos.zip`, `PlaneDemandHubGantt-windows.zip`
+- Assets: `DeliveryGantt-macos.zip`, `DeliveryGantt-windows.zip`

@@ -1,6 +1,6 @@
 # Portable Gantt Snapshot
 
-This directory is safe to commit. It captures the current Plane Demand Hub Gantt state for another machine.
+This directory is safe to commit. It captures the current Delivery Gantt state for another machine.
 
 Exported at: `2026-07-20T21:02:55.071916Z`
 
@@ -23,12 +23,12 @@ Counts:
 
 1. Clone the repository.
 2. Double-click `portable\gantt\latest\start-windows.bat`.
-3. Open `http://127.0.0.1:8091/gantt.html`.
+3. Open `http://127.0.0.1:8090/gantt.html`.
 
 If double-click is blocked by policy, open PowerShell at the repository root and run:
 
 ```powershell
-python scripts\serve-delivery-dashboard.py --port 8091
+python scripts\serve-delivery-dashboard.py --port 8090
 ```
 
 ## Updating This Snapshot

@@ -19,10 +19,10 @@ jobs:
         include:
           - os: macos-latest
             name: macOS
-            artifact: PlaneDemandHubGantt-macos
+            artifact: DeliveryGantt-macos
           - os: windows-latest
             name: Windows
-            artifact: PlaneDemandHubGantt-windows
+            artifact: DeliveryGantt-windows
 
     steps:
       - name: Check out repository
@@ -37,7 +37,7 @@ jobs:
         run: python -m pip install --upgrade pip pyinstaller
 
       - name: Build executable
-        run: pyinstaller packaging/plane-demand-hub-gantt.spec --noconfirm
+        run: pyinstaller packaging/delivery-gantt.spec --noconfirm
 
       - name: Package artifact
         shell: bash
@@ -48,7 +48,7 @@ jobs:
           from pathlib import Path
 
           artifact = os.environ["ARTIFACT_NAME"]
-          exe_name = "PlaneDemandHubGantt.exe" if os.name == "nt" else "PlaneDemandHubGantt"
+          exe_name = "DeliveryGantt.exe" if os.name == "nt" else "DeliveryGantt"
           exe_path = Path("dist") / exe_name
           if not exe_path.exists():
               raise SystemExit(f"missing executable: {exe_path}")

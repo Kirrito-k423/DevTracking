@@ -4689,7 +4689,7 @@
       "title": "LLaDA dLLM类模型"
     }
   ],
-  "note": "Static Gantt edits are persisted as an auditable changeset. Applying to Plane requires a controlled API writer; no direct Plane database writes.",
+  "note": "Standalone Gantt edits are persisted locally as an auditable changeset.",
   "schema": "plane-demand-hub.gantt-edits.v1",
   "snapshot": {
     "attachments": [],
@@ -7256,7 +7256,7 @@
         "delivery_summary": {
           "date_range": "2026-06-23 - 2026-07-22",
           "issue_key": "1-9",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -7338,7 +7338,7 @@
           "blocker": null,
           "date_range": "2026-07-08 - 2026-07-21",
           "issue_key": "1-12",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -7371,7 +7371,7 @@
         "delivery_summary": {
           "date_range": "2026-07-08 - 2026-07-21",
           "issue_key": "1-13",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -8386,7 +8386,7 @@
         "delivery_summary": {
           "date_range": "2026-06-20 - 2026-07-15",
           "issue_key": "1-14",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -8441,7 +8441,7 @@
         "delivery_summary": {
           "date_range": "2026-06-25 - 2026-07-16",
           "issue_key": "1-19",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -8521,7 +8521,7 @@
         "delivery_summary": {
           "date_range": "2026-06-25 - 2026-07-14",
           "issue_key": "1-15",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -8624,7 +8624,7 @@
         "delivery_summary": {
           "date_range": "2026-06-28 - 2026-07-13",
           "issue_key": "1-20",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -8706,7 +8706,7 @@
         "delivery_summary": {
           "date_range": "2026-06-23 - 2026-07-06",
           "issue_key": "1-22",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 100,
           "state": "Done",
@@ -9264,7 +9264,7 @@
         "delivery_summary": {
           "date_range": "2026-07-02 - 2026-07-14",
           "issue_key": "1-2",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": "侯玉峰",
           "progress": 50,
           "state": "In Progress",
@@ -9420,7 +9420,7 @@
         "delivery_summary": {
           "date_range": "2026-06-23 - 2026-07-22",
           "issue_key": "1-9",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -9443,7 +9443,7 @@
           "blocker": null,
           "date_range": "2026-07-08 - 2026-07-21",
           "issue_key": "1-12",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -9466,7 +9466,7 @@
         "delivery_summary": {
           "date_range": "2026-07-08 - 2026-07-21",
           "issue_key": "1-13",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -9489,7 +9489,7 @@
         "delivery_summary": {
           "date_range": "2026-06-20 - 2026-07-15",
           "issue_key": "1-14",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -9510,7 +9510,7 @@
         "delivery_summary": {
           "date_range": "2026-06-25 - 2026-07-16",
           "issue_key": "1-19",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -9532,7 +9532,7 @@
         "delivery_summary": {
           "date_range": "2026-06-25 - 2026-07-14",
           "issue_key": "1-15",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -9554,7 +9554,7 @@
         "delivery_summary": {
           "date_range": "2026-06-28 - 2026-07-13",
           "issue_key": "1-20",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 50,
           "state": "In Progress",
@@ -9577,7 +9577,7 @@
         "delivery_summary": {
           "date_range": "2026-06-23 - 2026-07-06",
           "issue_key": "1-22",
-          "next_action": "按最新 Plane 状态继续跟进",
+          "next_action": "按最新甘特图状态继续跟进",
           "owner": null,
           "progress": 100,
           "state": "Done",

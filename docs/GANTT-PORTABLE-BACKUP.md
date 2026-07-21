@@ -52,9 +52,9 @@ python scripts/backup-gantt-portable.py --branch codex/phase-06-gantt
 2. Start the local dashboard server:
 
 ```powershell
-python scripts\serve-delivery-dashboard.py --port 8091
+python scripts\serve-delivery-dashboard.py --port 8090
 ```
 
-3. Open `http://127.0.0.1:8091/gantt.html`.
+3. Open `http://127.0.0.1:8090/gantt.html`.
 
 The page loads `portable/gantt/latest/gantt-local-edits.json` when no newer local autosave or pushed edits exist on that machine.
