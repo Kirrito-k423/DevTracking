@@ -1,4 +1,4 @@
-# Roadmap: Plane Demand Hub
+# Roadmap: Delivery Gantt
 
 **Created:** 2026-07-02
 **Last reorganized:** 2026-07-06 after v1.0 MVP shipment
@@ -34,13 +34,12 @@ Archive:
 
 Use `$gsd-new-milestone` to define the next set of requirements and phases.
 
-Candidate directions from the archived v2 backlog:
+Candidate directions after the standalone pivot:
 
-- Chat / Slack intake for direct progress updates.
-- GitHub commits, issues, and pull requests as extra progress signals.
-- Excel and PowerPoint versions of weekly and retrospective reports.
-- Scheduled report generation, digests, and blocker escalation triggers.
-- Multi-workspace Plane support.
+- Continue interaction and visualization improvements in the Gantt.
+- Strengthen autosave recovery and portable backup observability.
+- Refresh desktop release assets under the Delivery Gantt name.
+- Add optional report formats without introducing heavyweight infrastructure.
 
 ## Progress
 

@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
 last_updated: "2026-07-18T00:09:18Z"
-last_activity: 2026-07-18 — Gantt right-side two-level detail drawer completed
+last_activity: 2026-07-21 — Plane retired and standalone Delivery Gantt deployed
 progress:
   total_phases: 6
   completed_phases: 6
@@ -13,21 +13,22 @@ progress:
   percent: 100
 ---
 
-# State: Plane Demand Hub
+# State: Delivery Gantt
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-07-06)
 
-**Core value:** Turn natural-language team progress into trustworthy Plane state, visual timelines, and delivery reports without making every contributor do heavy manual bookkeeping.
-**Current focus:** Milestone v1.0 MVP is archived; next recommended command is `$gsd-new-milestone`.
+**Core value:** Keep delivery plans visually editable, locally durable, portable, and independent of heavyweight infrastructure.
+**Current focus:** Operate and improve the standalone Delivery Gantt at `http://127.0.0.1:8090/gantt.html`.
 
 ## Current Status
 
-- Project initialized.
-- Local Plane is running at `http://localhost:8090`.
-- Phase 1 connector foundation is complete and verified.
-- Plane health check, read-only timeline export, progress parser, and API comment writer dry-run all pass.
+- Project pivoted to the standalone Delivery Gantt on 2026-07-21.
+- Plane deployment, integration code, containers, volumes, network, and images were removed.
+- Delivery Gantt runs without Docker through a macOS LaunchAgent at `http://127.0.0.1:8090/gantt.html`.
+- Existing portable data remains available with 105 tasks and 109 events.
+- Historical Plane-era milestone records remain archived for traceability.
 - Phase 1 local ship recorded; PR creation skipped because no git remote is configured.
 - Phase 2 conversational progress preview has been executed.
 - Seed update now resolves `SFT任务` to Plane issue `1-1 InternS2 SFT` and keeps unresolved `chunkmoe` as a draft/manual-target change.
@@ -96,11 +97,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 ## Active Decisions
 
-- Use Plane as the visual source of truth.
-- Build Demand Hub as a sidecar, not a Plane fork.
-- Read Plane DB for analytics; write through API-level paths.
-- Start with conversation-to-Plane daily progress loop.
-- Improve visualization through a Demand Hub Gantt sidecar view rather than forking Plane.
+- Delivery Gantt is the product and local source of truth.
+- Do not reintroduce Plane, Docker, or a database without an explicit requirement.
+- Preserve JSON autosaves, portable snapshots, and legacy schema identifiers for compatibility.
+- Run the macOS service through `com.devtracking.delivery-gantt` on port 8090.
 
 ## Accumulated Context
 
@@ -112,6 +112,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260721-vo3 | 移除已弃用的 Plane 代码与专属 Docker 资源，并部署自写甘特图本地服务 | 2026-07-21 | 0d44109 | [260721-vo3-plane-docker](./quick/260721-vo3-plane-docker/) |
 | 260718-b4e | Gantt right-side two-level detail drawer | 2026-07-18 | 677919a | [260718-b4e-gantt](./quick/260718-b4e-gantt/) |
 | 260716-h63 | Gantt future event proximity warning columns | 2026-07-16 | b9aa2c6 | [260716-h63-gantt-14](./quick/260716-h63-gantt-14/) |
 | 260716-gkw | Gantt task/event attachment workspace and portable ZIP migration | 2026-07-16 | c98ff65 | [260716-gkw-gantt-10mb-zip-ppt-txt-word-portable-zip](./quick/260716-gkw-gantt-10mb-zip-ppt-txt-word-portable-zip/) |
@@ -159,8 +160,8 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-18 — Gantt right-side two-level detail drawer completed
+Last activity: 2026-07-21 — Plane retired and standalone Delivery Gantt deployed
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Open `http://127.0.0.1:8090/gantt.html` and continue direct Gantt improvements as needed.
