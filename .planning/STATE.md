@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-23T10:11:02Z"
-last_activity: 2026-07-23 — Completed task subtrees now hide by default with a show-all toggle
+last_updated: "2026-07-23T13:21:35Z"
+last_activity: 2026-07-23 — Added dual demand views, event-recency sorting, and task pinning
 progress:
   total_phases: 6
   completed_phases: 6
@@ -82,6 +82,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Gantt future event proximity warning completed: event dates within the next 14 days now highlight full timeline columns in progressively brighter red while today remains light yellow.
 - Gantt right-side two-level detail drawer completed: first-level task/event summaries open on the right, while attachments are lazy-rendered in an internal second-level drawer.
 - Gantt completed task visibility completed: completed tasks and their descendants hide by default, while the toolbar can reveal the full expanded task tree.
+- Gantt demand prioritization completed: 版本必做 and 预埋技术 views share the same Gantt, unpinned siblings auto-sort by latest event, and Pin preserves selected task slots.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -113,6 +114,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260723-tb0 | Gantt 增加版本必做/预埋技术双页面、事件新鲜度自动排序与任务 Pin | 2026-07-23 | b0a2bd4 | [260723-tb0](./quick/260723-tb0-add-version-must-and-prebuilt-technology/) |
 | 260723-p3e | Gantt 完成任务及其子任务默认隐藏，并增加全部显示切换 | 2026-07-23 | f73a26c | [260723-p3e](./quick/260723-p3e-hide-completed-tasks-and-descendants-wit/) |
 | 260721-vo3 | 移除已弃用的 Plane 代码与专属 Docker 资源，并部署自写甘特图本地服务 | 2026-07-21 | 0d44109 | [260721-vo3-plane-docker](./quick/260721-vo3-plane-docker/) |
 | 260718-b4e | Gantt right-side two-level detail drawer | 2026-07-18 | 677919a | [260718-b4e-gantt](./quick/260718-b4e-gantt/) |
@@ -162,7 +164,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-23 — Completed task subtrees now hide by default with a show-all toggle
+Last activity: 2026-07-23 — Added dual demand views, event-recency sorting, and task pinning
 
 ## Operator Next Steps
 
