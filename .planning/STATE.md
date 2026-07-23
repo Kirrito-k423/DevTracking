@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: Awaiting next milestone
-last_updated: "2026-07-18T00:09:18Z"
-last_activity: 2026-07-21 — Plane retired and standalone Delivery Gantt deployed
+last_updated: "2026-07-23T10:11:02Z"
+last_activity: 2026-07-23 — Completed task subtrees now hide by default with a show-all toggle
 progress:
   total_phases: 6
   completed_phases: 6
@@ -81,6 +81,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 - Gantt attachment workspace completed: task and event details support 10MB ZIP/image/PPT/TXT/Word uploads, image lightbox previews, persistent bindings, and portable ZIP round-trip.
 - Gantt future event proximity warning completed: event dates within the next 14 days now highlight full timeline columns in progressively brighter red while today remains light yellow.
 - Gantt right-side two-level detail drawer completed: first-level task/event summaries open on the right, while attachments are lazy-rendered in an internal second-level drawer.
+- Gantt completed task visibility completed: completed tasks and their descendants hide by default, while the toolbar can reveal the full expanded task tree.
 - Milestone v1.0 MVP archived to `.planning/milestones/`.
 - Next recommended command: `$gsd-new-milestone`
 
@@ -112,6 +113,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260723-p3e | Gantt 完成任务及其子任务默认隐藏，并增加全部显示切换 | 2026-07-23 | f73a26c | [260723-p3e](./quick/260723-p3e-hide-completed-tasks-and-descendants-wit/) |
 | 260721-vo3 | 移除已弃用的 Plane 代码与专属 Docker 资源，并部署自写甘特图本地服务 | 2026-07-21 | 0d44109 | [260721-vo3-plane-docker](./quick/260721-vo3-plane-docker/) |
 | 260718-b4e | Gantt right-side two-level detail drawer | 2026-07-18 | 677919a | [260718-b4e-gantt](./quick/260718-b4e-gantt/) |
 | 260716-h63 | Gantt future event proximity warning columns | 2026-07-16 | b9aa2c6 | [260716-h63-gantt-14](./quick/260716-h63-gantt-14/) |
@@ -160,7 +162,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-06)
 Phase: Milestone v1.0 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-21 — Plane retired and standalone Delivery Gantt deployed
+Last activity: 2026-07-23 — Completed task subtrees now hide by default with a show-all toggle
 
 ## Operator Next Steps
 
