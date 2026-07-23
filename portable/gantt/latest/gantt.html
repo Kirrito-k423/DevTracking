@@ -18,11 +18,6 @@
     .tool-button[aria-pressed="true"] { border-color:var(--blue); color:var(--blue); box-shadow:0 0 0 2px rgba(47,111,237,.12); }
     .tool-button.danger { border-color:#e49a9a; color:var(--red); background:#fff5f5; }
     .tool-button.danger:hover { background:#ffecec; }
-    .demand-tabs { display:flex; align-items:center; gap:8px; padding:14px 24px 0; }
-    .demand-tab { min-height:38px; display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line); border-bottom-width:2px; border-radius:7px 7px 3px 3px; background:#fff; color:var(--muted); padding:0 16px; font-weight:750; cursor:pointer; }
-    .demand-tab[aria-selected="true"] { border-color:#9bb5e4; border-bottom-color:var(--blue); background:#f5f8ff; color:var(--blue); box-shadow:0 2px 8px rgba(47,111,237,.1); }
-    .demand-count { min-width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; background:#eef1f6; color:var(--muted); padding:0 6px; font-size:11px; }
-    .demand-tab[aria-selected="true"] .demand-count { background:#dfeaff; color:var(--blue); }
     .autosave-status { color:var(--muted); font-size:12px; white-space:nowrap; }
     .autosave-status[data-state="saved"] { color:var(--green); }
     .autosave-status[data-state="saving"] { color:var(--amber); }
@@ -49,13 +44,10 @@
     .indent-cell { width:7px; height:7px; border:1px solid #c5cfdd; background:#f4f7fb; border-radius:2px; }
     .drop-choice-label { overflow:hidden; text-overflow:ellipsis; }
     .task-main { display:flex; align-items:center; gap:4px; min-width:0; }
-    .row-button { flex:1 1 auto; min-width:0; min-height:calc(var(--row-h) - 6px); display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--ink); text-align:left; cursor:pointer; padding:0 4px; border-radius:4px; overflow:hidden; }
-    .task-pin { flex:0 0 23px; width:23px; height:23px; display:flex; align-items:center; justify-content:center; border:1px solid transparent; border-radius:5px; background:transparent; color:#9aa5b4; padding:0; cursor:pointer; font-size:12px; line-height:1; opacity:.56; }
-    .task-pin:hover { border-color:#bfd0ef; background:#f5f8ff; color:var(--blue); opacity:1; }
-    .task-pin[aria-pressed="true"] { border-color:#9bb5e4; background:#eaf1ff; color:var(--blue); opacity:1; box-shadow:0 0 0 1px rgba(47,111,237,.1); }
+    .row-button { width:100%; min-height:calc(var(--row-h) - 6px); display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--ink); text-align:left; cursor:pointer; padding:0 4px; border-radius:4px; overflow:hidden; }
     .task-row span:not(.task-main):not(.editable-cell) { cursor:pointer; }
     .editable-cell { cursor:text; }
-    .row-button:focus-visible, .task-pin:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible, .action-button:focus-visible, .danger-button:focus-visible, .palette-swatch:focus-visible, .detail-subnav:focus-visible, .attachment-card:focus-visible, .attachment-upload-button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+    .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible, .action-button:focus-visible, .danger-button:focus-visible, .palette-swatch:focus-visible, .detail-subnav:focus-visible, .attachment-card:focus-visible, .attachment-upload-button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
     .chevron { width:14px; flex:0 0 14px; color:var(--muted); text-align:center; }
     .task-key { color:var(--muted); flex:0 0 34px; width:34px; padding:0; font-size:11px; text-align:right; overflow:hidden; text-overflow:ellipsis; }
     .task-label { flex:1 1 auto; min-width:0; font-weight:600; font-size:var(--font-label); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -168,7 +160,6 @@
     .lightbox-caption { padding:8px 18px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; }
     @media (max-width: 760px) {
       header, main { padding-left:12px; padding-right:12px; }
-      .demand-tabs { padding-left:12px; padding-right:12px; }
       .gantt-layout { grid-template-columns:minmax(430px,78vw) minmax(520px,1fr); overflow:auto; }
       .timeline-pane { overflow:visible; }
       .detail { width:100vw; }
@@ -191,7 +182,6 @@
       <button class="tool-button" id="export-report" type="button">报告</button>
       <button class="tool-button" id="add-task" type="button">新增任务条</button>
       <button class="tool-button" id="add-event" type="button">新增事件</button>
-      <button class="tool-button" id="show-all-tasks" type="button" aria-pressed="false">全部显示</button>
       <button class="tool-button danger" id="clear-data" type="button" title="清除当前 Gantt 全部任务和事件">Clear</button>
       <button class="tool-button" id="marker-demo" type="button">Demo markers</button>
       <button class="tool-button" id="expand-all" type="button" title="Expand all">Expand</button>
@@ -203,14 +193,6 @@
     </div>
   </header>
   <div class="drop-overlay" id="drop-overlay">释放导入 JSON 或 ZIP 迁移包</div>
-  <nav class="demand-tabs" aria-label="需求紧急性分类" role="tablist">
-    <button class="demand-tab" id="lane-version-must" type="button" role="tab" aria-selected="true" data-demand-lane="version_must">
-      版本必做 <span class="demand-count" id="lane-version-must-count" aria-hidden="true">0</span>
-    </button>
-    <button class="demand-tab" id="lane-tech-prebuild" type="button" role="tab" aria-selected="false" data-demand-lane="tech_prebuild">
-      预埋技术 <span class="demand-count" id="lane-tech-prebuild-count" aria-hidden="true">0</span>
-    </button>
-  </nav>
   <main>
     <section class="summary" id="summary"></section>
     <section class="gantt-layout" aria-label="Gantt chart">
@@ -261,13 +243,7 @@
     const ATTACHMENT_ACCEPT = '.zip,.png,.jpg,.jpeg,.gif,.webp,.bmp,.txt,.ppt,.pptx,.doc,.docx';
     const ATTACHMENT_EXTENSIONS = new Set(ATTACHMENT_ACCEPT.split(',').map(value => value.slice(1)));
     const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']);
-    const DEMAND_LANES = {
-      version_must: '版本必做',
-      tech_prebuild: '预埋技术'
-    };
     const collapsed = new Set();
-    let showAllTasks = false;
-    let activeDemandLane = 'version_must';
     const DAY_MS = 86400000;
     const PAD_DAYS = 30;
     const symbol = { blocked: '✕', todo: '○', stalled: '×', restart: '↻', in_progress: '→', completed: '●', milestone: '★' };
@@ -335,11 +311,10 @@
       const progress = (futureEventWarningDays - daysAway) / Math.max(1, futureEventWarningDays - 1);
       return futureEventWarningMinAlpha + progress * (futureEventWarningMaxAlpha - futureEventWarningMinAlpha);
     }
-    function futureEventWarnings(visibleTaskIds = null) {
+    function futureEventWarnings() {
       const today = todayOrd();
       const warnings = new Map();
       for (const event of events) {
-        if (visibleTaskIds && !visibleTaskIds.has(event.task_id)) continue;
         const ord = dateOrd(event.date);
         if (ord === null) continue;
         const daysAway = ord - today;
@@ -587,9 +562,6 @@
         order: task.order || 0,
         order_index: index,
         project: task.project || null,
-        demand_lane: taskDemandLane(task),
-        pinned: Boolean(task.pinned),
-        pin_position: Number.isInteger(task.pin_position) ? task.pin_position : null,
         state: task.state || null,
         priority: task.priority || null,
         progress: task.progress || 0,
@@ -617,7 +589,7 @@
           const original = base.get(task.id);
           if (!original) return null;
           const changes = {};
-          for (const key of ['title', 'compact_label', 'parent_id', 'start_date', 'target_date', 'owner', 'state', 'progress', 'labels', 'modules', 'color', 'demand_lane', 'pinned', 'pin_position', 'delivery_summary']) {
+          for (const key of ['title', 'compact_label', 'parent_id', 'start_date', 'target_date', 'owner', 'state', 'progress', 'labels', 'modules', 'color', 'delivery_summary']) {
             if (!sameValue(task[key], original[key])) changes[key] = task[key] ?? null;
           }
           const originalOrder = gantt.tasks.findIndex(item => item.id === task.id);
@@ -644,9 +616,6 @@
           parent_id: task.parent_id || null,
           order_index: tasks.findIndex(item => item.id === task.id),
           project: task.project || null,
-          demand_lane: taskDemandLane(task),
-          pinned: Boolean(task.pinned),
-          pin_position: Number.isInteger(task.pin_position) ? task.pin_position : null,
           state: task.state || null,
           progress: task.progress || 0,
           owner: task.owner || null,
@@ -1058,9 +1027,9 @@
       };
       for (const task of tasks) if (!task.parent_id) assignDepth(task, 0);
     }
-    function eventsByTask(eventList = events) {
+    function eventsByTask() {
       const map = new Map();
-      for (const event of eventList) {
+      for (const event of events) {
         if (!map.has(event.task_id)) map.set(event.task_id, []);
         map.get(event.task_id).push(event);
       }
@@ -1126,14 +1095,14 @@
       }
       return ords;
     }
-    function latestTaskEventOrd(task, taskEventsOrMap = [], seen = new Set(), taskIndex = tasksById) {
+    function latestTaskEventOrd(task, taskEventsOrMap = [], seen = new Set()) {
       if (!task || seen.has(task.id)) return null;
       seen.add(task.id);
       const byTask = taskEventsOrMap instanceof Map ? taskEventsOrMap : new Map([[task.id, taskEventsOrMap]]);
       const ords = directTaskActivityOrds(task, byTask.get(task.id) || []);
       for (const childId of task.children || []) {
-        const child = taskIndex.get(childId);
-        const childOrd = latestTaskEventOrd(child, byTask, seen, taskIndex);
+        const child = tasksById.get(childId);
+        const childOrd = latestTaskEventOrd(child, byTask, seen);
         if (childOrd !== null) ords.push(childOrd);
       }
       return ords.length ? Math.max(...ords) : null;
@@ -1172,83 +1141,6 @@
       if (age < staleStartDays) return `最近事件 ${age} 天前`;
       return `最近事件 ${age} 天前，颜色已淡化提醒关注`;
     }
-    function taskDemandLane(task) {
-      return task?.demand_lane === 'tech_prebuild' ? 'tech_prebuild' : 'version_must';
-    }
-    function taskDemandLaneLabel(task) {
-      return DEMAND_LANES[taskDemandLane(task)];
-    }
-    function sortTasksByFreshnessWithPins(taskList, scoreForTask) {
-      const indexed = taskList.map((task, originalIndex) => ({ task, originalIndex }));
-      const slots = Array(indexed.length).fill(null);
-      const pinnedEntries = indexed
-        .filter(item => item.task.pinned)
-        .sort((left, right) => {
-          const leftPosition = Number.isInteger(left.task.pin_position) ? left.task.pin_position : left.originalIndex;
-          const rightPosition = Number.isInteger(right.task.pin_position) ? right.task.pin_position : right.originalIndex;
-          return (leftPosition - rightPosition) || (left.originalIndex - right.originalIndex);
-        });
-      for (const entry of pinnedEntries) {
-        const requested = Number.isInteger(entry.task.pin_position) ? entry.task.pin_position : entry.originalIndex;
-        const target = Math.max(0, Math.min(slots.length - 1, requested));
-        let selected = -1;
-        for (let offset = 0; offset < slots.length && selected === -1; offset += 1) {
-          const after = target + offset;
-          const before = target - offset;
-          if (after < slots.length && slots[after] === null) selected = after;
-          else if (before >= 0 && slots[before] === null) selected = before;
-        }
-        if (selected !== -1) slots[selected] = entry.task;
-      }
-      const automatic = indexed
-        .filter(item => !item.task.pinned)
-        .sort((left, right) => {
-          const leftScore = scoreForTask(left.task);
-          const rightScore = scoreForTask(right.task);
-          return (rightScore - leftScore) || (left.originalIndex - right.originalIndex);
-        })
-        .map(item => item.task);
-      let automaticIndex = 0;
-      return slots.map(task => task || automatic[automaticIndex++]);
-    }
-    function prioritizedTasksForLane(lane = activeDemandLane, taskList = tasks, eventList = events) {
-      const normalizedLane = Object.hasOwn(DEMAND_LANES, lane) ? lane : 'version_must';
-      const taskIndex = new Map(taskList.map(task => [task.id, task]));
-      const laneTasks = taskList.filter(task => taskDemandLane(task) === normalizedLane);
-      const laneIds = new Set(laneTasks.map(task => task.id));
-      const childrenByParent = new Map();
-      for (const task of laneTasks) {
-        const parentId = task.parent_id && laneIds.has(task.parent_id) ? task.parent_id : null;
-        if (!childrenByParent.has(parentId)) childrenByParent.set(parentId, []);
-        childrenByParent.get(parentId).push(task);
-      }
-      const byTask = eventsByTask(eventList);
-      const scoreForTask = task => latestTaskEventOrd(task, byTask, new Set(), taskIndex) ?? Number.NEGATIVE_INFINITY;
-      const ordered = [];
-      const appendLevel = (parentId, depth, path = new Set()) => {
-        const siblings = sortTasksByFreshnessWithPins(childrenByParent.get(parentId) || [], scoreForTask);
-        for (const task of siblings) {
-          if (!task || path.has(task.id)) continue;
-          task.view_depth = depth;
-          ordered.push(task);
-          const nextPath = new Set(path);
-          nextPath.add(task.id);
-          appendLevel(task.id, depth + 1, nextPath);
-        }
-      };
-      appendLevel(null, 0);
-      return ordered;
-    }
-    function updateDemandLaneControls(hiddenCompletedIds = new Set()) {
-      for (const [lane, label] of Object.entries(DEMAND_LANES)) {
-        const button = document.querySelector(`[data-demand-lane="${lane}"]`);
-        const count = tasks.filter(task => taskDemandLane(task) === lane && !hiddenCompletedIds.has(task.id)).length;
-        const total = tasks.filter(task => taskDemandLane(task) === lane).length;
-        button.setAttribute('aria-selected', lane === activeDemandLane ? 'true' : 'false');
-        button.title = `${label}：当前显示 ${count}，共 ${total} 个任务`;
-        document.getElementById(`lane-${lane.replaceAll('_', '-')}-count`).textContent = String(count);
-      }
-    }
     function summarize() {
       return {
         tasks: tasks.length,
@@ -1264,54 +1156,18 @@
       };
     }
 
-    function hiddenByAncestor(task, visibleTaskIds = null) {
+    function hiddenByAncestor(task) {
       let parentId = task.parent_id;
       while (parentId) {
-        if (visibleTaskIds && !visibleTaskIds.has(parentId)) return false;
         if (collapsed.has(parentId)) return true;
         const parent = tasksById.get(parentId);
         parentId = parent && parent.parent_id;
       }
       return false;
     }
-    function isTaskCompleted(task) {
-      if (!task) return false;
-      const progress = Number(task.progress);
-      return Boolean(task.completed_at)
-        || (Number.isFinite(progress) && progress >= 100)
-        || stateText(task.state) === '完成';
-    }
-    function isTaskHiddenByCompletion(task, taskIndex = tasksById) {
-      let current = task;
-      const seen = new Set();
-      while (current && !seen.has(current.id)) {
-        seen.add(current.id);
-        if (isTaskCompleted(current)) return true;
-        current = current.parent_id ? taskIndex.get(current.parent_id) : null;
-      }
-      return false;
-    }
-    function completedTaskAndDescendantIds(taskList = tasks) {
-      const taskIndex = new Map(taskList.map(task => [task.id, task]));
-      return new Set(taskList
-        .filter(task => isTaskHiddenByCompletion(task, taskIndex))
-        .map(task => task.id));
-    }
-    function updateCompletedVisibilityControl(hiddenCount) {
-      const button = document.getElementById('show-all-tasks');
-      button.textContent = showAllTasks ? '隐藏已完成' : '全部显示';
-      button.setAttribute('aria-pressed', showAllTasks ? 'true' : 'false');
-      button.title = showAllTasks
-        ? '恢复默认视图，隐藏已完成任务及其子任务'
-        : `显示全部任务（当前隐藏 ${hiddenCount} 个）`;
-    }
     function visibleTasks() {
       rebuildTaskIndex();
-      const hiddenCompletedIds = showAllTasks ? new Set() : completedTaskAndDescendantIds();
-      const eligibleTasks = tasks.filter(task => !hiddenCompletedIds.has(task.id));
-      const ordered = prioritizedTasksForLane(activeDemandLane, eligibleTasks);
-      const visibleTaskIds = new Set(ordered.map(task => task.id));
-      return ordered.filter(task => !hiddenByAncestor(task, visibleTaskIds));
+      return tasks.filter(task => !hiddenByAncestor(task));
     }
     function rowHeight() {
       return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--row-h')) || 30;
@@ -2020,8 +1876,6 @@
         ['Owner', task.owner],
         ['State', stateText(task.state)],
         ['Progress', `${text(task.progress)}%`],
-        ['需求页面', taskDemandLaneLabel(task)],
-        ['排序', task.pinned ? '已固定' : '按最近事件自动排序'],
         ['Range', monthRange(task)],
         ['Blocker', summary.blocker],
         ['Next action', summary.next_action],
@@ -2033,11 +1887,7 @@
         sections: [{ type: 'event-preview', task, events: previewEvents }],
         actions: [
           { label: '导出任务报告（含子任务）', onClick: () => exportTaskReport(task) },
-          { label: '编辑任务字段', onClick: () => editTaskFields(task) },
-          {
-            label: taskDemandLane(task) === 'version_must' ? '移至预埋技术（含子任务）' : '移至版本必做（含子任务）',
-            onClick: () => moveTaskToDemandLane(task, taskDemandLane(task) === 'version_must' ? 'tech_prebuild' : 'version_must')
-          }
+          { label: '编辑任务字段', onClick: () => editTaskFields(task) }
         ],
         palette: {
           label: '任务条颜色',
@@ -2066,58 +1916,6 @@
         actions: [{ label: '修改事件', onClick: () => editEvent(event) }],
         dangerAction: { label: '删除事件', onClick: () => deleteEvent(event) }
       });
-    }
-    function switchDemandLane(lane) {
-      if (!Object.hasOwn(DEMAND_LANES, lane) || lane === activeDemandLane) return;
-      activeDemandLane = lane;
-      selectedTaskId = null;
-      closeDetail();
-      render();
-    }
-    function moveTaskToDemandLane(task, lane) {
-      if (!task || !Object.hasOwn(DEMAND_LANES, lane)) return;
-      rebuildTaskIndex();
-      const movingIds = subtreeIds(task.id);
-      for (const item of tasks) {
-        if (!movingIds.has(item.id)) continue;
-        item.demand_lane = lane;
-        item.pinned = false;
-        item.pin_position = null;
-      }
-      activeDemandLane = lane;
-      selectedTaskId = task.id;
-      persistEdits();
-      render();
-      if (!showAllTasks && isTaskHiddenByCompletion(task)) closeDetail();
-      else showTask(task);
-    }
-    function toggleTaskPin(task) {
-      if (!task) return;
-      rebuildTaskIndex();
-      if (task.pinned) {
-        task.pinned = false;
-        task.pin_position = null;
-      } else {
-        const hiddenCompletedIds = showAllTasks ? new Set() : completedTaskAndDescendantIds();
-        const lane = taskDemandLane(task);
-        const laneCandidates = tasks.filter(item => taskDemandLane(item) === lane && !hiddenCompletedIds.has(item.id));
-        const laneIds = new Set(laneCandidates.map(item => item.id));
-        const parentId = task.parent_id && laneIds.has(task.parent_id) ? task.parent_id : null;
-        const siblings = laneCandidates.filter(item => {
-          const itemParentId = item.parent_id && laneIds.has(item.parent_id) ? item.parent_id : null;
-          return itemParentId === parentId;
-        });
-        const taskIndex = new Map(laneCandidates.map(item => [item.id, item]));
-        const byTask = eventsByTask();
-        const orderedSiblings = sortTasksByFreshnessWithPins(
-          siblings,
-          item => latestTaskEventOrd(item, byTask, new Set(), taskIndex) ?? Number.NEGATIVE_INFINITY
-        );
-        task.pinned = true;
-        task.pin_position = Math.max(0, orderedSiblings.findIndex(item => item.id === task.id));
-      }
-      persistEdits();
-      render();
     }
     function toggleTask(task) {
       if (!task.children || task.children.length === 0) return;
@@ -2204,8 +2002,7 @@
       });
       persistEdits();
       render();
-      if (!showAllTasks && isTaskHiddenByCompletion(task)) closeDetail();
-      else showTask(task);
+      showTask(task);
     }
     function taskSearchParts(task) {
       return [task.id, task.issue_id, task.issue_key, task.title, task.compact_label]
@@ -2293,9 +2090,6 @@
         depth: 0,
         order: tasks.length,
         project: parent?.project || '本地新增',
-        demand_lane: parent ? taskDemandLane(parent) : activeDemandLane,
-        pinned: false,
-        pin_position: null,
         state: 'draft',
         priority: null,
         progress: 0,
@@ -2727,15 +2521,11 @@
       updateBounds();
       const visible = visibleTasks();
       const renderItems = buildRenderItems(visible);
-      const hiddenCompletedIds = completedTaskAndDescendantIds();
-      const laneHiddenCompletedIds = showAllTasks ? new Set() : hiddenCompletedIds;
       const chartWidth = Math.max(720, (activeMaxOrd - activeMinOrd + 1) * dayWidth());
       const summary = summarize();
       const byTask = eventsByTask();
-      const futureWarnings = futureEventWarnings(new Set(visible.map(task => task.id)));
-      updateCompletedVisibilityControl(hiddenCompletedIds.size);
-      updateDemandLaneControls(laneHiddenCompletedIds);
-      document.getElementById('generated').textContent = `快照生成：${text(activeSnapshotGeneratedAt)} · ${DEMAND_LANES[activeDemandLane]} · 显示 ${visible.length}/${summary.tasks} 个任务 · ${summary.events} 个事件`;
+      const futureWarnings = futureEventWarnings();
+      document.getElementById('generated').textContent = `快照生成：${text(activeSnapshotGeneratedAt)} · ${summary.tasks} 个任务 · ${summary.events} 个事件`;
       document.getElementById('summary').replaceChildren(...[
         `Tasks ${summary.tasks}`,
         `Links ${summary.parent_links}`,
@@ -2752,10 +2542,7 @@
         span.textContent = label;
         return span;
       }));
-      const empty = document.getElementById('empty');
-      empty.hidden = visible.length > 0;
-      empty.querySelector('h2').textContent = `${DEMAND_LANES[activeDemandLane]}暂无任务`;
-      empty.querySelector('p').textContent = '可以新增任务，或从另一个需求页面的任务详情中移动任务及其子任务。';
+      document.getElementById('empty').hidden = tasks.length > 0;
       const head = document.getElementById('time-head');
       head.style.width = `${chartWidth}px`;
       head.replaceChildren();
@@ -2850,17 +2637,16 @@
           return;
         }
         const task = item.task;
-        const viewDepth = task.view_depth ?? task.depth ?? 0;
         const isDropParent = dragState?.drop?.intent === 'child' && dragState.drop.targetId === task.id;
         const row = document.createElement('div');
-        row.className = `task-row ${task.pinned ? 'pinned' : ''} ${isDropParent ? 'drop-parent' : ''}`;
+        row.className = `task-row ${isDropParent ? 'drop-parent' : ''}`;
         row.dataset.taskId = task.id;
         const buttonCell = document.createElement('span');
         buttonCell.className = 'task-main';
         const button = document.createElement('button');
         button.className = 'row-button';
         button.type = 'button';
-        button.style.paddingLeft = `${4 + viewDepth * 14}px`;
+        button.style.paddingLeft = `${4 + task.depth * 14}px`;
         button.title = task.title;
         const chevron = document.createElement('span');
         chevron.className = 'chevron';
@@ -2875,22 +2661,7 @@
         button.addEventListener('click', event => handleTaskRowClick(event, task));
         button.addEventListener('dblclick', event => { event.stopPropagation(); editTaskName(task); });
         button.addEventListener('pointerdown', event => armRowDrag(event, task));
-        const pin = document.createElement('button');
-        pin.className = 'task-pin';
-        pin.type = 'button';
-        pin.textContent = '📌';
-        pin.setAttribute('aria-pressed', task.pinned ? 'true' : 'false');
-        pin.setAttribute('aria-label', `${task.pinned ? '取消固定' : '固定任务'} ${task.title}`);
-        pin.title = task.pinned
-          ? '取消固定，恢复按最近事件自动排序'
-          : `固定当前位置；${taskStaleTitle(task, byTask)}`;
-        pin.addEventListener('pointerdown', event => event.stopPropagation());
-        pin.addEventListener('click', event => {
-          event.preventDefault();
-          event.stopPropagation();
-          toggleTaskPin(task);
-        });
-        buttonCell.append(button, pin);
+        buttonCell.append(button);
         const ownerCell = makeOwnerCell(task);
         const stateCell = makeCell(stateText(task.state), task.state);
         const rangeCell = makeCell(monthRange(task), `${text(task.start_date)}→${text(task.target_date)}`);
@@ -3034,9 +2805,6 @@
       updateBarLabelPositions();
       centerTodayOnce();
     }
-    for (const button of document.querySelectorAll('[data-demand-lane]')) {
-      button.addEventListener('click', () => switchDemandLane(button.dataset.demandLane));
-    }
     document.getElementById('density-dense').addEventListener('click', () => setDensity('dense'));
     document.getElementById('density-present').addEventListener('click', () => setDensity('present'));
     document.getElementById('expand-all').addEventListener('click', () => { collapsed.clear(); render(); });
@@ -3052,15 +2820,6 @@
     setupPortableImportDrop();
     document.getElementById('add-task').addEventListener('click', addTaskBar);
     document.getElementById('add-event').addEventListener('click', addEventFromButton);
-    document.getElementById('show-all-tasks').addEventListener('click', () => {
-      showAllTasks = !showAllTasks;
-      if (showAllTasks) {
-        collapsed.clear();
-      } else if (selectedTaskId && completedTaskAndDescendantIds().has(selectedTaskId)) {
-        closeDetail();
-      }
-      render();
-    });
     document.getElementById('clear-data').addEventListener('click', clearAllData);
     document.getElementById('marker-demo').addEventListener('click', addDemoEvents);
     document.getElementById('reset-edits').addEventListener('click', () => {
@@ -3071,7 +2830,6 @@
       attachments = clone(gantt.attachments || []);
       deletedAttachmentIds.clear();
       selectedTaskId = null;
-      activeDemandLane = 'version_must';
       collapsed.clear();
       closeDetail();
       render();
