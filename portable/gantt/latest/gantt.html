@@ -182,6 +182,7 @@
       <button class="tool-button" id="export-report" type="button">报告</button>
       <button class="tool-button" id="add-task" type="button">新增任务条</button>
       <button class="tool-button" id="add-event" type="button">新增事件</button>
+      <button class="tool-button" id="show-all-tasks" type="button" aria-pressed="false">全部显示</button>
       <button class="tool-button danger" id="clear-data" type="button" title="清除当前 Gantt 全部任务和事件">Clear</button>
       <button class="tool-button" id="marker-demo" type="button">Demo markers</button>
       <button class="tool-button" id="expand-all" type="button" title="Expand all">Expand</button>
@@ -244,6 +245,7 @@
     const ATTACHMENT_EXTENSIONS = new Set(ATTACHMENT_ACCEPT.split(',').map(value => value.slice(1)));
     const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']);
     const collapsed = new Set();
+    let showAllTasks = false;
     const DAY_MS = 86400000;
     const PAD_DAYS = 30;
     const symbol = { blocked: '✕', todo: '○', stalled: '×', restart: '↻', in_progress: '→', completed: '●', milestone: '★' };
@@ -311,10 +313,11 @@
       const progress = (futureEventWarningDays - daysAway) / Math.max(1, futureEventWarningDays - 1);
       return futureEventWarningMinAlpha + progress * (futureEventWarningMaxAlpha - futureEventWarningMinAlpha);
     }
-    function futureEventWarnings() {
+    function futureEventWarnings(visibleTaskIds = null) {
       const today = todayOrd();
       const warnings = new Map();
       for (const event of events) {
+        if (visibleTaskIds && !visibleTaskIds.has(event.task_id)) continue;
         const ord = dateOrd(event.date);
         if (ord === null) continue;
         const daysAway = ord - today;
@@ -1165,9 +1168,41 @@
       }
       return false;
     }
+    function isTaskCompleted(task) {
+      if (!task) return false;
+      const progress = Number(task.progress);
+      return Boolean(task.completed_at)
+        || (Number.isFinite(progress) && progress >= 100)
+        || stateText(task.state) === '完成';
+    }
+    function isTaskHiddenByCompletion(task, taskIndex = tasksById) {
+      let current = task;
+      const seen = new Set();
+      while (current && !seen.has(current.id)) {
+        seen.add(current.id);
+        if (isTaskCompleted(current)) return true;
+        current = current.parent_id ? taskIndex.get(current.parent_id) : null;
+      }
+      return false;
+    }
+    function completedTaskAndDescendantIds(taskList = tasks) {
+      const taskIndex = new Map(taskList.map(task => [task.id, task]));
+      return new Set(taskList
+        .filter(task => isTaskHiddenByCompletion(task, taskIndex))
+        .map(task => task.id));
+    }
+    function updateCompletedVisibilityControl(hiddenCount) {
+      const button = document.getElementById('show-all-tasks');
+      button.textContent = showAllTasks ? '隐藏已完成' : '全部显示';
+      button.setAttribute('aria-pressed', showAllTasks ? 'true' : 'false');
+      button.title = showAllTasks
+        ? '恢复默认视图，隐藏已完成任务及其子任务'
+        : `显示全部任务（当前隐藏 ${hiddenCount} 个）`;
+    }
     function visibleTasks() {
       rebuildTaskIndex();
-      return tasks.filter(task => !hiddenByAncestor(task));
+      const hiddenCompletedIds = showAllTasks ? new Set() : completedTaskAndDescendantIds();
+      return tasks.filter(task => !hiddenCompletedIds.has(task.id) && !hiddenByAncestor(task));
     }
     function rowHeight() {
       return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--row-h')) || 30;
@@ -2002,7 +2037,8 @@
       });
       persistEdits();
       render();
-      showTask(task);
+      if (!showAllTasks && isTaskHiddenByCompletion(task)) closeDetail();
+      else showTask(task);
     }
     function taskSearchParts(task) {
       return [task.id, task.issue_id, task.issue_key, task.title, task.compact_label]
@@ -2521,10 +2557,12 @@
       updateBounds();
       const visible = visibleTasks();
       const renderItems = buildRenderItems(visible);
+      const hiddenCompletedIds = completedTaskAndDescendantIds();
       const chartWidth = Math.max(720, (activeMaxOrd - activeMinOrd + 1) * dayWidth());
       const summary = summarize();
       const byTask = eventsByTask();
-      const futureWarnings = futureEventWarnings();
+      const futureWarnings = futureEventWarnings(new Set(visible.map(task => task.id)));
+      updateCompletedVisibilityControl(hiddenCompletedIds.size);
       document.getElementById('generated').textContent = `快照生成：${text(activeSnapshotGeneratedAt)} · ${summary.tasks} 个任务 · ${summary.events} 个事件`;
       document.getElementById('summary').replaceChildren(...[
         `Tasks ${summary.tasks}`,
@@ -2820,6 +2858,15 @@
     setupPortableImportDrop();
     document.getElementById('add-task').addEventListener('click', addTaskBar);
     document.getElementById('add-event').addEventListener('click', addEventFromButton);
+    document.getElementById('show-all-tasks').addEventListener('click', () => {
+      showAllTasks = !showAllTasks;
+      if (showAllTasks) {
+        collapsed.clear();
+      } else if (selectedTaskId && completedTaskAndDescendantIds().has(selectedTaskId)) {
+        closeDetail();
+      }
+      render();
+    });
     document.getElementById('clear-data').addEventListener('click', clearAllData);
     document.getElementById('marker-demo').addEventListener('click', addDemoEvents);
     document.getElementById('reset-edits').addEventListener('click', () => {
