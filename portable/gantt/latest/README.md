@@ -2,7 +2,7 @@
 
 This directory is safe to commit. It captures the current Delivery Gantt state for another machine.
 
-Exported at: `2026-08-01T21:03:39.473552Z`
+Exported at: `2026-08-02T21:03:30.321234Z`
 
 Snapshot contents:
 
