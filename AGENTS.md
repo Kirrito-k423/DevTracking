@@ -2,32 +2,32 @@
 
 - 始终用中文和用户对话。
 - 这台位于中国的 macOS 机器访问 GitHub、Google 等外网时，优先使用代理 `127.0.0.1:7890`。
-- Plane 本地访问地址是 `http://localhost:8090`。
-- Plane PostgreSQL 只用于只读抽取、报表、时间线和 AI 上下文；常规写入必须走 Plane API、webhook 或受控连接器。
-- 不要提交 `plane-selfhost/plane-app/plane.env`、API token、生成 secret、远程服务器密码或任何直接个人联系/支付标识。
-- 当用户用自然语言提供每日进展时，先结构化成人员、项目、任务、完成、阻塞、风险、下一步，再生成可确认的 Plane 变更计划。
+- Delivery Gantt 本地访问地址是 `http://localhost:8090/gantt.html`。
+- 甘特图是独立本地应用，不依赖 Docker、外部项目管理系统或数据库。
+- 不要提交 API token、生成 secret、远程服务器密码或任何直接个人联系/支付标识。
+- 保留旧 schema/localStorage 标识以兼容已有快照；不要仅为改名破坏历史数据导入。
 
 <!-- GSD:project-start source:PROJECT.md -->
 
 ## Project
 
-**Plane Demand Hub**
+**Delivery Gantt**
 
-Plane Demand Hub is a local-first delivery coordination system built around a self-hosted Plane instance. Plane remains the visual project, task, cycle, module, and kanban surface; the custom layer turns conversational daily progress updates into structured Plane changes, timeline data, dashboards, reports, and maintained delivery plans.
+Delivery Gantt is a standalone, local-first editable Gantt application. A lightweight Python standard-library server provides the page, autosave, attachment, and migration APIs, while committed portable snapshots make the data easy to move between machines.
 
-The first working mode is conversational: the user tells Codex each person's daily progress, blockers, risks, and next steps; Codex or a small local service parses that update, writes the right comments/status changes/work items into Plane, then refreshes visual progress and reports.
+The primary working mode is direct editing in the browser. Tasks, events, hierarchy, colors, attachments, and reports are maintained in the Gantt itself and persisted to local snapshots.
 
-**Core Value:** Turn natural-language team progress into trustworthy Plane state, visual timelines, and delivery reports without making every contributor do heavy manual bookkeeping.
+**Core Value:** Keep delivery plans visually editable, locally durable, portable, and independent of heavyweight infrastructure.
 
 ### Constraints
 
-- **Local-first**: The system should run on the user's Mac and use the existing local Plane deployment first.
+- **Local-first**: The system runs on the user's Mac and listens on loopback by default.
 - **Network**: External network access may require proxy `127.0.0.1:7890`.
-- **Data safety**: Plane database reads are allowed for reporting; writes should go through Plane API or a controlled connector.
-- **Disk**: The Mac currently has limited free space after pulling Plane images; avoid unnecessary large services and image rebuilds.
-- **Security**: Do not commit `plane.env`, API tokens, generated secrets, or direct personal contact/payment identifiers.
-- **Maintainability**: Custom business data should live outside Plane's internal schema so Plane upgrades remain possible.
-- **Interaction**: The working interface should support natural-language daily updates and produce confirmable structured changes.
+- **Data safety**: Preserve `exports/delivery/` runtime state and `portable/gantt/latest/` migration snapshots during changes.
+- **Disk**: Avoid unnecessary large services and build artifacts.
+- **Security**: Do not commit API tokens, generated secrets, or direct personal contact/payment identifiers.
+- **Maintainability**: Use Python standard-library components unless a new dependency materially improves the product.
+- **Interaction**: Direct browser editing, autosave, attachments, and import/export must remain functional.
 
 <!-- GSD:project-end -->
 
@@ -41,21 +41,18 @@ The first working mode is conversational: the user tells Codex each person's dai
 
 | Layer | Choice | Rationale | Confidence |
 |-------|--------|-----------|------------|
-| Project/task UI | Plane Community Edition v1.3.1 | Already running locally; attractive work item, project, cycle, module, roadmap, and kanban UX | High |
-| Plane deployment | Docker Compose | Official local self-hosting path; already verified at `http://localhost:8090` | High |
-| Analytics source | Read-only PostgreSQL queries against Plane DB | Complete local access to work item, comments, and activity history | High |
-| Write path | Plane API / webhooks / supported import paths | Avoids direct DB mutation risks | High |
-| Sidecar backend | Python FastAPI | Good fit for AI, parsing, report generation, scheduled jobs, and local scripts | Medium |
-| Sidecar DB | PostgreSQL, separate schema or separate DB | Keeps Demand Hub state separate from Plane internals | High |
-| Jobs | Python scheduler first; Redis/RQ later if needed | Avoids new infrastructure until report jobs grow | Medium |
-| Reports | Markdown/JSONL first, HTML/PDF/PPT later | Easy GitHub backup and AI consumption | High |
-| Visualization | Plane views first; lightweight custom dashboard later | Avoids duplicating Plane UI before the workflow is proven | High |
+| Local server | Python `ThreadingHTTPServer` | No third-party runtime dependency; supports local API routes and static files | High |
+| UI | Committed standalone HTML/CSS/JavaScript | Portable and directly usable on macOS/Windows/Linux | High |
+| Mutable data | JSON autosaves and changesets under `exports/delivery/` | Auditable, local, and easy to recover | High |
+| Portable data | `portable/gantt/latest/` | Clone-ready cross-machine snapshot | High |
+| Desktop package | PyInstaller | Produces a single launcher around the local server | High |
+| Backup | Git commits of portable snapshots | Simple history and remote recovery | High |
 
 ## What Not To Do
 
-- Do not fork Plane first. That makes upgrades harder and shifts effort away from the product's differentiator.
-- Do not write directly into `issues`, `issue_comments`, or `issue_activities` for normal operations.
-- Do not start with a large HR platform. Capability modeling should be scoped to delivery assignment, workload, blockers, and contribution visibility.
+- Do not reintroduce Docker or a database for the local Gantt without an explicit requirement.
+- Do not rename legacy schema/storage identifiers without a migration path.
+- Do not overwrite newer autosaves with an older portable snapshot.
 
 <!-- GSD:stack-end -->
 

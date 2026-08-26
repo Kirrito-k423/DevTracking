@@ -1,0 +1,95 @@
+name: Release Gantt App
+
+on:
+  push:
+    tags:
+      - "gantt-app-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            name: macOS
+            artifact: DeliveryGantt-macos
+          - os: windows-latest
+            name: Windows
+            artifact: DeliveryGantt-windows
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PyInstaller
+        run: python -m pip install --upgrade pip pyinstaller
+
+      - name: Build executable
+        run: pyinstaller packaging/delivery-gantt.spec --noconfirm
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import zipfile
+          from pathlib import Path
+
+          artifact = os.environ["ARTIFACT_NAME"]
+          exe_name = "DeliveryGantt.exe" if os.name == "nt" else "DeliveryGantt"
+          exe_path = Path("dist") / exe_name
+          if not exe_path.exists():
+              raise SystemExit(f"missing executable: {exe_path}")
+          out_dir = Path("release")
+          out_dir.mkdir(exist_ok=True)
+          zip_path = out_dir / f"{artifact}.zip"
+          with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+              zf.write(exe_path, arcname=exe_name)
+              zf.write("docs/GANTT-PORTABLE-BACKUP.md", arcname="GANTT-PORTABLE-BACKUP.md")
+          print(zip_path)
+          PY
+        env:
+          ARTIFACT_NAME: ${{ matrix.artifact }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: release/${{ matrix.artifact }}.zip
+
+  release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/gantt-app-v')
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG_NAME" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" release-assets/*.zip --repo "$GH_REPO" --clobber
+          else
+            gh release create "$TAG_NAME" release-assets/*.zip --repo "$GH_REPO" --title "$TAG_NAME" --generate-notes
+          fi

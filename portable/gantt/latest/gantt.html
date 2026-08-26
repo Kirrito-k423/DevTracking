@@ -1,0 +1,2862 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delivery Gantt</title>
+  <style>
+    :root { color-scheme: light; --ink:#20242a; --muted:#657282; --line:#d9dee7; --bg:#f7f8fa; --panel:#ffffff; --blue:#2f6fed; --green:#1b8a5a; --amber:#b26b00; --red:#c43d3d; --row-h:30px; --bar-h:18px; --day-w:30px; --table-w:520px; --font-body:13px; --font-label:12px; --marker-size:20px; }
+    body[data-density="present"] { --row-h:52px; --bar-h:28px; --day-w:40px; --table-w:620px; --font-body:15px; --font-label:13px; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--bg); font-size:var(--font-body); letter-spacing:0; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:16px 24px; border-bottom:1px solid var(--line); background:var(--panel); }
+    h1 { margin:0; font-size:22px; line-height:1.2; font-weight:700; letter-spacing:0; }
+    button { font:inherit; letter-spacing:0; }
+    .meta { color:var(--muted); font-size:12px; margin-top:4px; }
+    .toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .tool-button { min-width:36px; min-height:32px; border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:6px; padding:0 10px; cursor:pointer; }
+    .tool-button[aria-pressed="true"] { border-color:var(--blue); color:var(--blue); box-shadow:0 0 0 2px rgba(47,111,237,.12); }
+    .tool-button.danger { border-color:#e49a9a; color:var(--red); background:#fff5f5; }
+    .tool-button.danger:hover { background:#ffecec; }
+    .autosave-status { color:var(--muted); font-size:12px; white-space:nowrap; }
+    .autosave-status[data-state="saved"] { color:var(--green); }
+    .autosave-status[data-state="saving"] { color:var(--amber); }
+    .autosave-status[data-state="error"] { color:var(--red); }
+    .hidden-file-input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+    .drop-overlay { position:fixed; inset:14px; z-index:30; display:none; align-items:center; justify-content:center; border:2px dashed var(--blue); border-radius:8px; background:rgba(246,249,255,.92); color:var(--blue); font-size:22px; font-weight:800; pointer-events:none; }
+    body.drag-import .drop-overlay { display:flex; }
+    main { padding:16px 24px 32px; }
+    .summary { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; color:var(--muted); }
+    .summary span { background:#fff; border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
+    .gantt-layout { display:grid; grid-template-columns:minmax(430px,var(--table-w)) minmax(560px,1fr); border:1px solid var(--line); background:var(--panel); min-height:520px; overflow:hidden; }
+    .task-pane { border-right:1px solid var(--line); background:#fff; z-index:2; }
+    .pane-head { height:34px; display:grid; align-items:center; border-bottom:1px solid var(--line); background:#fbfcfd; color:var(--muted); font-weight:600; font-size:12px; }
+    .task-head { grid-template-columns:minmax(240px,1fr) 62px 64px 74px; }
+    .task-head span, .task-row span { padding:0 6px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .task-row { height:var(--row-h); display:grid; grid-template-columns:minmax(240px,1fr) 62px 64px 74px; align-items:center; border-bottom:1px solid var(--line); }
+    .task-row.placeholder { background:#eef1f6; color:var(--muted); border:1px dashed #aeb8c7; transition:height .16s ease, background .16s ease; }
+    .task-row.drop-parent { background:#eef5ff; box-shadow:inset 0 0 0 2px rgba(47,111,237,.2); }
+    .task-row.drop-options { background:#f8fbff; box-shadow:inset 0 0 0 1px rgba(47,111,237,.18); }
+    .drop-options-cell { grid-column:1 / -1; display:flex; align-items:center; gap:6px; padding:3px 6px; min-width:0; overflow-x:auto; overflow-y:hidden; scrollbar-width:thin; }
+    .drop-choice { flex:0 0 auto; min-height:22px; max-width:122px; display:flex; align-items:center; gap:4px; border:1px solid #c9d4e4; background:#fff; color:var(--ink); border-radius:5px; padding:0 7px; font-size:11px; cursor:pointer; white-space:nowrap; overflow:hidden; }
+    .drop-choice[aria-pressed="true"] { border-color:var(--blue); color:var(--blue); background:#eef5ff; box-shadow:0 0 0 2px rgba(47,111,237,.12); }
+    .drop-choice-indent { display:flex; align-items:center; gap:2px; flex:0 0 auto; }
+    .indent-cell { width:7px; height:7px; border:1px solid #c5cfdd; background:#f4f7fb; border-radius:2px; }
+    .drop-choice-label { overflow:hidden; text-overflow:ellipsis; }
+    .task-main { display:flex; align-items:center; gap:4px; min-width:0; }
+    .row-button { width:100%; min-height:calc(var(--row-h) - 6px); display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--ink); text-align:left; cursor:pointer; padding:0 4px; border-radius:4px; overflow:hidden; }
+    .task-row span:not(.task-main):not(.editable-cell) { cursor:pointer; }
+    .editable-cell { cursor:text; }
+    .row-button:focus-visible, .bar:focus-visible, .marker:focus-visible, .tool-button:focus-visible, .action-button:focus-visible, .danger-button:focus-visible, .palette-swatch:focus-visible, .detail-subnav:focus-visible, .attachment-card:focus-visible, .attachment-upload-button:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+    .chevron { width:14px; flex:0 0 14px; color:var(--muted); text-align:center; }
+    .task-key { color:var(--muted); flex:0 0 34px; width:34px; padding:0; font-size:11px; text-align:right; overflow:hidden; text-overflow:ellipsis; }
+    .task-label { flex:1 1 auto; min-width:0; font-weight:600; font-size:var(--font-label); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .timeline-pane { overflow:auto; background:#fff; position:relative; }
+    .timeline-content { position:relative; min-height:100%; }
+    .time-head { height:34px; position:sticky; top:0; z-index:3; display:flex; border-bottom:1px solid var(--line); background:#fbfcfd; }
+    .tick { width:var(--day-w); flex:0 0 var(--day-w); border-right:1px solid var(--line); padding:10px 1px 0; color:var(--muted); font-size:10px; text-align:center; white-space:nowrap; overflow:hidden; }
+    .tick.weekend, .tick.holiday { background:#eef1f4; color:#7b8794; }
+    .tick.holiday { box-shadow:inset 0 -2px 0 rgba(123,135,148,.34); }
+    .tick.today { background:#fff3bf; color:#7a5a00; font-weight:700; box-shadow:inset 0 -2px 0 rgba(217,164,33,.46); }
+    .tick.event-warning { background:rgba(255,59,48,var(--event-warning-alpha)); color:#8f1510; font-weight:700; box-shadow:inset 0 -2px 0 rgba(228,35,25,.68); }
+    .timeline-row { height:var(--row-h); position:relative; border-bottom:1px solid var(--line); background-image:linear-gradient(to right, rgba(217,222,231,.72) 1px, transparent 1px); background-size:var(--day-w) 100%; }
+    .timeline-row.today-highlight::before { content:""; position:absolute; top:0; bottom:0; left:var(--today-left); width:var(--day-w); background:rgba(255,236,153,.42); pointer-events:none; z-index:0; }
+    .future-event-column { position:absolute; top:0; bottom:0; width:var(--day-w); background:rgba(255,59,48,var(--event-warning-alpha)); pointer-events:none; z-index:0; }
+    .bar { position:absolute; top:calc((var(--row-h) - var(--bar-h)) / 2); height:var(--bar-h); min-width:18px; border:0; border-radius:5px; background:var(--task-color,var(--blue)); color:#fff; padding:0 8px; display:flex; align-items:center; justify-content:flex-start; font-weight:650; font-size:var(--font-label); overflow:hidden; white-space:nowrap; cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.18); z-index:2; }
+    .bar-label { position:sticky; left:8px; max-width:calc(100% - 16px); z-index:1; overflow:hidden; text-overflow:ellipsis; pointer-events:none; }
+    .bar.drop-parent { transform:scaleY(1.28); transform-origin:center; box-shadow:0 0 0 2px rgba(47,111,237,.22), inset 0 -1px 0 rgba(0,0,0,.18); }
+    .bar-handle { position:absolute; top:0; bottom:0; width:10px; z-index:2; cursor:ew-resize; }
+    .bar-handle.start { left:0; }
+    .bar-handle.end { right:0; }
+    .bar-handle:hover { background:rgba(255,255,255,.28); }
+    .bar.parent { background:var(--task-color,var(--blue)); }
+    .bar.blocked { background:var(--task-color,var(--red)); }
+    .event-stack { position:absolute; top:50%; transform:translateY(-50%); min-height:calc(var(--marker-size) + 4px); display:flex; align-items:center; justify-content:center; gap:2px; padding:1px; border:1px solid rgba(154,165,180,.72); border-radius:999px; background:#fff; box-shadow:0 1px 3px rgba(32,36,42,.14); z-index:5; }
+    .event-stack.multi { box-shadow:0 2px 6px rgba(32,36,42,.18); }
+    .event-stack.collapsed { overflow:hidden; background:#fff; }
+    .event-stack.expanded { min-height:26px; gap:4px; padding:2px 6px 2px 21px; border-color:var(--blue); border-radius:9px; background:#fff; box-shadow:0 0 0 2px rgba(47,111,237,.14), 0 4px 10px rgba(32,36,42,.12); z-index:7; }
+    .stack-collapse { position:absolute; left:4px; top:50%; transform:translateY(-50%); width:13px; height:13px; border:1px solid #c8d1df; background:#fff; color:var(--blue); border-radius:999px; padding:0; display:flex; align-items:center; justify-content:center; font-size:10px; line-height:1; cursor:pointer; box-shadow:0 1px 2px rgba(32,36,42,.08); }
+    .marker { width:var(--stack-marker-size, var(--marker-size)); height:var(--stack-marker-size, var(--marker-size)); border:1px solid var(--marker-color); background:var(--marker-color); color:#fff; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; font-size:11px; font-weight:800; line-height:1; box-shadow:inset 0 -1px 0 rgba(0,0,0,.16); }
+    .marker b { display:block; line-height:1; transform:translateY(-.25px); }
+    .event-stack.collapsed .marker { position:absolute; top:50%; transform:translateY(-50%); }
+    .event-stack.expanded .marker { position:relative; flex:0 0 auto; }
+    .marker.blocked { --marker-color:var(--red); }
+    .marker.todo { --marker-color:#7b8794; }
+    .marker.stalled { --marker-color:#848484; }
+    .marker.restart { --marker-color:#D9A421; }
+    .marker.in_progress { --marker-color:#6A8EC9; }
+    .marker.completed { --marker-color:var(--green); }
+    .marker.milestone { --marker-color:var(--amber); }
+    .connector-layer { position:absolute; left:0; top:34px; pointer-events:none; overflow:visible; z-index:1; }
+    .connector { fill:none; stroke:#9aa5b4; stroke-width:1.35; stroke-linecap:square; stroke-linejoin:miter; stroke-dasharray:5 4; opacity:.9; vector-effect:non-scaling-stroke; shape-rendering:geometricPrecision; mix-blend-mode:normal; }
+    .timeline-row.placeholder { background:#eef1f6; border:1px dashed #aeb8c7; transition:height .16s ease, background .16s ease; }
+    .timeline-row.drop-options { background:#f8fbff; box-shadow:inset 0 0 0 1px rgba(47,111,237,.14); }
+    .timeline-row.drop-parent { background:#f0f6ff; }
+    .drag-ghost { position:fixed; left:0; top:0; z-index:20; pointer-events:none; min-width:240px; max-width:420px; padding:8px 10px; background:#fff; border:1px solid #aeb8c7; border-radius:6px; box-shadow:0 12px 30px rgba(32,36,42,.22); font-weight:700; opacity:.96; transform:translate(-9999px,-9999px); }
+    body.dragging-row { user-select:none; cursor:grabbing; }
+    .empty { padding:24px; color:var(--muted); }
+    .detail { position:fixed; top:0; right:0; bottom:0; width:min(440px,calc(100vw - 24px)); background:#fff; border-left:1px solid var(--line); box-shadow:-12px 0 28px rgba(32,36,42,.16); transform:translateX(105%); transition:transform .18s ease; z-index:8; display:flex; flex-direction:column; overflow:hidden; }
+    .detail.open { transform:translateX(0); }
+    .detail header { flex:0 0 auto; display:grid; grid-template-columns:36px minmax(0,1fr); align-items:center; justify-content:initial; gap:12px; padding:10px 14px; border-bottom:1px solid var(--line); background:#fff; }
+    .detail-close { width:32px; min-width:32px; padding:0; font-size:20px; line-height:1; }
+    .detail h2 { min-width:0; margin:0; font-size:17px; line-height:1.3; letter-spacing:0; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+    .detail-body { flex:1 1 auto; min-height:0; padding:14px 18px 20px; overflow:auto; }
+    .detail-info { min-width:0; }
+    .kv { display:grid; grid-template-columns:102px minmax(0,1fr); gap:8px; padding:7px 0; border-bottom:1px solid var(--line); }
+    .kv b { color:var(--muted); font-weight:600; }
+    .kv span, .source-list li { min-width:0; overflow-wrap:anywhere; }
+    .source-list { margin:8px 0 0; padding-left:18px; color:var(--muted); }
+    .detail-section { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
+    .detail-section h3 { margin:0 0 8px; font-size:13px; letter-spacing:0; }
+    .event-preview-list { display:grid; gap:8px; }
+    .event-preview-item { display:grid; grid-template-columns:72px 56px 1fr; gap:8px; align-items:start; padding:8px; border:1px solid var(--line); border-radius:6px; background:#fbfcfd; }
+    .event-preview-date, .event-preview-type { color:var(--muted); font-size:12px; white-space:nowrap; }
+    .event-preview-main { min-width:0; }
+    .event-preview-task { font-weight:700; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .event-preview-summary { margin-top:3px; color:var(--ink); font-size:12px; line-height:1.35; overflow-wrap:anywhere; }
+    .detail-actions { margin-top:18px; padding-top:14px; border-top:1px solid var(--line); display:grid; gap:8px; }
+    .action-button { width:100%; min-height:34px; border:1px solid #bfd0ef; background:#f6f9ff; color:var(--blue); border-radius:6px; padding:0 12px; font-weight:700; cursor:pointer; }
+    .action-button:hover { background:#edf4ff; }
+    .palette-label { color:var(--muted); font-weight:700; margin-top:2px; }
+    .palette-grid { display:grid; grid-template-columns:repeat(8, minmax(26px,1fr)); gap:8px; }
+    .palette-swatch { height:28px; border:1px solid rgba(32,36,42,.14); border-radius:7px; background:var(--swatch); cursor:pointer; box-shadow:inset 0 -1px 0 rgba(0,0,0,.16); }
+    .palette-swatch[aria-pressed="true"] { box-shadow:0 0 0 2px rgba(47,111,237,.26), inset 0 -1px 0 rgba(0,0,0,.16); }
+    .danger-button { width:100%; min-height:36px; border:1px solid #e49a9a; background:#fff5f5; color:var(--red); border-radius:6px; padding:0 12px; font-weight:700; cursor:pointer; }
+    .danger-button:hover { background:#ffecec; }
+    .detail-subnav { width:100%; min-height:48px; margin:14px 0 2px; display:grid; grid-template-columns:minmax(0,1fr) auto 18px; align-items:center; gap:8px; border:1px solid #bfd0ef; border-radius:7px; background:#f6f9ff; color:var(--ink); padding:8px 10px; text-align:left; cursor:pointer; }
+    .detail-subnav:hover { background:#edf4ff; }
+    .detail-subnav-title { min-width:0; font-weight:750; }
+    .detail-subnav-count { color:var(--muted); font-size:12px; white-space:nowrap; }
+    .detail-subnav-arrow { color:var(--blue); font-size:20px; line-height:1; text-align:right; }
+    .detail-subpanel { position:absolute; inset:0; z-index:2; display:flex; flex-direction:column; background:#fff; transform:translateX(105%); transition:transform .18s ease; box-shadow:-8px 0 20px rgba(32,36,42,.12); }
+    .detail-subpanel.open { transform:translateX(0); }
+    .detail-subpanel[aria-hidden="true"] { pointer-events:none; }
+    .detail-subpanel header { grid-template-columns:36px minmax(0,1fr) 36px; }
+    .detail-back { width:32px; min-width:32px; padding:0; font-size:18px; line-height:1; }
+    .detail-subpanel-body { flex:1 1 auto; min-height:0; overflow:auto; padding:14px 16px 20px; }
+    .attachment-section { min-width:0; }
+    .attachment-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    .attachment-head h3 { margin:0; font-size:14px; }
+    .attachment-count { color:var(--muted); font-size:12px; white-space:nowrap; }
+    .attachment-dropzone { min-height:104px; display:flex; align-items:stretch; justify-content:center; flex-direction:column; gap:8px; border:1px dashed #9eb2d0; border-radius:7px; background:#f7faff; color:var(--muted); padding:12px; transition:border-color .14s ease, background .14s ease; }
+    .attachment-dropzone.drag-over { border-color:var(--blue); background:#edf4ff; box-shadow:inset 0 0 0 1px rgba(47,111,237,.14); }
+    .attachment-upload-button { min-height:34px; border:1px solid #bfd0ef; border-radius:6px; background:#fff; color:var(--blue); padding:0 12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+    .attachment-drop-copy { min-width:0; font-size:12px; line-height:1.4; }
+    .attachment-status { min-height:18px; margin:7px 0 2px; color:var(--muted); font-size:12px; }
+    .attachment-status.error { color:var(--red); }
+    .attachment-list { display:grid; grid-template-columns:1fr; gap:8px; margin-top:8px; }
+    .attachment-empty { margin-top:10px; padding:14px 0; color:var(--muted); font-size:12px; }
+    .attachment-item { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) 30px; align-items:stretch; border:1px solid var(--line); border-radius:7px; background:#fff; overflow:hidden; }
+    .attachment-card { min-width:0; min-height:62px; display:grid; grid-template-columns:50px minmax(0,1fr); align-items:center; gap:9px; border:0; background:#fff; color:var(--ink); padding:6px 8px; text-align:left; cursor:pointer; }
+    .attachment-thumb, .attachment-type { width:50px; height:50px; border-radius:5px; background:#eef2f7; object-fit:cover; display:flex; align-items:center; justify-content:center; color:#526174; font-size:11px; font-weight:800; text-transform:uppercase; overflow:hidden; }
+    .attachment-name { font-size:12px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .attachment-meta { margin-top:4px; color:var(--muted); font-size:11px; }
+    .attachment-delete { width:30px; border:0; border-left:1px solid var(--line); background:#fff; color:var(--red); cursor:pointer; font-size:16px; }
+    .attachment-delete:hover { background:#fff1f1; }
+    .image-lightbox { position:fixed; inset:0; z-index:40; display:grid; grid-template-rows:44px minmax(0,1fr) 38px; background:rgba(15,18,23,.9); color:#fff; }
+    .image-lightbox[hidden] { display:none; }
+    .lightbox-close { justify-self:end; width:40px; border:0; background:transparent; color:#fff; font-size:28px; cursor:pointer; }
+    .image-lightbox img { align-self:center; justify-self:center; max-width:94vw; max-height:calc(100vh - 100px); object-fit:contain; }
+    .lightbox-caption { padding:8px 18px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; }
+    @media (max-width: 760px) {
+      header, main { padding-left:12px; padding-right:12px; }
+      .gantt-layout { grid-template-columns:minmax(430px,78vw) minmax(520px,1fr); overflow:auto; }
+      .timeline-pane { overflow:visible; }
+      .detail { width:100vw; }
+      .detail-body, .detail-subpanel-body { padding:12px; }
+    }
+  </style>
+</head>
+<body data-density="dense">
+  <header>
+    <div>
+      <h1>Delivery Gantt</h1>
+      <div class="meta" id="generated"></div>
+    </div>
+    <div class="toolbar" aria-label="Gantt controls">
+      <button class="tool-button" id="refresh" type="button">Refresh exports</button>
+      <button class="tool-button" id="reset-edits" type="button">Reset local edits</button>
+      <button class="tool-button" id="push-edits" type="button">Push changes</button>
+      <button class="tool-button" id="export-portable" type="button" title="导出迁移包">导出</button>
+      <button class="tool-button" id="import-portable" type="button" title="导入 JSON 变化集或 ZIP 迁移包">导入</button>
+      <button class="tool-button" id="export-report" type="button">报告</button>
+      <button class="tool-button" id="add-task" type="button">新增任务条</button>
+      <button class="tool-button" id="add-event" type="button">新增事件</button>
+      <button class="tool-button danger" id="clear-data" type="button" title="清除当前 Gantt 全部任务和事件">Clear</button>
+      <button class="tool-button" id="marker-demo" type="button">Demo markers</button>
+      <button class="tool-button" id="expand-all" type="button" title="Expand all">Expand</button>
+      <button class="tool-button" id="collapse-all" type="button" title="Collapse all">Collapse</button>
+      <button class="tool-button" id="density-dense" type="button" aria-pressed="true">Dense</button>
+      <button class="tool-button" id="density-present" type="button" aria-pressed="false">Present</button>
+      <span class="autosave-status" id="autosave-status" data-state="idle">Autosave idle</span>
+      <input class="hidden-file-input" id="import-portable-file" type="file" accept=".json,application/json,.zip,application/zip">
+    </div>
+  </header>
+  <div class="drop-overlay" id="drop-overlay">释放导入 JSON 或 ZIP 迁移包</div>
+  <main>
+    <section class="summary" id="summary"></section>
+    <section class="gantt-layout" aria-label="Gantt chart">
+      <div class="task-pane">
+        <div class="pane-head task-head"><span>Task</span><span>Owner</span><span>State</span><span>Range</span></div>
+        <div id="task-rows"></div>
+      </div>
+      <div class="timeline-pane" id="timeline-scroll">
+        <div class="timeline-content" id="timeline-content">
+          <div class="time-head" id="time-head"></div>
+          <svg class="connector-layer" id="connector-layer" aria-hidden="true"></svg>
+          <div id="timeline-rows"></div>
+        </div>
+      </div>
+    </section>
+    <section class="empty" id="empty" hidden>
+      <h2>No Gantt data</h2>
+      <p>Run the timeline and progress export commands, then rebuild the Gantt view.</p>
+    </section>
+  </main>
+  <aside class="detail" id="detail" aria-label="任务或事件详情" aria-hidden="true">
+    <header>
+      <button class="tool-button detail-close" id="detail-close" type="button" title="关闭" aria-label="关闭">×</button>
+      <h2 id="detail-title">Delivery summary</h2>
+    </header>
+    <div class="detail-body" id="detail-body"></div>
+    <section class="detail-subpanel" id="detail-subpanel" aria-label="资料与附件" aria-hidden="true">
+      <header>
+        <button class="tool-button detail-back" id="detail-subpanel-back" type="button" title="返回详情" aria-label="返回详情">←</button>
+        <h2 id="detail-subpanel-title">资料与附件</h2>
+        <button class="tool-button detail-close" id="detail-subpanel-close" type="button" title="关闭" aria-label="关闭详情">×</button>
+      </header>
+      <div class="detail-subpanel-body" id="detail-subpanel-body"></div>
+    </section>
+  </aside>
+  <div class="image-lightbox" id="image-lightbox" role="dialog" aria-modal="true" aria-label="图片预览" hidden>
+    <button class="lightbox-close" id="lightbox-close" type="button" title="关闭" aria-label="关闭图片预览">×</button>
+    <img id="lightbox-image" alt="">
+    <div class="lightbox-caption" id="lightbox-caption"></div>
+  </div>
+  <script id="gantt-data" type="application/json">{"events": [{"compact_label": "里程碑", "date": "2026-07-03", "id": "534f110e-1401-4546-b84f-aeeec0008cb1:milestone:2026-07-03:14a4723f-abd8-48e5-8a02-c2f3c0a4abaa", "source_refs": [{"event_time": "2026-07-03T08:57:48.622899+00:00", "event_type": "label_added", "source": {"id": "14a4723f-abd8-48e5-8a02-c2f3c0a4abaa", "table": "issue_labels"}}], "summary": "Milestone: InternS2 SFT", "task_id": "534f110e-1401-4546-b84f-aeeec0008cb1", "type": "milestone"}, {"compact_label": "求助", "date": "2026-07-03", "id": "8cb36313-b191-4dcc-9b21-c3c817ba80e5:blocked:2026-07-03:face45af-ba3d-4cc7-a17e-f32848c25a70", "source_refs": [{"event_time": "2026-07-03T09:04:18.596818+00:00", "event_type": "label_added", "source": {"id": "face45af-ba3d-4cc7-a17e-f32848c25a70", "table": "issue_labels"}}], "summary": "needs-help: 2026-07-02 于家硕：SFT 排队等待资源", "task_id": "8cb36313-b191-4dcc-9b21-c3c817ba80e5", "type": "blocked"}, {"compact_label": "阻塞", "date": "2026-07-03", "id": "8cb36313-b191-4dcc-9b21-c3c817ba80e5:stalled:2026-07-03:5c7d4aeb-57bc-4593-8821-a1fbcf2c46d1", "source_refs": [{"event_time": "2026-07-03T09:04:18.596025+00:00", "event_type": "label_added", "source": {"id": "5c7d4aeb-57bc-4593-8821-a1fbcf2c46d1", "table": "issue_labels"}}], "summary": "blocked: 2026-07-02 于家硕：SFT 排队等待资源", "task_id": "8cb36313-b191-4dcc-9b21-c3c817ba80e5", "type": "stalled"}, {"compact_label": "里程碑", "date": "2026-07-06", "id": "0dce8040-4d8b-4583-b9f4-ff6c46905733:milestone:2026-07-06:87dce487-4ebf-4dad-b77b-1b39957dd910", "source_refs": [{"event_time": "2026-07-06T09:19:42.437102+00:00", "event_type": "label_added", "source": {"id": "87dce487-4ebf-4dad-b77b-1b39957dd910", "table": "issue_labels"}}], "summary": "Milestone: 字节猛犸：理解模型文档完成，代码待合入", "task_id": "0dce8040-4d8b-4583-b9f4-ff6c46905733", "type": "milestone"}, {"compact_label": "完成", "date": "2026-07-06", "id": "158d9a4c-fbfc-45a1-9b4e-82f2a0435366:completed:2026-07-06:158d9a4c-fbfc-45a1-9b4e-82f2a0435366", "source_refs": [{"event_time": "2026-07-06T08:58:21.329258+00:00", "event_type": "issue_completed", "source": {"field": "completed_at", "id": "158d9a4c-fbfc-45a1-9b4e-82f2a0435366", "table": "issues"}}], "summary": "Completed: 2026-07-06 chunkmoe：功能完成并取得显存收益", "task_id": "158d9a4c-fbfc-45a1-9b4e-82f2a0435366", "type": "completed"}, {"compact_label": "里程碑", "date": "2026-07-06", "id": "158d9a4c-fbfc-45a1-9b4e-82f2a0435366:milestone:2026-07-06:fe3dd3c1-4323-4766-9924-30fb42c869ff", "source_refs": [{"event_time": "2026-07-06T08:41:18.794061+00:00", "event_type": "label_added", "source": {"id": "fe3dd3c1-4323-4766-9924-30fb42c869ff", "table": "issue_labels"}}], "summary": "Milestone: 2026-07-06 chunkmoe：功能完成并取得显存收益", "task_id": "158d9a4c-fbfc-45a1-9b4e-82f2a0435366", "type": "milestone"}, {"compact_label": "里程碑", "date": "2026-07-06", "id": "20cff7b4-f999-4075-a50b-e0217094204d:milestone:2026-07-06:aa66767f-7c9f-487a-928a-8ed8b8f32cc3", "source_refs": [{"event_time": "2026-07-06T09:19:42.343358+00:00", "event_type": "label_added", "source": {"id": "aa66767f-7c9f-487a-928a-8ed8b8f32cc3", "table": "issue_labels"}}], "summary": "Milestone: 2026 Q3 季度需求跟踪", "task_id": "20cff7b4-f999-4075-a50b-e0217094204d", "type": "milestone"}, {"compact_label": "完成", "date": "2026-07-06", "id": "28f9fe75-76a3-40a9-b8e3-59d6d4f1f78b:completed:2026-07-06:28f9fe75-76a3-40a9-b8e3-59d6d4f1f78b", "source_refs": [{"event_time": "2026-07-06T09:19:42.472228+00:00", "event_type": "issue_completed", "source": {"field": "completed_at", "id": "28f9fe75-76a3-40a9-b8e3-59d6d4f1f78b", "table": "issues"}}], "summary": "Completed: 京东 OPD：Megatron 后端 micro bs 修复优化", "task_id": "28f9fe75-76a3-40a9-b8e3-59d6d4f1f78b", "type": "completed"}, {"compact_label": "完成", "date": "2026-07-06", "id": "3309364c-1ee7-4d97-bc90-d15ec45d8619:completed:2026-07-06:3309364c-1ee7-4d97-bc90-d15ec45d8619", "source_refs": [{"event_time": "2026-07-06T09:19:42.461394+00:00", "event_type": "issue_completed", "source": {"field": "completed_at", "id": "3309364c-1ee7-4d97-bc90-d15ec45d8619", "table": "issues"}}], "summary": "Completed: 京东 OPD：FSDP 后端接入 GDN Triton", "task_id": "3309364c-1ee7-4d97-bc90-d15ec45d8619", "type": "completed"}, {"compact_label": "求助", "date": "2026-07-06", "id": "531618e7-35f2-4957-91e2-7958e7c93e16:blocked:2026-07-06:0682c9a0-296e-4c0d-bc3c-b26fafc8d07b", "source_refs": [{"event_time": "2026-07-06T08:41:18.783401+00:00", "event_type": "label_added", "source": {"id": "0682c9a0-296e-4c0d-bc3c-b26fafc8d07b", "table": "issue_labels"}}], "summary": "needs-help: 2026-07-06 SFT：保存权重 2000 步卡住并单机复现", "task_id": "531618e7-35f2-4957-91e2-7958e7c93e16", "type": "blocked"}, {"compact_label": "阻塞", "date": "2026-07-06", "id": "531618e7-35f2-4957-91e2-7958e7c93e16:stalled:2026-07-06:d14a6bf2-9c48-49a2-846e-2603b33bd68a", "source_refs": [{"event_time": "2026-07-06T08:41:18.782162+00:00", "event_type": "label_added", "source": {"id": "d14a6bf2-9c48-49a2-846e-2603b33bd68a", "table": "issue_labels"}}], "summary": "blocked: 2026-07-06 SFT：保存权重 2000 步卡住并单机复现", "task_id": "531618e7-35f2-4957-91e2-7958e7c93e16", "type": "stalled"}, {"compact_label": "里程碑", "date": "2026-07-06", "id": "b24ba519-fce5-4448-800c-364aea71812d:milestone:2026-07-06:b815fff0-8ddc-4457-b9e7-44f1b255f338", "source_refs": [{"event_time": "2026-07-06T09:19:42.390131+00:00", "event_type": "label_added", "source": {"id": "b815fff0-8ddc-4457-b9e7-44f1b255f338", "table": "issue_labels"}}], "summary": "Milestone: 字节猛犸系列模型训练专项", "task_id": "b24ba519-fce5-4448-800c-364aea71812d", "type": "milestone"}, {"compact_label": "完成", "date": "2026-07-06", "id": "c4d4798d-4b56-46b2-8946-6c9d28a1d241:completed:2026-07-06:c4d4798d-4b56-46b2-8946-6c9d28a1d241", "source_refs": [{"event_time": "2026-07-06T09:19:42.40077+00:00", "event_type": "issue_completed", "source": {"field": "completed_at", "id": "c4d4798d-4b56-46b2-8946-6c9d28a1d241", "table": "issues"}}], "summary": "Completed: 生成模型：720p 长稳测试与 reward 正常", "task_id": "c4d4798d-4b56-46b2-8946-6c9d28a1d241", "type": "completed"}, {"compact_label": "里程碑", "date": "2026-07-06", "id": "c4d4798d-4b56-46b2-8946-6c9d28a1d241:milestone:2026-07-06:11301153-c2ae-43c7-8513-a2b602ee54c4", "source_refs": [{"event_time": "2026-07-06T09:19:42.403603+00:00", "event_type": "label_added", "source": {"id": "11301153-c2ae-43c7-8513-a2b602ee54c4", "table": "issue_labels"}}], "summary": "Milestone: 生成模型：720p 长稳测试与 reward 正常", "task_id": "c4d4798d-4b56-46b2-8946-6c9d28a1d241", "type": "milestone"}, {"compact_label": "完成", "date": "2026-07-06", "id": "dd86294f-5076-47fa-8d2d-ae95f6d57d1f:completed:2026-07-06:dd86294f-5076-47fa-8d2d-ae95f6d57d1f", "source_refs": [{"event_time": "2026-07-06T09:19:42.408426+00:00", "event_type": "issue_completed", "source": {"field": "completed_at", "id": "dd86294f-5076-47fa-8d2d-ae95f6d57d1f", "table": "issues"}}], "summary": "Completed: 生成模型：文本侧推理训练链路性能优化", "task_id": "dd86294f-5076-47fa-8d2d-ae95f6d57d1f", "type": "completed"}, {"compact_label": "里程碑", "date": "2026-07-06", "id": "f7618747-f6d0-4e58-b01e-2978d1f2c473:milestone:2026-07-06:f47d395c-fcc0-40ed-8014-069ac85f6c3e", "source_refs": [{"event_time": "2026-07-06T08:41:18.802617+00:00", "event_type": "label_added", "source": {"id": "f47d395c-fcc0-40ed-8014-069ac85f6c3e", "table": "issue_labels"}}], "summary": "Milestone: 2026-07-06 chunkmoe：消融验证精度和性能", "task_id": "f7618747-f6d0-4e58-b01e-2978d1f2c473", "type": "milestone"}, {"compact_label": "求助", "date": "2026-07-06", "id": "fdf3840f-834a-4552-b4fd-3d9cd1b158cd:blocked:2026-07-06:57fd394d-0143-472f-94f3-feb333b9609d", "source_refs": [{"event_time": "2026-07-06T09:19:42.421418+00:00", "event_type": "label_added", "source": {"id": "57fd394d-0143-472f-94f3-feb333b9609d", "table": "issue_labels"}}], "summary": "needs-help: 生成模型：训练部分 SMA 低于 45% 分析优化", "task_id": "fdf3840f-834a-4552-b4fd-3d9cd1b158cd", "type": "blocked"}, {"compact_label": "阻塞", "date": "2026-07-06", "id": "fdf3840f-834a-4552-b4fd-3d9cd1b158cd:stalled:2026-07-06:fa276c33-de28-425a-8bdc-57eac39d115b", "source_refs": [{"event_time": "2026-07-06T09:19:42.42009+00:00", "event_type": "label_added", "source": {"id": "fa276c33-de28-425a-8bdc-57eac39d115b", "table": "issue_labels"}}], "summary": "blocked: 生成模型：训练部分 SMA 低于 45% 分析优化", "task_id": "fdf3840f-834a-4552-b4fd-3d9cd1b158cd", "type": "stalled"}], "generated_at": "2026-07-20T21:02:55.054766+00:00", "sources": {"progress_audits": 4, "timeline_rows": 141}, "summary": {"blocked": 3, "completed": 5, "events": 18, "in_progress": 0, "milestones": 7, "parent_links": 1, "restart": 0, "stalled": 3, "tasks": 22, "todo": 0}, "tasks": [{"children": ["c83d2690-d6c1-4839-9d25-b45043a1387d"], "compact_label": "InternS2", "completed_at": null, "delivery_summary": {"date_range": "2026-06-01 - 2026-07-15", "issue_key": "1-1", "next_action": "展开子任务复查交付路径", "owner": "于家硕", "progress": 50, "state": "In Progress", "title": "InternS2 SFT"}, "depth": 0, "id": "534f110e-1401-4546-b84f-aeeec0008cb1", "issue_id": "534f110e-1401-4546-b84f-aeeec0008cb1", "issue_key": "1-1", "labels": ["milestone", "owner:于家硕"], "modules": ["SFT 交付"], "order": 0, "owner": "于家硕", "parent_id": null, "progress": 50, "project": "浦江", "source_refs": [{"event_time": "2026-07-02T11:21:40.758946+00:00", "event_type": "issue_activity", "source": {"field": null, "id": "3782ea1b-9cda-47c8-9081-7877a91882a0", "table": "issue_activities"}}, {"event_time": "2026-07-02T11:21:40.758946+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "534f110e-1401-4546-b84f-aeeec0008cb1", "table": "issues"}}, {"event_time": "2026-07-03T03:05:50.242753+00:00", "event_type": "issue_comment", "source": {"id": "8e0a18ba-b22e-4b59-a027-e513d22e75f8", "table": "issue_comments"}}, {"event_time": "2026-07-03T03:05:50.264266+00:00", "event_type": "issue_activity", "source": {"field": "comment", "id": "7a8ff163-7323-4b7b-86cc-7ae70515de5a", "table": "issue_activities"}}, {"event_time": "2026-07-03T08:57:48.622899+00:00", "event_type": "label_added", "source": {"id": "14a4723f-abd8-48e5-8a02-c2f3c0a4abaa", "table": "issue_labels"}}, {"event_time": "2026-07-03T08:57:48.624002+00:00", "event_type": "label_added", "source": {"id": "a6602c73-a8d5-4931-b71e-a848e69173a2", "table": "issue_labels"}}, {"event_time": "2026-07-03T08:57:48.62716+00:00", "event_type": "module_linked", "source": {"id": "85d2928c-3fe6-409c-9208-a316a9fd77cc", "table": "module_issues"}}], "start_date": "2026-06-01", "state": "In Progress", "target_date": "2026-07-15", "title": "InternS2 SFT"}, {"children": [], "compact_label": "chunkmoe", "completed_at": null, "delivery_summary": {"date_range": "2026-07-02 - 2026-07-14", "issue_key": "1-2", "next_action": "按最新甘特图状态继续跟进", "owner": "侯玉峰", "progress": 50, "state": "In Progress", "title": "chunkmoe 性能优化"}, "depth": 1, "id": "c83d2690-d6c1-4839-9d25-b45043a1387d", "issue_id": "c83d2690-d6c1-4839-9d25-b45043a1387d", "issue_key": "1-2", "labels": ["breakthrough", "owner:侯玉峰"], "modules": ["SFT 交付", "chunkmoe"], "order": 1, "owner": "侯玉峰", "parent_id": "534f110e-1401-4546-b84f-aeeec0008cb1", "progress": 50, "project": "浦江", "source_refs": [{"event_time": "2026-07-03T03:05:50.146848+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "c83d2690-d6c1-4839-9d25-b45043a1387d", "table": "issues"}}, {"event_time": "2026-07-03T03:05:50.146848+00:00", "event_type": "issue_activity", "source": {"field": null, "id": "8b1b0811-cc2d-43a9-8159-12ba29973ef2", "table": "issue_activities"}}, {"event_time": "2026-07-03T03:05:50.247229+00:00", "event_type": "issue_activity", "source": {"field": "comment", "id": "8afae78b-788a-4c4d-b29d-3060465940b9", "table": "issue_activities"}}, {"event_time": "2026-07-03T03:08:32.473916+00:00", "event_type": "issue_activity", "source": {"field": "start_date", "id": "f15b5885-7f41-48e2-9e20-722a92e06835", "table": "issue_activities"}}, {"event_time": "2026-07-03T03:08:32.474192+00:00", "event_type": "issue_activity", "source": {"field": "target_date", "id": "fcda1824-f87b-4b32-8fcd-6ea82f3deccf", "table": "issue_activities"}}, {"event_time": "2026-07-03T06:42:19.352468+00:00", "event_type": "issue_activity", "source": {"field": "parent", "id": "67350d32-1b36-4d11-a3ca-68d87452046d", "table": "issue_activities"}}, {"event_time": "2026-07-03T06:53:22.639504+00:00", "event_type": "issue_activity", "source": {"field": "issue", "id": "73256e48-b0cb-4467-b390-80b5e8fbbfb6", "table": "issue_activities"}}, {"event_time": "2026-07-03T08:57:48.624726+00:00", "event_type": "label_added", "source": {"id": "e01b8a3a-d05b-4e8a-913c-286f7de2482e", "table": "issue_labels"}}, {"event_time": "2026-07-03T08:57:48.625455+00:00", "event_type": "label_added", "source": {"id": "f15c268b-8156-4235-a8ac-bd787bbbfd03", "table": "issue_labels"}}, {"event_time": "2026-07-03T08:57:48.62986+00:00", "event_type": "module_linked", "source": {"id": "87cd765d-fa6b-4025-8b0b-3053ab766cce", "table": "module_issues"}}, {"event_time": "2026-07-03T08:57:48.630572+00:00", "event_type": "module_linked", "source": {"id": "016c0c05-7248-4835-9e10-4bcb42b21636", "table": "module_issues"}}, {"event_time": "2026-07-06T08:27:02.163916+00:00", "event_type": "issue_activity", "source": {"field": "start_date", "id": "e5c6576a-7e57-402e-bc44-2052f46e0d9a", "table": "issue_activities"}}, {"event_time": "2026-07-06T08:27:02.164429+00:00", "event_type": "issue_activity", "source": {"field": "target_date", "id": "79ee3746-66a3-49da-8b4c-1c3c14884072", "table": "issue_activities"}}, {"event_time": "2026-07-03T03:06:23.132876+00:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/smoke-final-20260702.json", "source_id": "smoke-final-20260702"}}], "start_date": "2026-07-02", "state": "In Progress", "target_date": "2026-07-14", "title": "chunkmoe 性能优化"}, {"children": [], "compact_label": "开发 chunk", "completed_at": null, "delivery_summary": {"date_range": "2026-07-03 - 2026-07-15", "issue_key": "1-3", "next_action": "按最新甘特图状态继续跟进", "owner": "侯玉峰", "progress": 50, "state": "In Progress", "title": "2026-07-02 侯玉峰：开发 chunkmoe"}, "depth": 0, "id": "20831375-db43-449d-8a2e-7e4abed74410", "issue_id": "20831375-db43-449d-8a2e-7e4abed74410", "issue_key": "1-3", "labels": ["daily-event", "breakthrough", "owner:侯玉峰"], "modules": ["SFT 交付", "chunkmoe"], "order": 2, "owner": "侯玉峰", "parent_id": null, "progress": 50, "project": "浦江", "source_refs": [{"event_time": "2026-07-03T09:04:18.5856+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "20831375-db43-449d-8a2e-7e4abed74410", "table": "issues"}}, {"event_time": "2026-07-03T09:04:18.592802+00:00", "event_type": "label_added", "source": {"id": "bb8997fd-5b0b-4b7e-8288-141f1702ce01", "table": "issue_labels"}}, {"event_time": "2026-07-03T09:04:18.593838+00:00", "event_type": "label_added", "source": {"id": "ac56ab5f-a695-4e8f-8d84-2508d4e43a2b", "table": "issue_labels"}}, {"event_time": "2026-07-03T09:04:18.594613+00:00", "event_type": "label_added", "source": {"id": "2e93920a-ee76-49b3-900d-07f212b81290", "table": "issue_labels"}}, {"event_time": "2026-07-03T09:04:18.5999+00:00", "event_type": "module_linked", "source": {"id": "d0718c8f-47e6-49fc-a8a6-4ef454a7b8b6", "table": "module_issues"}}, {"event_time": "2026-07-03T09:04:18.601908+00:00", "event_type": "module_linked", "source": {"id": "70099b8e-a7b5-4e90-aa93-ae68cbe740e1", "table": "module_issues"}}], "start_date": "2026-07-03", "state": "In Progress", "target_date": "2026-07-15", "title": "2026-07-02 侯玉峰：开发 chunkmoe"}, {"children": [], "compact_label": "SFT 排队等待", "completed_at": null, "delivery_summary": {"date_range": "2026-06-01 - 2026-07-15", "issue_key": "1-4", "next_action": "确认阻塞解除时间和协助人", "owner": "于家硕", "progress": 25, "state": "Todo", "title": "2026-07-02 于家硕：SFT 排队等待资源"}, "depth": 0, "id": "8cb36313-b191-4dcc-9b21-c3c817ba80e5", "issue_id": "8cb36313-b191-4dcc-9b21-c3c817ba80e5", "issue_key": "1-4", "labels": ["daily-event", "blocked", "needs-help", "owner:于家硕"], "modules": ["SFT 交付"], "order": 3, "owner": "于家硕", "parent_id": null, "progress": 25, "project": "浦江", "source_refs": [{"event_time": "2026-07-03T09:04:18.589535+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "8cb36313-b191-4dcc-9b21-c3c817ba80e5", "table": "issues"}}, {"event_time": "2026-07-03T09:04:18.595313+00:00", "event_type": "label_added", "source": {"id": "8c7985b3-cae9-47be-afe7-f06cf3896632", "table": "issue_labels"}}, {"event_time": "2026-07-03T09:04:18.596025+00:00", "event_type": "label_added", "source": {"id": "5c7d4aeb-57bc-4593-8821-a1fbcf2c46d1", "table": "issue_labels"}}, {"event_time": "2026-07-03T09:04:18.596818+00:00", "event_type": "label_added", "source": {"id": "face45af-ba3d-4cc7-a17e-f32848c25a70", "table": "issue_labels"}}, {"event_time": "2026-07-03T09:04:18.597826+00:00", "event_type": "label_added", "source": {"id": "63a7f12d-c116-4214-ab93-6f259f17c5e5", "table": "issue_labels"}}, {"event_time": "2026-07-03T09:04:18.60082+00:00", "event_type": "module_linked", "source": {"id": "c6ccd3ea-b087-4ac9-83d5-2f7a67908db8", "table": "module_issues"}}], "start_date": "2026-06-01", "state": "Todo", "target_date": "2026-07-15", "title": "2026-07-02 于家硕：SFT 排队等待资源"}, {"children": [], "compact_label": "保存权重 200", "completed_at": null, "delivery_summary": {"date_range": "2026-06-01 - 2026-07-15", "issue_key": "1-6", "next_action": "确认阻塞解除时间和协助人", "owner": "于家硕", "progress": 25, "state": "Todo", "title": "2026-07-06 SFT：保存权重 2000 步卡住并单机复现"}, "depth": 0, "id": "531618e7-35f2-4957-91e2-7958e7c93e16", "issue_id": "531618e7-35f2-4957-91e2-7958e7c93e16", "issue_key": "1-6", "labels": ["daily-event", "blocked", "needs-help", "owner:于家硕"], "modules": ["SFT 交付"], "order": 4, "owner": "于家硕", "parent_id": null, "progress": 25, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T08:41:18.775654+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "531618e7-35f2-4957-91e2-7958e7c93e16", "table": "issues"}}, {"event_time": "2026-07-06T08:41:18.7805+00:00", "event_type": "label_added", "source": {"id": "db8470d9-9115-4606-b15e-8d60d18367dc", "table": "issue_labels"}}, {"event_time": "2026-07-06T08:41:18.782162+00:00", "event_type": "label_added", "source": {"id": "d14a6bf2-9c48-49a2-846e-2603b33bd68a", "table": "issue_labels"}}, {"event_time": "2026-07-06T08:41:18.783401+00:00", "event_type": "label_added", "source": {"id": "0682c9a0-296e-4c0d-bc3c-b26fafc8d07b", "table": "issue_labels"}}, {"event_time": "2026-07-06T08:41:18.784513+00:00", "event_type": "label_added", "source": {"id": "405f4290-e607-4345-b09d-760fb43676d1", "table": "issue_labels"}}, {"event_time": "2026-07-06T08:41:18.786523+00:00", "event_type": "module_linked", "source": {"id": "b2382b5a-02c3-4a2b-b351-a1622165133e", "table": "module_issues"}}], "start_date": "2026-06-01", "state": "Todo", "target_date": "2026-07-15", "title": "2026-07-06 SFT：保存权重 2000 步卡住并单机复现"}, {"children": [], "compact_label": "功能完成并取得显", "completed_at": "2026-07-06T08:58:21.329258+00:00", "delivery_summary": {"date_range": "2026-07-03 - 2026-07-15", "issue_key": "1-7", "next_action": "按最新甘特图状态继续跟进", "owner": "侯玉峰", "progress": 100, "state": "Done", "title": "2026-07-06 chunkmoe：功能完成并取得显存收益"}, "depth": 0, "id": "158d9a4c-fbfc-45a1-9b4e-82f2a0435366", "issue_id": "158d9a4c-fbfc-45a1-9b4e-82f2a0435366", "issue_key": "1-7", "labels": ["daily-event", "breakthrough", "milestone", "owner:侯玉峰"], "modules": ["SFT 交付", "chunkmoe"], "order": 5, "owner": "侯玉峰", "parent_id": null, "progress": 100, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T08:41:18.790239+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "158d9a4c-fbfc-45a1-9b4e-82f2a0435366", "table": "issues"}}, {"event_time": "2026-07-06T08:41:18.792005+00:00", "event_type": "label_added", "source": {"id": "ec5bc317-0c8b-446c-aa32-400623617e40", "table": "issue_labels"}}, {"event_time": "2026-07-06T08:41:18.793036+00:00", "event_type": "label_added", "source": {"id": "ba29f44f-eca3-49b4-9799-4728b6aaf118", "table": "issue_labels"}}, {"event_time": "2026-07-06T08:41:18.794061+00:00", "event_type": "label_added", "source": {"id": "fe3dd3c1-4323-4766-9924-30fb42c869ff", "table": "issue_labels"}}, {"event_time": "2026-07-06T08:41:18.795061+00:00", "event_type": "label_added", "source": {"id": "ae002da5-eb03-4922-9cec-65bcbfbfb583", "table": "issue_labels"}}, {"event_time": "2026-07-06T08:41:18.796115+00:00", "event_type": "module_linked", "source": {"id": "b40765a2-5a8e-4953-9b11-9cef8dba7876", "table": "module_issues"}}, {"event_time": "2026-07-06T08:41:18.797201+00:00", "event_type": "module_linked", "source": {"id": "511db2d5-572f-49f0-9552-5d81cf0dea24", "table": "module_issues"}}, {"event_time": "2026-07-06T08:58:21.329258+00:00", "event_type": "issue_completed", "source": {"field": "completed_at", "id": "158d9a4c-fbfc-45a1-9b4e-82f2a0435366", "table": "issues"}}], "start_date": "2026-07-03", "state": "Done", "target_date": "2026-07-15", "title": "2026-07-06 chunkmoe：功能完成并取得显存收益"}, {"children": [], "compact_label": "消融验证精度和性", "completed_at": null, "delivery_summary": {"date_range": "2026-07-03 - 2026-07-15", "issue_key": "1-8", "next_action": "按最新甘特图状态继续跟进", "owner": "侯玉峰", "progress": 0, "state": "Todo", "title": "2026-07-06 chunkmoe：消融验证精度和性能"}, "depth": 0, "id": "f7618747-f6d0-4e58-b01e-2978d1f2c473", "issue_id": "f7618747-f6d0-4e58-b01e-2978d1f2c473", "issue_key": "1-8", "labels": ["daily-event", "milestone", "owner:侯玉峰"], "modules": ["chunkmoe", "评测"], "order": 6, "owner": "侯玉峰", "parent_id": null, "progress": 0, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T08:41:18.799981+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "f7618747-f6d0-4e58-b01e-2978d1f2c473", "table": "issues"}}, {"event_time": "2026-07-06T08:41:18.801588+00:00", "event_type": "label_added", "source": {"id": "3a0f7754-89ae-4b68-85be-ae23520c848d", "table": "issue_labels"}}, {"event_time": "2026-07-06T08:41:18.802617+00:00", "event_type": "label_added", "source": {"id": "f47d395c-fcc0-40ed-8014-069ac85f6c3e", "table": "issue_labels"}}, {"event_time": "2026-07-06T08:41:18.803551+00:00", "event_type": "label_added", "source": {"id": "10e435e9-2c4a-4f91-bffc-ff24dce6d03c", "table": "issue_labels"}}, {"event_time": "2026-07-06T08:41:18.804573+00:00", "event_type": "module_linked", "source": {"id": "82858829-43bb-41dd-932b-d64456239dab", "table": "module_issues"}}, {"event_time": "2026-07-06T08:41:18.805694+00:00", "event_type": "module_linked", "source": {"id": "effd60f7-e0a2-49c3-b503-8a43e2b5da6d", "table": "module_issues"}}], "start_date": "2026-07-03", "state": "Todo", "target_date": "2026-07-15", "title": "2026-07-06 chunkmoe：消融验证精度和性能"}, {"children": [], "compact_label": "季度需求跟踪", "completed_at": null, "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-9", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 50, "state": "In Progress", "title": "2026 Q3 季度需求跟踪"}, "depth": 0, "id": "20cff7b4-f999-4075-a50b-e0217094204d", "issue_id": "20cff7b4-f999-4075-a50b-e0217094204d", "issue_key": "1-9", "labels": ["daily-event", "quarterly-demand", "demand", "milestone"], "modules": ["Q3 需求"], "order": 7, "owner": null, "parent_id": null, "progress": 50, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.331516+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "20cff7b4-f999-4075-a50b-e0217094204d", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.336231+00:00", "event_type": "label_added", "source": {"id": "fe255d87-2180-41bf-9d03-4574e676d410", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.340453+00:00", "event_type": "label_added", "source": {"id": "02802b3f-8e41-4537-9f60-cfca50bc62e8", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.342321+00:00", "event_type": "label_added", "source": {"id": "d08e3731-a83b-46e7-830c-ce9619f34802", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.343358+00:00", "event_type": "label_added", "source": {"id": "aa66767f-7c9f-487a-928a-8ed8b8f32cc3", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.347858+00:00", "event_type": "module_linked", "source": {"id": "6ecdac07-d2e9-4b79-a952-1515aa0f51f8", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "In Progress", "target_date": "2026-07-06", "title": "2026 Q3 季度需求跟踪"}, {"children": [], "compact_label": "veomni 需", "completed_at": null, "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-10", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 50, "state": "In Progress", "title": "Q3 需求：veomni 需求跟踪"}, "depth": 0, "id": "80b22b69-370e-4aec-8da1-f36391f318ac", "issue_id": "80b22b69-370e-4aec-8da1-f36391f318ac", "issue_key": "1-10", "labels": ["daily-event", "quarterly-demand", "demand", "community"], "modules": ["Q3 需求"], "order": 8, "owner": null, "parent_id": null, "progress": 50, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.351756+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "80b22b69-370e-4aec-8da1-f36391f318ac", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.353264+00:00", "event_type": "label_added", "source": {"id": "bc713319-d317-4673-8f2e-a1dfb240ab6b", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.354424+00:00", "event_type": "label_added", "source": {"id": "f16091f6-4b5f-4f25-ad36-3d5c5218621d", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.355525+00:00", "event_type": "label_added", "source": {"id": "850b3f34-25e7-4545-9d13-2c23099e1662", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.357315+00:00", "event_type": "label_added", "source": {"id": "1945d504-3ead-4e32-9b35-dd33b475facf", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.35838+00:00", "event_type": "module_linked", "source": {"id": "17ac4860-4cbf-45b2-915c-de647bf6c650", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "In Progress", "target_date": "2026-07-06", "title": "Q3 需求：veomni 需求跟踪"}, {"children": [], "compact_label": "verl 需求跟", "completed_at": null, "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-11", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 50, "state": "In Progress", "title": "Q3 需求：verl 需求跟踪"}, "depth": 0, "id": "28376ea2-1f61-4929-806c-d9a1c2fa144e", "issue_id": "28376ea2-1f61-4929-806c-d9a1c2fa144e", "issue_key": "1-11", "labels": ["daily-event", "quarterly-demand", "demand"], "modules": ["Q3 需求"], "order": 9, "owner": null, "parent_id": null, "progress": 50, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.361138+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "28376ea2-1f61-4929-806c-d9a1c2fa144e", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.362462+00:00", "event_type": "label_added", "source": {"id": "1f2b6600-e076-4d0d-a8e2-cdc987914903", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.363456+00:00", "event_type": "label_added", "source": {"id": "c1ab5985-8fdd-4f94-aea4-f14f8b6aa500", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.364424+00:00", "event_type": "label_added", "source": {"id": "5f458626-97de-497c-91b1-ffb2218f563d", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.365414+00:00", "event_type": "module_linked", "source": {"id": "d417458d-750b-4f28-948c-2eb0a3e404a0", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "In Progress", "target_date": "2026-07-06", "title": "Q3 需求：verl 需求跟踪"}, {"children": [], "compact_label": "周边 vllm-", "completed_at": null, "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-12", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 50, "state": "In Progress", "title": "Q3 需求：周边 vllm-ascend 需求跟踪"}, "depth": 0, "id": "223fd862-4d1f-400c-ac31-48723ff56557", "issue_id": "223fd862-4d1f-400c-ac31-48723ff56557", "issue_key": "1-12", "labels": ["daily-event", "quarterly-demand", "demand", "community"], "modules": ["Q3 需求"], "order": 10, "owner": null, "parent_id": null, "progress": 50, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.367989+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "223fd862-4d1f-400c-ac31-48723ff56557", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.369867+00:00", "event_type": "label_added", "source": {"id": "85f00c7f-d4ed-45e8-8ed9-a5727bcbbd19", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.370872+00:00", "event_type": "label_added", "source": {"id": "0703d068-2054-45c1-a49f-a35f671c8270", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.371833+00:00", "event_type": "label_added", "source": {"id": "710f4ad4-f5db-4606-b846-78b2258b4d64", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.372815+00:00", "event_type": "label_added", "source": {"id": "49992283-6da0-4626-ab38-3b51a2ec7437", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.373831+00:00", "event_type": "module_linked", "source": {"id": "ee16cf22-4f29-4f9b-9f11-4aae443e3d50", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "In Progress", "target_date": "2026-07-06", "title": "Q3 需求：周边 vllm-ascend 需求跟踪"}, {"children": [], "compact_label": "数据集评测需求跟", "completed_at": null, "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-13", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 50, "state": "In Progress", "title": "Q3 需求：数据集评测需求跟踪"}, "depth": 0, "id": "06890a67-07fc-4317-a641-6cd17ea21dd0", "issue_id": "06890a67-07fc-4317-a641-6cd17ea21dd0", "issue_key": "1-13", "labels": ["daily-event", "quarterly-demand", "demand", "validation"], "modules": ["Q3 需求", "评测"], "order": 11, "owner": null, "parent_id": null, "progress": 50, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.376339+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "06890a67-07fc-4317-a641-6cd17ea21dd0", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.377668+00:00", "event_type": "label_added", "source": {"id": "40b71802-ab77-47e8-909b-121a42ddd225", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.37886+00:00", "event_type": "label_added", "source": {"id": "c47e48c8-0546-4b00-93b9-67fe9d730011", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.379881+00:00", "event_type": "label_added", "source": {"id": "1e540d5b-046d-4239-a8db-048bea1a5b69", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.381547+00:00", "event_type": "label_added", "source": {"id": "8b8ee15a-d1be-4013-b108-c64ea14711d2", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.382515+00:00", "event_type": "module_linked", "source": {"id": "58c3f381-86ae-4be2-b170-6eb2891a90ff", "table": "module_issues"}}, {"event_time": "2026-07-06T09:19:42.383517+00:00", "event_type": "module_linked", "source": {"id": "74d25526-3b15-448a-bc01-9615d2c328b4", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "In Progress", "target_date": "2026-07-06", "title": "Q3 需求：数据集评测需求跟踪"}, {"children": [], "compact_label": "字节猛犸系列模型", "completed_at": null, "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-14", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 50, "state": "In Progress", "title": "字节猛犸系列模型训练专项"}, "depth": 0, "id": "b24ba519-fce5-4448-800c-364aea71812d", "issue_id": "b24ba519-fce5-4448-800c-364aea71812d", "issue_key": "1-14", "labels": ["daily-event", "special-project", "milestone"], "modules": ["字节猛犸系列模型训练专项"], "order": 12, "owner": null, "parent_id": null, "progress": 50, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.385894+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "b24ba519-fce5-4448-800c-364aea71812d", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.387206+00:00", "event_type": "label_added", "source": {"id": "3566a4d9-1838-48fc-9193-99f18b5da254", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.389179+00:00", "event_type": "label_added", "source": {"id": "6a1619d0-8533-4d4b-8d80-17741ec87a33", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.390131+00:00", "event_type": "label_added", "source": {"id": "b815fff0-8ddc-4457-b9e7-44f1b255f338", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.391954+00:00", "event_type": "module_linked", "source": {"id": "cc33f526-71f5-4eb6-9aa2-cdd0e346b2fe", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "In Progress", "target_date": "2026-07-06", "title": "字节猛犸系列模型训练专项"}, {"children": [], "compact_label": "生成模型训练", "completed_at": null, "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-15", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 50, "state": "In Progress", "title": "字节猛犸：生成模型训练"}, "depth": 0, "id": "f1406290-c5c6-40e2-ab63-935965a29b14", "issue_id": "f1406290-c5c6-40e2-ab63-935965a29b14", "issue_key": "1-15", "labels": ["daily-event", "special-project", "performance"], "modules": ["字节猛犸系列模型训练专项"], "order": 13, "owner": null, "parent_id": null, "progress": 50, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.394292+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "f1406290-c5c6-40e2-ab63-935965a29b14", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.39552+00:00", "event_type": "label_added", "source": {"id": "ac148bda-0aa8-48f3-bbd7-49e7a3cf5877", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.396487+00:00", "event_type": "label_added", "source": {"id": "7095bca2-68f7-480f-a511-aeecd51c1ea0", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.398101+00:00", "event_type": "label_added", "source": {"id": "7f2d28cf-3ba4-40dd-978c-dd3514d1a85d", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.399127+00:00", "event_type": "module_linked", "source": {"id": "971d2ad1-2c37-4b21-b8a7-faba5fa4f3e2", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "In Progress", "target_date": "2026-07-06", "title": "字节猛犸：生成模型训练"}, {"children": [], "compact_label": "720p 长稳测", "completed_at": "2026-07-06T09:19:42.40077+00:00", "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-16", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 100, "state": "Done", "title": "生成模型：720p 长稳测试与 reward 正常"}, "depth": 0, "id": "c4d4798d-4b56-46b2-8946-6c9d28a1d241", "issue_id": "c4d4798d-4b56-46b2-8946-6c9d28a1d241", "issue_key": "1-16", "labels": ["daily-event", "milestone", "validation"], "modules": ["字节猛犸系列模型训练专项", "评测"], "order": 14, "owner": null, "parent_id": null, "progress": 100, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.40077+00:00", "event_type": "issue_completed", "source": {"field": "completed_at", "id": "c4d4798d-4b56-46b2-8946-6c9d28a1d241", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.401453+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "c4d4798d-4b56-46b2-8946-6c9d28a1d241", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.402672+00:00", "event_type": "label_added", "source": {"id": "1b41f90a-29f9-4102-b123-dbe863983c47", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.403603+00:00", "event_type": "label_added", "source": {"id": "11301153-c2ae-43c7-8513-a2b602ee54c4", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.404514+00:00", "event_type": "label_added", "source": {"id": "f0f20234-2867-438a-a000-021e7c8da20c", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.405811+00:00", "event_type": "module_linked", "source": {"id": "31b2a613-ebdb-4ea5-b399-e44215e46f2b", "table": "module_issues"}}, {"event_time": "2026-07-06T09:19:42.406775+00:00", "event_type": "module_linked", "source": {"id": "7e45886b-c52b-4102-a4e0-37b7447f9ed2", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "Done", "target_date": "2026-07-06", "title": "生成模型：720p 长稳测试与 reward 正常"}, {"children": [], "compact_label": "文本侧推理训练链", "completed_at": "2026-07-06T09:19:42.408426+00:00", "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-17", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 100, "state": "Done", "title": "生成模型：文本侧推理训练链路性能优化"}, "depth": 0, "id": "dd86294f-5076-47fa-8d2d-ae95f6d57d1f", "issue_id": "dd86294f-5076-47fa-8d2d-ae95f6d57d1f", "issue_key": "1-17", "labels": ["daily-event", "breakthrough", "performance"], "modules": ["字节猛犸系列模型训练专项"], "order": 15, "owner": null, "parent_id": null, "progress": 100, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.408426+00:00", "event_type": "issue_completed", "source": {"field": "completed_at", "id": "dd86294f-5076-47fa-8d2d-ae95f6d57d1f", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.409141+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "dd86294f-5076-47fa-8d2d-ae95f6d57d1f", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.410361+00:00", "event_type": "label_added", "source": {"id": "4122a42b-355f-437e-aacc-21dddc291b7e", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.411345+00:00", "event_type": "label_added", "source": {"id": "0c24c741-4a74-4ff4-a556-a7726736a7db", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.412488+00:00", "event_type": "label_added", "source": {"id": "d5655051-9c7c-47f9-961d-5cd55fe7ccc2", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.413454+00:00", "event_type": "module_linked", "source": {"id": "a2ad1bd5-e6f9-41ad-b9cc-9eb116a747d8", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "Done", "target_date": "2026-07-06", "title": "生成模型：文本侧推理训练链路性能优化"}, {"children": [], "compact_label": "训练部分 SMA", "completed_at": null, "delivery_summary": {"blocker": "训练部分 SMA 低于 45%", "date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-18", "next_action": "确认阻塞解除时间和协助人", "owner": null, "progress": 25, "state": "In Progress", "title": "生成模型：训练部分 SMA 低于 45% 分析优化"}, "depth": 0, "id": "fdf3840f-834a-4552-b4fd-3d9cd1b158cd", "issue_id": "fdf3840f-834a-4552-b4fd-3d9cd1b158cd", "issue_key": "1-18", "labels": ["daily-event", "blocked", "needs-help", "risk", "performance"], "modules": ["字节猛犸系列模型训练专项"], "order": 16, "owner": null, "parent_id": null, "progress": 25, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.416427+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "fdf3840f-834a-4552-b4fd-3d9cd1b158cd", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.418763+00:00", "event_type": "label_added", "source": {"id": "c36f0141-7b55-4920-850e-ed936b33c1f7", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.42009+00:00", "event_type": "label_added", "source": {"id": "fa276c33-de28-425a-8bdc-57eac39d115b", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.421418+00:00", "event_type": "label_added", "source": {"id": "57fd394d-0143-472f-94f3-feb333b9609d", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.423586+00:00", "event_type": "label_added", "source": {"id": "1519e93d-9ed8-4dd5-8db0-de1c9de62f08", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.425444+00:00", "event_type": "label_added", "source": {"id": "15d91d69-fac0-4c92-b369-c1c4a8378966", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.428087+00:00", "event_type": "module_linked", "source": {"id": "24992489-1e79-49c1-b69e-fef23fd2a611", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "In Progress", "target_date": "2026-07-06", "title": "生成模型：训练部分 SMA 低于 45% 分析优化"}, {"children": [], "compact_label": "理解模型文档完成", "completed_at": null, "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-19", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 50, "state": "In Progress", "title": "字节猛犸：理解模型文档完成，代码待合入"}, "depth": 0, "id": "0dce8040-4d8b-4583-b9f4-ff6c46905733", "issue_id": "0dce8040-4d8b-4583-b9f4-ff6c46905733", "issue_key": "1-19", "labels": ["daily-event", "milestone", "special-project"], "modules": ["字节猛犸系列模型训练专项"], "order": 17, "owner": null, "parent_id": null, "progress": 50, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.433343+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "0dce8040-4d8b-4583-b9f4-ff6c46905733", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.435531+00:00", "event_type": "label_added", "source": {"id": "1843b464-aa99-4391-94f7-cf70fca5827f", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.437102+00:00", "event_type": "label_added", "source": {"id": "87dce487-4ebf-4dad-b77b-1b39957dd910", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.438362+00:00", "event_type": "label_added", "source": {"id": "e742fd8f-dbbf-4bed-86f3-c3d7ba3844e4", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.439341+00:00", "event_type": "module_linked", "source": {"id": "c9b3c23f-0ba8-4e15-9c3b-08984fc8ccd7", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "In Progress", "target_date": "2026-07-06", "title": "字节猛犸：理解模型文档完成，代码待合入"}, {"children": [], "compact_label": "字节 veomn", "completed_at": null, "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-20", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 50, "state": "In Progress", "title": "字节 veomni 专项：社区性能问题跟踪"}, "depth": 0, "id": "63bb653a-3989-47b4-9061-0608b86640c5", "issue_id": "63bb653a-3989-47b4-9061-0608b86640c5", "issue_key": "1-20", "labels": ["daily-event", "special-project", "community", "performance"], "modules": ["字节 veomni 专项", "Q3 需求"], "order": 18, "owner": null, "parent_id": null, "progress": 50, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.441727+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "63bb653a-3989-47b4-9061-0608b86640c5", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.443362+00:00", "event_type": "label_added", "source": {"id": "2354b662-990f-4445-b0cf-e3bc1ff3d459", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.444586+00:00", "event_type": "label_added", "source": {"id": "ad23225d-99cc-4680-82d6-b9a957703144", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.445696+00:00", "event_type": "label_added", "source": {"id": "1acc4c06-8db5-40e6-874c-6b579064c2e8", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.446768+00:00", "event_type": "label_added", "source": {"id": "6ee41993-4c66-49d0-8f15-02a3802cafe5", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.448723+00:00", "event_type": "module_linked", "source": {"id": "26965bc1-d90f-4ebd-914b-c660285b04af", "table": "module_issues"}}, {"event_time": "2026-07-06T09:19:42.450023+00:00", "event_type": "module_linked", "source": {"id": "2d4d7bcf-5a6d-48eb-a158-357b470e34e4", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "In Progress", "target_date": "2026-07-06", "title": "字节 veomni 专项：社区性能问题跟踪"}, {"children": [], "compact_label": "字节 veomn", "completed_at": null, "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-21", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 50, "state": "In Progress", "title": "字节 veomni：京东 OPD 性能问题"}, "depth": 0, "id": "4d33dafc-3608-4c27-855c-0c691aaf38f6", "issue_id": "4d33dafc-3608-4c27-855c-0c691aaf38f6", "issue_key": "1-21", "labels": ["daily-event", "community", "performance"], "modules": ["字节 veomni 专项"], "order": 19, "owner": null, "parent_id": null, "progress": 50, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.453149+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "4d33dafc-3608-4c27-855c-0c691aaf38f6", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.455103+00:00", "event_type": "label_added", "source": {"id": "3c7c408c-b5f2-496e-8ac3-e769181765cf", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.456461+00:00", "event_type": "label_added", "source": {"id": "23c3c655-2b36-4021-aa0e-84b075d9ef7f", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.457632+00:00", "event_type": "label_added", "source": {"id": "7f2a0fcf-aaf7-425c-a782-92e9cb4de54a", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.459004+00:00", "event_type": "module_linked", "source": {"id": "9e2a6670-5719-4b4b-b530-08aa56a97f7a", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "In Progress", "target_date": "2026-07-06", "title": "字节 veomni：京东 OPD 性能问题"}, {"children": [], "compact_label": "FSDP 后端接", "completed_at": "2026-07-06T09:19:42.461394+00:00", "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-22", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 100, "state": "Done", "title": "京东 OPD：FSDP 后端接入 GDN Triton"}, "depth": 0, "id": "3309364c-1ee7-4d97-bc90-d15ec45d8619", "issue_id": "3309364c-1ee7-4d97-bc90-d15ec45d8619", "issue_key": "1-22", "labels": ["daily-event", "breakthrough", "performance"], "modules": ["字节 veomni 专项"], "order": 20, "owner": null, "parent_id": null, "progress": 100, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.461394+00:00", "event_type": "issue_completed", "source": {"field": "completed_at", "id": "3309364c-1ee7-4d97-bc90-d15ec45d8619", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.462359+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "3309364c-1ee7-4d97-bc90-d15ec45d8619", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.464203+00:00", "event_type": "label_added", "source": {"id": "d343ed56-2e9e-482e-a3c0-a689976fca0b", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.466066+00:00", "event_type": "label_added", "source": {"id": "28c0b5ba-62bc-4d50-8ccc-82ab9a8846b1", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.467585+00:00", "event_type": "label_added", "source": {"id": "17887155-5cf4-415d-8070-48d18df1e8bb", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.469251+00:00", "event_type": "module_linked", "source": {"id": "cb98f017-3c8a-48e2-8be9-9ec5ab6b452c", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "Done", "target_date": "2026-07-06", "title": "京东 OPD：FSDP 后端接入 GDN Triton"}, {"children": [], "compact_label": "Megatron", "completed_at": "2026-07-06T09:19:42.472228+00:00", "delivery_summary": {"date_range": "2026-07-06 - 2026-07-06", "issue_key": "1-23", "next_action": "按最新甘特图状态继续跟进", "owner": null, "progress": 100, "state": "Done", "title": "京东 OPD：Megatron 后端 micro bs 修复优化"}, "depth": 0, "id": "28f9fe75-76a3-40a9-b8e3-59d6d4f1f78b", "issue_id": "28f9fe75-76a3-40a9-b8e3-59d6d4f1f78b", "issue_key": "1-23", "labels": ["daily-event", "breakthrough", "performance"], "modules": ["字节 veomni 专项"], "order": 21, "owner": null, "parent_id": null, "progress": 100, "project": "浦江", "source_refs": [{"event_time": "2026-07-06T09:19:42.472228+00:00", "event_type": "issue_completed", "source": {"field": "completed_at", "id": "28f9fe75-76a3-40a9-b8e3-59d6d4f1f78b", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.473581+00:00", "event_type": "issue_created", "source": {"field": "created_at", "id": "28f9fe75-76a3-40a9-b8e3-59d6d4f1f78b", "table": "issues"}}, {"event_time": "2026-07-06T09:19:42.47526+00:00", "event_type": "label_added", "source": {"id": "ec841159-f68d-4b76-92fe-08e776538cea", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.476384+00:00", "event_type": "label_added", "source": {"id": "f08f60f5-bab0-4cea-bf66-bd590b236256", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.477426+00:00", "event_type": "label_added", "source": {"id": "0608434c-5400-4fd2-b76f-3076513f7c86", "table": "issue_labels"}}, {"event_time": "2026-07-06T09:19:42.478617+00:00", "event_type": "module_linked", "source": {"id": "8dfa9965-a004-44d8-8598-442e256a7236", "table": "module_issues"}}, {"event_time": "2026-07-06T17:19:39.956534+08:00", "event_type": "progress_audit", "source": {"path": "/Users/Zhuanz/Documents/DevTracking/exports/progress/program-20260706-q3-byte-specials.json", "source_id": "program-20260706-q3-byte-specials"}}], "start_date": "2026-07-06", "state": "Done", "target_date": "2026-07-06", "title": "京东 OPD：Megatron 后端 micro bs 修复优化"}]}</script>
+  <script>
+    const gantt = JSON.parse(document.getElementById('gantt-data').textContent);
+    let activeSnapshotGeneratedAt = gantt.generated_at;
+    const STORAGE_KEY = 'plane-demand-hub-gantt-local-edits-v1';
+    const AUTOSAVE_DELAY_MS = 900;
+    const ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
+    const ATTACHMENT_ACCEPT = '.zip,.png,.jpg,.jpeg,.gif,.webp,.bmp,.txt,.ppt,.pptx,.doc,.docx';
+    const ATTACHMENT_EXTENSIONS = new Set(ATTACHMENT_ACCEPT.split(',').map(value => value.slice(1)));
+    const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']);
+    const collapsed = new Set();
+    const DAY_MS = 86400000;
+    const PAD_DAYS = 30;
+    const symbol = { blocked: '✕', todo: '○', stalled: '×', restart: '↻', in_progress: '→', completed: '●', milestone: '★' };
+    const eventTypeLabel = { blocked: '求助', todo: 'Todo', stalled: '阻塞', restart: '重启', in_progress: '进行中', completed: '完成', milestone: '里程碑' };
+    const eventTypeOrder = { todo: 0, blocked: 1, stalled: 2, restart: 3, in_progress: 4, completed: 5, milestone: 6 };
+    const taskColorPalette = ['#458A74', '#018B38', '#D9A421', '#F5A216', '#57AF37', '#41B9C1', '#008B8B', '#4E5689', '#6A8EC9', '#652884', '#652884', '#8A7355', '#CC5B45', '#848484', '#E42320', '#B46DA9'];
+    const defaultTaskColor = '#2f6fed';
+    const blockedTaskColor = '#c43d3d';
+    const staleStartDays = 2;
+    const staleMinimumOpacity = 0.1;
+    const staleFullFadeDays = 6;
+    const futureEventWarningDays = 14;
+    const futureEventWarningMinAlpha = 0.08;
+    const futureEventWarningMaxAlpha = 0.52;
+    const holidayDates = new Set([
+      '2026-01-01', '2026-01-02', '2026-01-03',
+      '2026-02-15', '2026-02-16', '2026-02-17', '2026-02-18', '2026-02-19', '2026-02-20', '2026-02-21', '2026-02-22', '2026-02-23',
+      '2026-04-04', '2026-04-05', '2026-04-06',
+      '2026-05-01', '2026-05-02', '2026-05-03', '2026-05-04', '2026-05-05',
+      '2026-06-19', '2026-06-20', '2026-06-21',
+      '2026-09-25', '2026-09-26', '2026-09-27',
+      '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06', '2026-10-07'
+    ]);
+    const fixedHolidayMonthDays = new Set(['01-01', '05-01', '10-01']);
+    const clone = value => JSON.parse(JSON.stringify(value));
+    let tasks = clone(gantt.tasks);
+    let events = clone(gantt.events);
+    let attachments = clone(gantt.attachments || []);
+    let deletedAttachmentIds = new Set();
+    let tasksById = new Map();
+    let dragState = null;
+    let suppressNextClick = false;
+    const expandedEventStacks = new Set();
+    let activeMinOrd = 0;
+    let activeMaxOrd = 0;
+    let selectedTaskId = null;
+    let activeDetailOwner = null;
+    let detailSubpanelOpen = false;
+    let didCenterToday = false;
+    let autosaveEnabled = false;
+    let autosaveTimer = null;
+    let autosaveInFlight = false;
+    let autosavePending = false;
+
+    function dateOrd(value) {
+      if (!value) return null;
+      const parsed = Date.parse(value.length === 10 ? value + 'T00:00:00Z' : value);
+      return Number.isNaN(parsed) ? null : Math.floor(parsed / DAY_MS);
+    }
+    function isoFromOrd(ord) {
+      return new Date(ord * DAY_MS).toISOString().slice(0, 10);
+    }
+    function todayOrd() {
+      return dateOrd(new Date().toISOString().slice(0, 10));
+    }
+    function isWeekendOrd(ord) {
+      const day = new Date(ord * DAY_MS).getUTCDay();
+      return day === 0 || day === 6;
+    }
+    function isHolidayDate(isoDate) {
+      return holidayDates.has(isoDate) || fixedHolidayMonthDays.has(isoDate.slice(5));
+    }
+    function futureEventWarningAlpha(daysAway) {
+      if (daysAway < 1 || daysAway > futureEventWarningDays) return 0;
+      const progress = (futureEventWarningDays - daysAway) / Math.max(1, futureEventWarningDays - 1);
+      return futureEventWarningMinAlpha + progress * (futureEventWarningMaxAlpha - futureEventWarningMinAlpha);
+    }
+    function futureEventWarnings() {
+      const today = todayOrd();
+      const warnings = new Map();
+      for (const event of events) {
+        const ord = dateOrd(event.date);
+        if (ord === null) continue;
+        const daysAway = ord - today;
+        const alpha = futureEventWarningAlpha(daysAway);
+        if (!alpha) continue;
+        const current = warnings.get(ord);
+        warnings.set(ord, {
+          ord,
+          daysAway,
+          alpha,
+          count: (current?.count || 0) + 1
+        });
+      }
+      return warnings;
+    }
+    function updateBounds() {
+      const ords = [];
+      for (const task of tasks) {
+        const start = dateOrd(task.start_date);
+        const target = dateOrd(task.target_date);
+        if (start !== null) ords.push(start);
+        if (target !== null) ords.push(target);
+      }
+      const fallback = todayOrd();
+      activeMinOrd = (ords.length ? Math.min(...ords) : fallback) - PAD_DAYS;
+      activeMaxOrd = (ords.length ? Math.max(...ords) : fallback) + PAD_DAYS;
+    }
+    function applySnapshot(snapshot) {
+      if (!snapshot || !Array.isArray(snapshot.tasks) || !Array.isArray(snapshot.events)) return false;
+      tasks = clone(snapshot.tasks).map((task, index) => Object.assign({ children: [], order: index }, task));
+      events = clone(snapshot.events);
+      attachments = Array.isArray(snapshot.attachments) ? clone(snapshot.attachments) : [];
+      return true;
+    }
+    function applyChangesetSnapshot(changeset) {
+      const applied = applySnapshot(changeset?.snapshot);
+      if (applied) deletedAttachmentIds = new Set((changeset?.deleted_attachments || []).map(item => item.id).filter(Boolean));
+      return applied;
+    }
+    function snapshotCandidate(source, snapshot, generatedAt = null, priority = 0, options = {}) {
+      if (!snapshot || !Array.isArray(snapshot.tasks) || !Array.isArray(snapshot.events)) return null;
+      const parsed = Date.parse(generatedAt || '');
+      const taskIds = new Set(snapshot.tasks.map(task => task.id).filter(Boolean));
+      const eventIds = new Set(snapshot.events.map(event => event.id).filter(Boolean));
+      const attachmentIds = new Set((snapshot.attachments || []).map(attachment => attachment.id).filter(Boolean));
+      return {
+        source,
+        snapshot,
+        generatedAt: generatedAt || null,
+        timestamp: Number.isNaN(parsed) ? 0 : parsed,
+        priority,
+        taskIds,
+        eventIds,
+        attachmentIds,
+        deletedTaskIds: new Set(options.deletedTaskIds || []),
+        deletedEventIds: new Set(options.deletedEventIds || []),
+        deletedAttachmentIds: new Set(options.deletedAttachmentIds || [])
+      };
+    }
+    function changesetCandidate(source, changeset, priority = 0) {
+      return snapshotCandidate(source, changeset?.snapshot, changeset?.saved_at || changeset?.generated_at || null, priority, {
+        deletedTaskIds: (changeset?.deleted_tasks || []).map(task => task.id).filter(Boolean),
+        deletedEventIds: (changeset?.deleted_events || []).map(event => event.id).filter(Boolean),
+        deletedAttachmentIds: (changeset?.deleted_attachments || []).map(attachment => attachment.id).filter(Boolean)
+      });
+    }
+    async function fetchChangesetCandidate(url, source, priority = 0) {
+      try {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) return null;
+        const payload = await response.json();
+        return changesetCandidate(source, payload.changeset || payload, priority);
+      } catch {
+        return null;
+      }
+    }
+    function localStorageCandidate() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        if (!saved) return null;
+        if (saved.snapshot) return changesetCandidate('localStorage', saved, 30);
+        return snapshotCandidate('localStorage', {
+          tasks: saved.tasks || [],
+          events: saved.events || [],
+          attachments: saved.attachments || []
+        }, saved.saved_at || saved.generated_at || null, 30, {
+          deletedTaskIds: saved.deleted_task_ids || [],
+          deletedEventIds: saved.deleted_event_ids || [],
+          deletedAttachmentIds: saved.deleted_attachment_ids || []
+        });
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+        return null;
+      }
+    }
+    function restoreEdits() {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (!saved) return false;
+      if (saved.snapshot) return applyChangesetSnapshot(saved);
+      try {
+        const deletedTaskIds = new Set(saved.deleted_task_ids || []);
+        const deletedEventIds = new Set(saved.deleted_event_ids || []);
+        deletedAttachmentIds = new Set(saved.deleted_attachment_ids || []);
+        const baseTasks = tasks.filter(task => !deletedTaskIds.has(task.id));
+        const baseTaskIds = new Set(baseTasks.map(task => task.id));
+        const savedTasks = new Map((saved.tasks || []).map(task => [task.id, task]));
+        const mergedTasks = new Map(baseTasks.map(task => [task.id, Object.assign(task, savedTasks.get(task.id) || {})]));
+        for (const task of saved.tasks || []) {
+          if (!baseTaskIds.has(task.id) && !deletedTaskIds.has(task.id)) mergedTasks.set(task.id, task);
+        }
+        const orderedTasks = [];
+        const seenTasks = new Set();
+        for (const savedTask of saved.tasks || []) {
+          const task = mergedTasks.get(savedTask.id);
+          if (!task || seenTasks.has(task.id)) continue;
+          orderedTasks.push(task);
+          seenTasks.add(task.id);
+        }
+        for (const task of baseTasks) {
+          if (seenTasks.has(task.id)) continue;
+          orderedTasks.push(mergedTasks.get(task.id) || task);
+        }
+        tasks = orderedTasks;
+        const baseEvents = new Map(events.filter(event => !deletedEventIds.has(event.id)).map(event => [event.id, event]));
+        for (const event of saved.events || []) {
+          if (!deletedEventIds.has(event.id)) baseEvents.set(event.id, event);
+        }
+        events = [...baseEvents.values()];
+        attachments = clone(saved.attachments || []);
+        return true;
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+        return false;
+      }
+    }
+    function localPreservesFileSnapshot(local, fileCandidate) {
+      if (!local || !fileCandidate) return true;
+      for (const id of fileCandidate.taskIds || []) {
+        if (!local.taskIds.has(id) && !local.deletedTaskIds.has(id)) return false;
+      }
+      for (const id of fileCandidate.eventIds || []) {
+        if (!local.eventIds.has(id) && !local.deletedEventIds.has(id)) return false;
+      }
+      for (const id of fileCandidate.attachmentIds || []) {
+        if (!local.attachmentIds.has(id) && !local.deletedAttachmentIds.has(id)) return false;
+      }
+      return true;
+    }
+    function selectRestoreCandidate(local, autosave, pushed, portable) {
+      const fileCandidate = [autosave, pushed, portable]
+        .filter(Boolean)
+        .sort((a, b) => (b.timestamp - a.timestamp) || (b.priority - a.priority))[0] || null;
+      if (local?.generatedAt && (!fileCandidate || (local.timestamp >= fileCandidate.timestamp && localPreservesFileSnapshot(local, fileCandidate)))) return local;
+      if (fileCandidate) return fileCandidate;
+      if (local) return local;
+      return null;
+    }
+    function setAutosaveStatus(message, state = 'idle') {
+      const status = document.getElementById('autosave-status');
+      if (!status) return;
+      status.dataset.state = state;
+      status.textContent = message;
+    }
+    function scheduleAutosave() {
+      if (!autosaveEnabled) return;
+      clearTimeout(autosaveTimer);
+      setAutosaveStatus('Autosave queued', 'saving');
+      autosaveTimer = setTimeout(runAutosave, AUTOSAVE_DELAY_MS);
+    }
+    async function runAutosave() {
+      if (!autosaveEnabled) return;
+      if (autosaveInFlight) {
+        autosavePending = true;
+        return;
+      }
+      autosaveInFlight = true;
+      autosavePending = false;
+      setAutosaveStatus('Autosave saving...', 'saving');
+      const changeset = buildChangeset();
+      const filename = `gantt-autosave-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      try {
+        const response = await fetch('/api/gantt-autosave', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename, changeset })
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json();
+        const savedAt = new Date().toLocaleTimeString();
+        setAutosaveStatus(`Autosave saved ${savedAt}`, 'saved');
+        if (result.latest) {
+          document.getElementById('autosave-status').title = result.latest;
+        }
+      } catch (error) {
+        setAutosaveStatus('Autosave failed', 'error');
+      } finally {
+        autosaveInFlight = false;
+        if (autosavePending) scheduleAutosave();
+      }
+    }
+    async function initializeGantt() {
+      const local = localStorageCandidate();
+      const autosave = await fetchChangesetCandidate('/api/gantt-autosave/latest', 'autosave', 25);
+      const pushed = await fetchChangesetCandidate('/api/gantt-edits/latest', 'pushed changes', 20);
+      const portable = await fetchChangesetCandidate('/api/gantt-portable/latest', 'portable snapshot', 10)
+        || await fetchChangesetCandidate('/gantt-local-edits.json', 'portable snapshot', 10);
+      const selected = selectRestoreCandidate(local, autosave, pushed, portable);
+      if (selected) {
+        applySnapshot(selected.snapshot);
+        deletedAttachmentIds = new Set(selected.deletedAttachmentIds || []);
+        activeSnapshotGeneratedAt = selected.generatedAt || activeSnapshotGeneratedAt;
+      }
+      const migratedLocalTaskKeys = normalizeLocalTaskKeys();
+      rebuildTaskIndex();
+      if (selected || migratedLocalTaskKeys) persistEdits();
+      render();
+      autosaveEnabled = true;
+      setAutosaveStatus(selected ? `Restored ${selected.source}` : 'Autosave ready', selected ? 'saved' : 'idle');
+    }
+    function persistEdits(options = {}) {
+      const extraDeletedTaskIds = options.deletedTaskIds || [];
+      const extraDeletedEventIds = options.deletedEventIds || [];
+      const extraDeletedAttachmentIds = options.deletedAttachmentIds || [];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        saved_at: new Date().toISOString(),
+        tasks: tasks.map((task, index) => taskStorageRecord(task, index)),
+        events,
+        attachments,
+        deleted_task_ids: [...new Set([...deletedTaskIds(), ...extraDeletedTaskIds])],
+        deleted_event_ids: [...new Set([...deletedEventIds(), ...extraDeletedEventIds])],
+        deleted_attachment_ids: [...new Set([...deletedAttachmentIds, ...extraDeletedAttachmentIds])]
+      }));
+      scheduleAutosave();
+    }
+    function taskStorageRecord(task, index = 0) {
+      return {
+        id: task.id,
+        issue_id: task.issue_id || null,
+        issue_key: task.issue_key || null,
+        title: task.title,
+        compact_label: task.compact_label,
+        parent_id: task.parent_id || null,
+        children: task.children || [],
+        depth: task.depth || 0,
+        order: task.order || 0,
+        order_index: index,
+        project: task.project || null,
+        state: task.state || null,
+        priority: task.priority || null,
+        progress: task.progress || 0,
+        owner: task.owner || null,
+        color: task.color || null,
+        labels: task.labels || [],
+        modules: task.modules || [],
+        start_date: task.start_date || null,
+        target_date: task.target_date || null,
+        completed_at: task.completed_at || null,
+        source_refs: task.source_refs || [],
+        delivery_summary: task.delivery_summary || {}
+      };
+    }
+    function baseTaskMap() {
+      return new Map(gantt.tasks.map(task => [task.id, task]));
+    }
+    function baseEventMap() {
+      return new Map(gantt.events.map(event => [event.id, event]));
+    }
+    function changedTaskRecords() {
+      const base = baseTaskMap();
+      return tasks
+        .map((task, index) => {
+          const original = base.get(task.id);
+          if (!original) return null;
+          const changes = {};
+          for (const key of ['title', 'compact_label', 'parent_id', 'start_date', 'target_date', 'owner', 'state', 'progress', 'labels', 'modules', 'color', 'delivery_summary']) {
+            if (!sameValue(task[key], original[key])) changes[key] = task[key] ?? null;
+          }
+          const originalOrder = gantt.tasks.findIndex(item => item.id === task.id);
+          if (originalOrder !== -1 && originalOrder !== index) changes.order_index = index;
+          return Object.keys(changes).length ? {
+            id: task.id,
+            issue_id: task.issue_id,
+            issue_key: task.issue_key,
+            changes
+          } : null;
+        })
+        .filter(Boolean);
+    }
+    function newTaskRecords() {
+      const base = baseTaskMap();
+      return tasks
+        .filter(task => !base.has(task.id))
+        .map(task => ({
+          id: task.id,
+          issue_id: task.issue_id || null,
+          issue_key: task.issue_key || null,
+          title: task.title,
+          compact_label: task.compact_label,
+          parent_id: task.parent_id || null,
+          order_index: tasks.findIndex(item => item.id === task.id),
+          project: task.project || null,
+          state: task.state || null,
+          progress: task.progress || 0,
+          owner: task.owner || null,
+          color: task.color || null,
+          labels: task.labels || [],
+          modules: task.modules || [],
+          start_date: task.start_date || null,
+          target_date: task.target_date || null,
+          delivery_summary: task.delivery_summary || {},
+          source_refs: task.source_refs || []
+        }));
+    }
+    function newEventRecords() {
+      const base = baseEventMap();
+      return events
+        .filter(event => !base.has(event.id))
+        .map(event => ({
+          id: event.id,
+          task_id: event.task_id,
+          type: event.type,
+          date: event.date,
+          summary: event.summary,
+          compact_label: event.compact_label,
+          source_refs: event.source_refs || []
+        }));
+    }
+    function changedEventRecords() {
+      const base = baseEventMap();
+      return events
+        .map(event => {
+          const original = base.get(event.id);
+          if (!original) return null;
+          const changes = {};
+          for (const key of ['task_id', 'type', 'date', 'summary', 'compact_label']) {
+            if (!sameValue(event[key], original[key])) changes[key] = event[key] ?? null;
+          }
+          return Object.keys(changes).length ? {
+            id: event.id,
+            task_id: event.task_id,
+            changes
+          } : null;
+        })
+        .filter(Boolean);
+    }
+    function deletedTaskIds() {
+      const current = new Set(tasks.map(task => task.id));
+      return gantt.tasks.filter(task => !current.has(task.id)).map(task => task.id);
+    }
+    function deletedEventIds() {
+      const current = new Set(events.map(event => event.id));
+      return gantt.events.filter(event => !current.has(event.id)).map(event => event.id);
+    }
+    function deletedTaskRecords() {
+      const current = new Set(tasks.map(task => task.id));
+      return gantt.tasks
+        .filter(task => !current.has(task.id))
+        .map(task => ({
+          id: task.id,
+          issue_id: task.issue_id,
+          issue_key: task.issue_key,
+          title: task.title
+        }));
+    }
+    function deletedEventRecords() {
+      const current = new Set(events.map(event => event.id));
+      return gantt.events
+        .filter(event => !current.has(event.id))
+        .map(event => ({
+          id: event.id,
+          task_id: event.task_id,
+          type: event.type,
+          date: event.date,
+          summary: event.summary
+        }));
+    }
+    function buildChangeset() {
+      return {
+        schema: 'plane-demand-hub.gantt-edits.v1',
+        generated_at: new Date().toISOString(),
+        source_gantt_generated_at: gantt.generated_at,
+        note: 'Standalone Gantt edits are persisted locally as an auditable changeset.',
+        new_tasks: newTaskRecords(),
+        task_changes: changedTaskRecords(),
+        event_changes: changedEventRecords(),
+        new_events: newEventRecords(),
+        deleted_tasks: deletedTaskRecords(),
+        deleted_events: deletedEventRecords(),
+        deleted_attachments: [...deletedAttachmentIds].map(id => ({ id })),
+        snapshot: {
+          tasks: tasks.map((task, index) => ({
+            id: task.id,
+            issue_id: task.issue_id,
+            issue_key: task.issue_key,
+            title: task.title,
+            compact_label: task.compact_label,
+            parent_id: task.parent_id,
+            order_index: index,
+            owner: task.owner,
+            state: task.state,
+            progress: task.progress,
+            labels: task.labels || [],
+            modules: task.modules || [],
+            color: task.color || null,
+            delivery_summary: task.delivery_summary || {},
+            start_date: task.start_date,
+            target_date: task.target_date
+          })),
+          events,
+          attachments
+        }
+      };
+    }
+    function downloadJson(filename, payload) {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    }
+    function downloadText(filename, content, type = 'text/markdown') {
+      const blob = new Blob([content], { type: `${type};charset=utf-8` });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    }
+    function downloadUrl(url) {
+      const link = document.createElement('a');
+      link.href = url;
+      document.body.append(link);
+      link.click();
+      link.remove();
+    }
+    function addDays(value, days) {
+      return isoFromOrd((dateOrd(value) ?? todayOrd()) + days);
+    }
+    function reportKindFromInput(value) {
+      const raw = String(value || '').trim().toLowerCase();
+      if (raw.includes('周') || raw.includes('week')) return 'weekly';
+      if (raw.includes('月') || raw.includes('month')) return 'monthly';
+      if (raw.includes('任务') || raw.includes('task')) return 'task';
+      return 'daily';
+    }
+    function reportKindLabel(kind) {
+      return { daily: '日报', weekly: '周报', monthly: '月报', task: '任务报告' }[kind] || '日报';
+    }
+    function defaultReportPeriod(kind) {
+      const today = todayOrd();
+      if (kind === 'weekly') {
+        const date = new Date(today * DAY_MS);
+        const day = date.getUTCDay() || 7;
+        const start = today - day + 1;
+        return { start: isoFromOrd(start), end: isoFromOrd(start + 6) };
+      }
+      if (kind === 'monthly') {
+        const date = new Date(today * DAY_MS);
+        const start = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1) / DAY_MS;
+        const end = Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0) / DAY_MS;
+        return { start: isoFromOrd(start), end: isoFromOrd(end) };
+      }
+      const day = isoFromOrd(today);
+      return { start: day, end: day };
+    }
+    function dateInRange(value, startDate, endDate) {
+      const ord = dateOrd(value);
+      return ord !== null && ord >= dateOrd(startDate) && ord <= dateOrd(endDate);
+    }
+    function taskOverlapsPeriod(task, startDate, endDate, periodEvents) {
+      const start = dateOrd(task.start_date);
+      const target = dateOrd(task.target_date) ?? start;
+      const periodStart = dateOrd(startDate);
+      const periodEnd = dateOrd(endDate);
+      const rangeOverlaps = start !== null && target !== null && start <= periodEnd && target >= periodStart;
+      return rangeOverlaps || periodEvents.some(event => event.task_id === task.id);
+    }
+    function cleanReportText(value) {
+      const raw = text(value);
+      return raw === 'n/a' ? '' : raw.replace(/\s+/g, ' ').trim();
+    }
+    function taskName(task) {
+      return `${cleanReportText(task.issue_key)} ${cleanReportText(task.title)}`.trim();
+    }
+    function pushLine(lines, value) {
+      if (value) lines.push(value);
+    }
+    function buildReportMarkdown(kind, startDate, endDate, options = {}) {
+      const label = reportKindLabel(kind);
+      const scopedTaskIds = options.taskIds || null;
+      const inScope = taskId => !scopedTaskIds || scopedTaskIds.has(taskId);
+      const periodEvents = sortedEvents(events.filter(event => inScope(event.task_id) && dateInRange(event.date, startDate, endDate)));
+      const reportTasks = tasks.filter(task => inScope(task.id) && taskOverlapsPeriod(task, startDate, endDate, periodEvents));
+      const lines = [
+        `# ${options.title || `Delivery Gantt ${label}`}`,
+        '',
+        `周期：${startDate} 至 ${endDate}`,
+        `生成时间：${new Date().toISOString()}`,
+        `数据来源：当前 Gantt 页面状态（含本地编辑）`,
+        '',
+        '## 进展'
+      ];
+      if (!reportTasks.length) {
+        lines.push('- 本周期没有匹配任务。');
+      } else {
+        for (const task of reportTasks) {
+          const taskEvents = periodEvents.filter(event => event.task_id === task.id);
+          const eventText = taskEvents.map(event => `${eventLabel(event.type)} ${shortDate(event.date)} ${cleanReportText(event.summary)}`).join('；');
+          const range = `${cleanReportText(task.start_date)}→${cleanReportText(task.target_date)}`;
+          const owner = cleanReportText(task.owner) || '未分配';
+          const progress = `${text(task.progress)}%`;
+          lines.push(`- ${taskName(task)}：${stateText(task.state)}，进度 ${progress}，Owner ${owner}，周期 ${range}${eventText ? `；事件：${eventText}` : ''}`);
+        }
+      }
+      lines.push('', '## 下一步');
+      const nextLines = reportTasks
+        .map(task => ({ task, next: cleanReportText((task.delivery_summary || {}).next_action) }))
+        .filter(item => item.next);
+      if (!nextLines.length) lines.push('- 暂无明确下一步。');
+      for (const item of nextLines) lines.push(`- ${taskName(item.task)}：${item.next}`);
+
+      lines.push('', '## 阻塞');
+      const blockerLines = [];
+      for (const task of reportTasks) {
+        const summary = task.delivery_summary || {};
+        const blocker = cleanReportText(summary.blocker);
+        const isBlocked = stateText(task.state) === '阻塞' || (task.labels || []).some(label => ['blocked', 'needs-help', 'blocker'].includes(String(label).toLowerCase()));
+        if (blocker || isBlocked) blockerLines.push(`- ${taskName(task)}：${blocker || '状态或标签显示阻塞'}`);
+      }
+      if (!blockerLines.length) lines.push('- 暂无阻塞。');
+      else lines.push(...blockerLines);
+
+      lines.push('', '## 求助点');
+      const helpEvents = periodEvents.filter(event => event.type === 'blocked');
+      if (!helpEvents.length) {
+        lines.push('- 暂无求助点。');
+      } else {
+        for (const event of helpEvents) {
+          const task = tasksById.get(event.task_id) || {};
+          lines.push(`- ${taskName(task)}：${shortDate(event.date)} ${cleanReportText(event.summary) || '需要协助'}`);
+        }
+      }
+      lines.push('', '## 事件明细');
+      if (!periodEvents.length) {
+        lines.push('- 本周期没有事件标记。');
+      } else {
+        for (const event of periodEvents) {
+          const task = tasksById.get(event.task_id) || {};
+          lines.push(`- ${shortDate(event.date)} · ${eventLabel(event.type)} · ${taskName(task)} · ${cleanReportText(event.summary)}`);
+        }
+      }
+      return lines.join('\n') + '\n';
+    }
+    function exportReport() {
+      persistEdits();
+      rebuildTaskIndex();
+      const rawKind = prompt('报告类型：日报 / 周报 / 月报', '日报');
+      if (rawKind === null) return;
+      const kind = reportKindFromInput(rawKind);
+      const defaults = defaultReportPeriod(kind);
+      const startDate = promptDate('开始日期 YYYY-MM-DD', defaults.start);
+      if (!startDate) return;
+      const endDate = promptDate('结束日期 YYYY-MM-DD', defaults.end);
+      if (!endDate) return;
+      const startOrd = dateOrd(startDate) ?? todayOrd();
+      const endOrd = dateOrd(endDate) ?? startOrd;
+      const normalizedStart = isoFromOrd(Math.min(startOrd, endOrd));
+      const normalizedEnd = isoFromOrd(Math.max(startOrd, endOrd));
+      const markdown = buildReportMarkdown(kind, normalizedStart, normalizedEnd);
+      const filename = `gantt-${kind}-report-${normalizedStart}-to-${normalizedEnd}.md`;
+      downloadText(filename, markdown);
+    }
+    async function pushEdits() {
+      persistEdits();
+      const changeset = buildChangeset();
+      if (!changeset.new_tasks.length && !changeset.task_changes.length && !changeset.event_changes.length && !changeset.new_events.length && !changeset.deleted_tasks.length && !changeset.deleted_events.length && !changeset.snapshot.attachments.length && !changeset.deleted_attachments.length) {
+        alert('没有可 Push 的本地修改。');
+        return;
+      }
+      const filename = `gantt-changeset-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      try {
+        const response = await fetch('/api/gantt-edits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename, changeset })
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json();
+        alert(`已保存 changeset：${result.path || filename}\n修改已保存在本机。`);
+      } catch (error) {
+        downloadJson(filename, changeset);
+        alert('当前服务器不支持直接写文件，已下载 changeset JSON。可在其他设备导入该 changeset JSON。');
+      }
+    }
+    async function exportPortablePackage() {
+      persistEdits();
+      const changeset = buildChangeset();
+      try {
+        const response = await fetch('/api/gantt-portable/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ changeset })
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json();
+        const counts = result.manifest?.counts || {};
+        downloadUrl(`/api/gantt-portable/download?t=${Date.now()}`);
+        alert(`已导出迁移包：${result.directory || 'portable/gantt/latest'}\n任务 ${counts.tasks ?? '-'}，事件 ${counts.events ?? '-'}，资料 ${counts.attachments ?? 0}。`);
+      } catch (error) {
+        downloadJson('gantt-portable-local-edits.json', changeset);
+        alert('当前服务器不支持迁移包下载，已下载快照 JSON。');
+      }
+    }
+    function applyImportedChangeset(changeset, label) {
+      if (!applyChangesetSnapshot(changeset)) throw new Error('missing snapshot');
+      activeSnapshotGeneratedAt = changeset.saved_at || changeset.generated_at || activeSnapshotGeneratedAt;
+      normalizeLocalTaskKeys();
+      rebuildTaskIndex();
+      closeDetail();
+      persistEdits();
+      render();
+      alert(`已导入${label}：任务 ${tasks.length}，事件 ${events.length}，资料 ${attachments.length}。`);
+    }
+    async function importPortablePackage(file) {
+      if (!file) return;
+      const filename = file.name || '';
+      if (/\.json$/i.test(filename) || file.type === 'application/json') {
+        try {
+          const payload = JSON.parse(await file.text());
+          applyImportedChangeset(payload.changeset || payload, 'JSON 变化集');
+        } catch (error) {
+          alert('导入失败：请选择由本看板导出的有效 JSON 变化集。');
+        }
+        return;
+      }
+      if (!/\.zip$/i.test(filename)) {
+        alert('请选择 .json 变化集或 .zip 迁移包。');
+        return;
+      }
+      try {
+        const response = await fetch('/api/gantt-portable/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/zip' },
+          body: file
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json();
+        applyImportedChangeset(result.changeset, 'ZIP 迁移包');
+      } catch (error) {
+        alert('导入失败：迁移包无效，或当前服务器不支持 ZIP 导入。');
+      }
+    }
+    function setupPortableImportDrop() {
+      const input = document.getElementById('import-portable-file');
+      let dragDepth = 0;
+      const importFileFromTransfer = event => {
+        const files = [...(event.dataTransfer?.files || [])];
+        return files.find(file => /\.(json|zip)$/i.test(file.name || '')) || files[0] || null;
+      };
+      const hasFiles = event => Array.from(event.dataTransfer?.types || []).includes('Files');
+      const targetsAttachmentZone = event => event.target instanceof Element && Boolean(event.target.closest('.attachment-dropzone'));
+      document.getElementById('import-portable').addEventListener('click', () => input.click());
+      input.addEventListener('change', () => {
+        const file = input.files?.[0] || null;
+        input.value = '';
+        importPortablePackage(file);
+      });
+      window.addEventListener('dragenter', event => {
+        if (!hasFiles(event) || targetsAttachmentZone(event)) return;
+        dragDepth += 1;
+        document.body.classList.add('drag-import');
+      });
+      window.addEventListener('dragover', event => {
+        if (!hasFiles(event) || targetsAttachmentZone(event)) return;
+        event.preventDefault();
+      });
+      window.addEventListener('dragleave', event => {
+        if (!hasFiles(event) || targetsAttachmentZone(event)) return;
+        dragDepth = Math.max(0, dragDepth - 1);
+        if (!dragDepth) document.body.classList.remove('drag-import');
+      });
+      window.addEventListener('drop', event => {
+        if (!hasFiles(event) || targetsAttachmentZone(event)) return;
+        event.preventDefault();
+        dragDepth = 0;
+        document.body.classList.remove('drag-import');
+        importPortablePackage(importFileFromTransfer(event));
+      });
+    }
+    function rebuildTaskIndex() {
+      tasksById = new Map(tasks.map(task => [task.id, task]));
+      for (const task of tasks) task.children = [];
+      for (const task of tasks) {
+        if (task.parent_id && tasksById.has(task.parent_id) && task.parent_id !== task.id) {
+          tasksById.get(task.parent_id).children.push(task.id);
+        } else if (task.parent_id && !tasksById.has(task.parent_id)) {
+          task.parent_id = null;
+        }
+      }
+      const assignDepth = (task, depth, seen = new Set()) => {
+        if (!task || seen.has(task.id)) return;
+        seen.add(task.id);
+        task.depth = depth;
+        for (const childId of task.children || []) assignDepth(tasksById.get(childId), depth + 1, seen);
+      };
+      for (const task of tasks) if (!task.parent_id) assignDepth(task, 0);
+    }
+    function eventsByTask() {
+      const map = new Map();
+      for (const event of events) {
+        if (!map.has(event.task_id)) map.set(event.task_id, []);
+        map.get(event.task_id).push(event);
+      }
+      return map;
+    }
+    function isLocalTask(task) {
+      return String(task?.id || '').startsWith('local-task:') || (task?.labels || []).includes('local') || task?.issue_key === 'NEW';
+    }
+    function localTaskKeyNumber(value) {
+      const match = String(value || '').trim().match(/^N-(\d+)$/i);
+      return match ? Number.parseInt(match[1], 10) : null;
+    }
+    function nextLocalTaskKey() {
+      let maxNumber = 0;
+      for (const task of tasks) {
+        const number = localTaskKeyNumber(task.issue_key);
+        if (number !== null) maxNumber = Math.max(maxNumber, number);
+      }
+      return `N-${maxNumber + 1}`;
+    }
+    function normalizeLocalTaskKeys() {
+      let changed = false;
+      for (const task of tasks) {
+        if (isLocalTask(task) && (!task.issue_key || task.issue_key === 'NEW')) {
+          task.issue_key = nextLocalTaskKey();
+          changed = true;
+        }
+      }
+      return changed;
+    }
+    function isFreshnessSourceRef(ref) {
+      return ref?.event_type !== 'local_task_created';
+    }
+    function localTaskFallbackOrd(task) {
+      if (!isLocalTask(task)) return null;
+      return dateOrd(task.start_date) ?? dateOrd(task.target_date);
+    }
+    function eventActivityOrds(event) {
+      const ords = [];
+      const eventOrd = dateOrd(event.date);
+      if (eventOrd !== null) ords.push(eventOrd);
+      for (const ref of event.source_refs || []) {
+        const refOrd = dateOrd(ref.event_time);
+        if (refOrd !== null) ords.push(refOrd);
+      }
+      return ords;
+    }
+    function directTaskActivityOrds(task, taskEvents = []) {
+      const ords = [];
+      for (const event of taskEvents) {
+        ords.push(...eventActivityOrds(event));
+      }
+      const completedOrd = dateOrd(task.completed_at);
+      if (completedOrd !== null) ords.push(completedOrd);
+      for (const ref of task.source_refs || []) {
+        if (!isFreshnessSourceRef(ref)) continue;
+        const ord = dateOrd(ref.event_time);
+        if (ord !== null) ords.push(ord);
+      }
+      if (!ords.length) {
+        const fallback = localTaskFallbackOrd(task);
+        if (fallback !== null) ords.push(fallback);
+      }
+      return ords;
+    }
+    function latestTaskEventOrd(task, taskEventsOrMap = [], seen = new Set()) {
+      if (!task || seen.has(task.id)) return null;
+      seen.add(task.id);
+      const byTask = taskEventsOrMap instanceof Map ? taskEventsOrMap : new Map([[task.id, taskEventsOrMap]]);
+      const ords = directTaskActivityOrds(task, byTask.get(task.id) || []);
+      for (const childId of task.children || []) {
+        const child = tasksById.get(childId);
+        const childOrd = latestTaskEventOrd(child, byTask, seen);
+        if (childOrd !== null) ords.push(childOrd);
+      }
+      return ords.length ? Math.max(...ords) : null;
+    }
+    function taskLastEventAgeDays(task, taskEventsOrMap = []) {
+      const last = latestTaskEventOrd(task, taskEventsOrMap);
+      return last === null ? null : Math.max(0, todayOrd() - last);
+    }
+    function taskFreshnessOpacity(task, taskEventsOrMap = []) {
+      const age = taskLastEventAgeDays(task, taskEventsOrMap);
+      if (age === null || age < staleStartDays) return 1;
+      if (age >= staleFullFadeDays) return staleMinimumOpacity;
+      const span = Math.max(1, staleFullFadeDays - staleStartDays + 1);
+      const ratio = Math.min(1, (age - staleStartDays + 1) / span);
+      return Math.max(staleMinimumOpacity, 1 - ratio * (1 - staleMinimumOpacity));
+    }
+    function taskBaseColor(task) {
+      const labels = task.labels || [];
+      if (task.color) return task.color;
+      if (labels.includes('blocked') || labels.includes('needs-help')) return blockedTaskColor;
+      return defaultTaskColor;
+    }
+    function hexToRgba(hex, alpha) {
+      const raw = String(hex || '').trim().replace('#', '');
+      const normalized = raw.length === 3 ? raw.split('').map(char => char + char).join('') : raw;
+      if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return hex;
+      const value = Number.parseInt(normalized, 16);
+      const red = (value >> 16) & 255;
+      const green = (value >> 8) & 255;
+      const blue = value & 255;
+      return `rgba(${red}, ${green}, ${blue}, ${alpha.toFixed(3)})`;
+    }
+    function taskStaleTitle(task, taskEventsOrMap = []) {
+      const age = taskLastEventAgeDays(task, taskEventsOrMap);
+      if (age === null) return '暂无事件记录';
+      if (age < staleStartDays) return `最近事件 ${age} 天前`;
+      return `最近事件 ${age} 天前，颜色已淡化提醒关注`;
+    }
+    function summarize() {
+      return {
+        tasks: tasks.length,
+        parent_links: tasks.filter(task => task.parent_id).length,
+        events: events.length,
+        todo: events.filter(event => event.type === 'todo').length,
+        blocked: events.filter(event => event.type === 'blocked').length,
+        stalled: events.filter(event => event.type === 'stalled').length,
+        restart: events.filter(event => event.type === 'restart').length,
+        in_progress: events.filter(event => event.type === 'in_progress').length,
+        completed: events.filter(event => event.type === 'completed').length,
+        milestones: events.filter(event => event.type === 'milestone').length
+      };
+    }
+
+    function hiddenByAncestor(task) {
+      let parentId = task.parent_id;
+      while (parentId) {
+        if (collapsed.has(parentId)) return true;
+        const parent = tasksById.get(parentId);
+        parentId = parent && parent.parent_id;
+      }
+      return false;
+    }
+    function visibleTasks() {
+      rebuildTaskIndex();
+      return tasks.filter(task => !hiddenByAncestor(task));
+    }
+    function rowHeight() {
+      return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--row-h')) || 30;
+    }
+    function dayWidth() {
+      return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--day-w')) || 28;
+    }
+    function offsetForDate(value) {
+      const ord = dateOrd(value);
+      return Math.max(0, ((ord ?? activeMinOrd) - activeMinOrd) * dayWidth());
+    }
+    function widthForTask(task) {
+      const start = dateOrd(task.start_date) ?? activeMinOrd;
+      const target = dateOrd(task.target_date) ?? start;
+      return Math.max(dayWidth(), (target - start + 1) * dayWidth());
+    }
+    function text(value) {
+      return value === null || value === undefined || value === '' ? 'n/a' : String(value);
+    }
+    function sameValue(left, right) {
+      const normalize = value => {
+        if (value === undefined || value === null || value === '') return null;
+        if (Array.isArray(value) || typeof value === 'object') return JSON.stringify(value);
+        return String(value);
+      };
+      return normalize(left) === normalize(right);
+    }
+    function compact(value) {
+      return text(value).slice(0, 8);
+    }
+    function compactTaskLabel(value) {
+      let label = text(value).replace(/^\s*(?:\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{4}\s+Q\d)\s*/, '').trim();
+      if (label.includes('：')) label = label.split('：').slice(1).join('：').trim() || label;
+      else if (label.includes(': ')) label = label.split(': ').slice(1).join(': ').trim() || label;
+      return compact(label);
+    }
+    function eventLabel(type) {
+      return eventTypeLabel[type] || type || '事件';
+    }
+    function sortedEvents(eventList) {
+      return [...eventList].sort((left, right) => (
+        text(left.date).localeCompare(text(right.date)) ||
+        ((eventTypeOrder[left.type] ?? 9) - (eventTypeOrder[right.type] ?? 9)) ||
+        text(left.id).localeCompare(text(right.id))
+      ));
+    }
+    function sortedEventsDesc(eventList) {
+      return [...eventList].sort((left, right) => (
+        text(right.date).localeCompare(text(left.date)) ||
+        ((eventTypeOrder[left.type] ?? 9) - (eventTypeOrder[right.type] ?? 9)) ||
+        text(right.id).localeCompare(text(left.id))
+      ));
+    }
+    function shouldSuppressClick(event) {
+      if (!suppressNextClick) return false;
+      suppressNextClick = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return true;
+    }
+    function eventStackKey(taskId, eventDate) {
+      return `${taskId}:${eventDate || 'n/a'}`;
+    }
+    function markerSize() {
+      return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--marker-size')) || 20;
+    }
+    function dateObj(value) {
+      const ord = dateOrd(value);
+      return ord === null ? null : new Date(ord * DAY_MS);
+    }
+    function monthText(value) {
+      const date = dateObj(value);
+      return date ? `M${date.getUTCMonth() + 1}` : 'n/a';
+    }
+    function monthRange(task) {
+      const start = monthText(task.start_date);
+      const target = monthText(task.target_date);
+      if (start === 'n/a' && target === 'n/a') return 'n/a';
+      if (start === target || target === 'n/a') return start;
+      if (start === 'n/a') return target;
+      return `${start}～${target}`;
+    }
+    function shortDate(value) {
+      const date = dateObj(value);
+      return date ? `${date.getUTCMonth() + 1}/${date.getUTCDate()}` : 'n/a';
+    }
+    function todayColumnLeft() {
+      const today = todayOrd();
+      return today >= activeMinOrd && today <= activeMaxOrd ? (today - activeMinOrd) * dayWidth() : null;
+    }
+    function applyTodayColumn(element, left) {
+      if (left === null) return;
+      element.classList.add('today-highlight');
+      element.style.setProperty('--today-left', `${left}px`);
+    }
+    function applyFutureEventColumns(element, warnings) {
+      for (const warning of warnings.values()) {
+        if (warning.ord < activeMinOrd || warning.ord > activeMaxOrd) continue;
+        const highlight = document.createElement('span');
+        highlight.className = 'future-event-column';
+        highlight.style.left = `${(warning.ord - activeMinOrd) * dayWidth()}px`;
+        highlight.style.setProperty('--event-warning-alpha', warning.alpha.toFixed(3));
+        highlight.setAttribute('aria-hidden', 'true');
+        element.append(highlight);
+      }
+    }
+    function stateText(value) {
+      const raw = text(value);
+      const lower = raw.toLowerCase();
+      if (['done', 'completed', 'complete', 'closed', '已完成', '完成'].includes(lower) || lower.includes('done')) return '完成';
+      if (['todo', 'backlog', '待办'].includes(lower)) return '待办';
+      if (lower.includes('blocked') || lower.includes('waiting') || lower.includes('stuck') || raw.includes('阻塞') || raw.includes('等待')) return '阻塞';
+      if (raw === 'n/a') return 'n/a';
+      return '进行中';
+    }
+    function setDensity(mode) {
+      document.body.dataset.density = mode;
+      document.getElementById('density-dense').setAttribute('aria-pressed', mode === 'dense');
+      document.getElementById('density-present').setAttribute('aria-pressed', mode === 'present');
+      expandedEventStacks.clear();
+      render();
+    }
+    function makeCell(value, title) {
+      const span = document.createElement('span');
+      span.textContent = text(value);
+      span.title = text(title ?? value);
+      return span;
+    }
+    function makeOwnerCell(task) {
+      const span = makeCell(task.owner);
+      span.classList.add('editable-cell');
+      span.title = `双击修改 Owner：${text(task.owner)}`;
+      span.addEventListener('dblclick', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        editTaskOwner(task);
+      });
+      return span;
+    }
+    function handleTaskRowClick(event, task) {
+      if (shouldSuppressClick(event)) return;
+      if (event.target?.closest?.('.editable-cell')) return;
+      event.stopPropagation();
+      toggleTask(task);
+      showTask(task);
+    }
+    function subtreeIds(taskId, ids = new Set()) {
+      if (!taskId || ids.has(taskId)) return ids;
+      ids.add(taskId);
+      const task = tasksById.get(taskId);
+      for (const childId of task?.children || []) subtreeIds(childId, ids);
+      return ids;
+    }
+    function scopedTaskEvents(taskIds) {
+      return sortedEventsDesc(events.filter(event => taskIds.has(event.task_id)));
+    }
+    function taskReportDateRange(taskIds) {
+      const ords = [];
+      for (const taskId of taskIds) {
+        const task = tasksById.get(taskId);
+        if (!task) continue;
+        const start = dateOrd(task.start_date);
+        const target = dateOrd(task.target_date);
+        if (start !== null) ords.push(start);
+        if (target !== null) ords.push(target);
+      }
+      for (const event of events) {
+        if (!taskIds.has(event.task_id)) continue;
+        const ord = dateOrd(event.date);
+        if (ord !== null) ords.push(ord);
+      }
+      const fallback = todayOrd();
+      return {
+        start: isoFromOrd(ords.length ? Math.min(...ords) : fallback),
+        end: isoFromOrd(ords.length ? Math.max(...ords) : fallback)
+      };
+    }
+    function safeFileSegment(value) {
+      return String(value || 'task')
+        .trim()
+        .replace(/[\/:*?"<>|]+/g, '-')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 80) || 'task';
+    }
+    function exportTaskReport(task) {
+      persistEdits();
+      rebuildTaskIndex();
+      const taskIds = subtreeIds(task.id);
+      const range = taskReportDateRange(taskIds);
+      const markdown = buildReportMarkdown('task', range.start, range.end, {
+        taskIds,
+        title: `Delivery Gantt 任务报告：${taskName(task)}`
+      });
+      const filename = `gantt-task-report-${safeFileSegment(taskName(task))}-${range.start}-to-${range.end}.md`;
+      downloadText(filename, markdown);
+    }
+    function ancestorTasks(task) {
+      const ancestors = [];
+      let parent = task?.parent_id ? tasksById.get(task.parent_id) : null;
+      const seen = new Set();
+      while (parent && !seen.has(parent.id)) {
+        ancestors.unshift(parent);
+        seen.add(parent.id);
+        parent = parent.parent_id ? tasksById.get(parent.parent_id) : null;
+      }
+      return ancestors;
+    }
+    function dropChoicesForTarget(targetId, movingIds = new Set()) {
+      const target = tasksById.get(targetId);
+      if (!target || movingIds.has(target.id)) return [];
+      const choices = [];
+      const addChoice = choice => {
+        if (choice.parentId && movingIds.has(choice.parentId)) return;
+        if (choice.anchorId && movingIds.has(choice.anchorId)) return;
+        choices.push(Object.assign(choice, {
+          key: `${choice.intent}:${choice.anchorId}:${choice.parentId || 'root'}:${choice.insert}`,
+          targetId: target.id
+        }));
+      };
+      for (const ancestor of ancestorTasks(target)) {
+        addChoice({
+          intent: 'ancestor-after',
+          label: `升到${ancestor.depth + 1}级后`,
+          depth: ancestor.depth,
+          parentId: ancestor.parent_id || null,
+          anchorId: ancestor.id,
+          insert: 'after-subtree'
+        });
+      }
+      addChoice({
+        intent: 'before',
+        label: '同级前',
+        depth: target.depth || 0,
+        parentId: target.parent_id || null,
+        anchorId: target.id,
+        insert: 'before'
+      });
+      addChoice({
+        intent: 'after',
+        label: '同级后',
+        depth: target.depth || 0,
+        parentId: target.parent_id || null,
+        anchorId: target.id,
+        insert: 'after-subtree'
+      });
+      addChoice({
+        intent: 'child',
+        label: '作为子任务',
+        depth: (target.depth || 0) + 1,
+        parentId: target.id,
+        anchorId: target.id,
+        insert: 'after'
+      });
+      return choices;
+    }
+    function ordFromPointer(event) {
+      const pane = document.getElementById('timeline-scroll');
+      const rect = pane.getBoundingClientRect();
+      const x = event.clientX - rect.left + pane.scrollLeft;
+      return activeMinOrd + Math.round(x / dayWidth());
+    }
+    function setTaskDate(task, edge, ord) {
+      const start = dateOrd(task.start_date) ?? ord;
+      const target = dateOrd(task.target_date) ?? start;
+      if (edge === 'start') {
+        const next = Math.min(ord, target);
+        task.start_date = isoFromOrd(next);
+      } else {
+        const next = Math.max(ord, start);
+        task.target_date = isoFromOrd(next);
+      }
+      task.delivery_summary = task.delivery_summary || {};
+      task.delivery_summary.date_range = `${text(task.start_date)} - ${text(task.target_date)}`;
+    }
+    function closeDetail() {
+      const detail = document.getElementById('detail');
+      closeDetailSubpanel(false);
+      document.getElementById('detail-subpanel-body').replaceChildren();
+      detail.classList.remove('open');
+      detail.setAttribute('aria-hidden', 'true');
+      activeDetailOwner = null;
+    }
+    function closeDetailSubpanel(restoreFocus = true) {
+      const panel = document.getElementById('detail-subpanel');
+      panel.classList.remove('open');
+      panel.setAttribute('aria-hidden', 'true');
+      detailSubpanelOpen = false;
+      if (restoreFocus) document.querySelector('.detail-subnav')?.focus();
+    }
+    function attachmentExtension(name) {
+      const parts = String(name || '').toLowerCase().split('.');
+      return parts.length > 1 ? parts.pop() : '';
+    }
+    function attachmentIsImage(attachment) {
+      return IMAGE_EXTENSIONS.has(attachmentExtension(attachment.name || attachment.storage_name));
+    }
+    function attachmentUrl(attachment) {
+      const storageName = encodeURIComponent(attachment.storage_name || '');
+      const version = encodeURIComponent(String(attachment.sha256 || '').slice(0, 12));
+      return `/api/gantt-attachments/${storageName}${version ? `?v=${version}` : ''}`;
+    }
+    function formatFileSize(size) {
+      const bytes = Number(size) || 0;
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+    function attachmentsForOwner(owner) {
+      return attachments
+        .filter(attachment => attachment.owner_type === owner.type && attachment.owner_id === owner.id)
+        .sort((a, b) => String(b.uploaded_at || '').localeCompare(String(a.uploaded_at || '')));
+    }
+    function openImagePreview(attachment) {
+      const lightbox = document.getElementById('image-lightbox');
+      const image = document.getElementById('lightbox-image');
+      image.src = attachmentUrl(attachment);
+      image.alt = attachment.name || '图片预览';
+      document.getElementById('lightbox-caption').textContent = attachment.name || '';
+      lightbox.hidden = false;
+      document.getElementById('lightbox-close').focus();
+    }
+    function closeImagePreview() {
+      const lightbox = document.getElementById('image-lightbox');
+      lightbox.hidden = true;
+      document.getElementById('lightbox-image').removeAttribute('src');
+    }
+    function downloadAttachment(attachment) {
+      const link = document.createElement('a');
+      link.href = attachmentUrl(attachment);
+      link.download = attachment.name || attachment.storage_name;
+      document.body.append(link);
+      link.click();
+      link.remove();
+    }
+    function refreshActiveDetail() {
+      if (!activeDetailOwner) return;
+      const owner = { ...activeDetailOwner };
+      if (detailSubpanelOpen) {
+        renderAttachmentSubpanel(owner);
+        updateAttachmentNavigationCount(owner);
+        return;
+      }
+      if (owner.type === 'task') {
+        const task = tasksById.get(owner.id);
+        if (task) showTask(task);
+        return;
+      }
+      const event = events.find(item => item.id === owner.id);
+      if (event) showEvent(event);
+    }
+    async function removeAttachment(attachment) {
+      if (!confirm(`删除资料「${attachment.name || attachment.storage_name}」？`)) return;
+      try {
+        const response = await fetch(`/api/gantt-attachments/${encodeURIComponent(attachment.storage_name)}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        attachments = attachments.filter(item => item.id !== attachment.id);
+        deletedAttachmentIds.add(attachment.id);
+        persistEdits();
+        refreshActiveDetail();
+      } catch (error) {
+        alert('资料删除失败，请确认本地服务仍在运行。');
+      }
+    }
+    async function uploadAttachmentFiles(fileList, owner, status) {
+      const files = [...fileList];
+      if (!files.length) return;
+      const errors = [];
+      let uploaded = 0;
+      for (const file of files) {
+        const extension = attachmentExtension(file.name);
+        if (!ATTACHMENT_EXTENSIONS.has(extension)) {
+          errors.push(`${file.name}：不支持的文件类型`);
+          continue;
+        }
+        if (!file.size || file.size > ATTACHMENT_MAX_BYTES) {
+          errors.push(`${file.name}：单文件不能超过 10MB`);
+          continue;
+        }
+        status.classList.remove('error');
+        status.textContent = `正在上传 ${file.name}…`;
+        const attachmentId = `att-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+        const query = new URLSearchParams({
+          id: attachmentId,
+          name: file.name,
+          content_type: file.type || 'application/octet-stream'
+        });
+        try {
+          const response = await fetch(`/api/gantt-attachments?${query}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: file
+          });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.attachment) throw new Error(result.reason || `HTTP ${response.status}`);
+          attachments.push(Object.assign({}, result.attachment, {
+            owner_type: owner.type,
+            owner_id: owner.id,
+            uploaded_at: new Date().toISOString()
+          }));
+          deletedAttachmentIds.delete(attachmentId);
+          uploaded += 1;
+        } catch (error) {
+          errors.push(`${file.name}：上传失败`);
+        }
+      }
+      if (uploaded) persistEdits();
+      status.textContent = errors.length ? errors.join('；') : `已保存 ${uploaded} 个资料`;
+      status.classList.toggle('error', Boolean(errors.length));
+      if (uploaded) refreshActiveDetail();
+      if (errors.length) alert(errors.join('\n'));
+    }
+    function appendAttachmentSection(body, owner) {
+      const section = document.createElement('section');
+      section.className = 'attachment-section';
+      const head = document.createElement('div');
+      head.className = 'attachment-head';
+      const heading = document.createElement('h3');
+      heading.textContent = '相关资料';
+      const current = attachmentsForOwner(owner);
+      const count = document.createElement('span');
+      count.className = 'attachment-count';
+      count.textContent = `${current.length} 个文件`;
+      head.append(heading, count);
+
+      const dropzone = document.createElement('div');
+      dropzone.className = 'attachment-dropzone';
+      const input = document.createElement('input');
+      input.className = 'hidden-file-input';
+      input.type = 'file';
+      input.multiple = true;
+      input.accept = ATTACHMENT_ACCEPT;
+      const upload = document.createElement('button');
+      upload.className = 'attachment-upload-button';
+      upload.type = 'button';
+      upload.textContent = '+ 添加资料';
+      const copy = document.createElement('div');
+      copy.className = 'attachment-drop-copy';
+      copy.textContent = '拖拽到此处 · ZIP / 图片 / PPT / TXT / Word · 单文件不超过 10MB';
+      const status = document.createElement('div');
+      status.className = 'attachment-status';
+      upload.addEventListener('click', () => input.click());
+      input.addEventListener('change', () => {
+        const files = input.files || [];
+        input.value = '';
+        uploadAttachmentFiles(files, owner, status);
+      });
+      for (const type of ['dragenter', 'dragover']) {
+        dropzone.addEventListener(type, event => {
+          event.preventDefault();
+          event.stopPropagation();
+          document.body.classList.remove('drag-import');
+          dropzone.classList.add('drag-over');
+        });
+      }
+      dropzone.addEventListener('dragleave', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        dropzone.classList.remove('drag-over');
+      });
+      dropzone.addEventListener('drop', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        document.body.classList.remove('drag-import');
+        dropzone.classList.remove('drag-over');
+        uploadAttachmentFiles(event.dataTransfer?.files || [], owner, status);
+      });
+      dropzone.append(upload, copy, input);
+      section.append(head, dropzone, status);
+
+      if (!current.length) {
+        const empty = document.createElement('div');
+        empty.className = 'attachment-empty';
+        empty.textContent = '暂无相关资料';
+        section.append(empty);
+      } else {
+        const list = document.createElement('div');
+        list.className = 'attachment-list';
+        for (const attachment of current) {
+          const item = document.createElement('div');
+          item.className = 'attachment-item';
+          const card = document.createElement('button');
+          card.className = 'attachment-card';
+          card.type = 'button';
+          card.title = attachmentIsImage(attachment) ? '放大预览' : '下载文件';
+          if (attachmentIsImage(attachment)) {
+            const image = document.createElement('img');
+            image.className = 'attachment-thumb';
+            image.src = attachmentUrl(attachment);
+            image.alt = '';
+            image.loading = 'lazy';
+            card.append(image);
+            card.addEventListener('click', () => openImagePreview(attachment));
+          } else {
+            const type = document.createElement('div');
+            type.className = 'attachment-type';
+            type.textContent = attachmentExtension(attachment.name) || 'file';
+            card.append(type);
+            card.addEventListener('click', () => downloadAttachment(attachment));
+          }
+          const info = document.createElement('div');
+          const name = document.createElement('div');
+          name.className = 'attachment-name';
+          name.textContent = attachment.name || attachment.storage_name;
+          const meta = document.createElement('div');
+          meta.className = 'attachment-meta';
+          meta.textContent = formatFileSize(attachment.size);
+          info.append(name, meta);
+          card.append(info);
+          const remove = document.createElement('button');
+          remove.className = 'attachment-delete';
+          remove.type = 'button';
+          remove.title = '删除资料';
+          remove.setAttribute('aria-label', `删除 ${attachment.name || '资料'}`);
+          remove.textContent = '×';
+          remove.addEventListener('click', () => removeAttachment(attachment));
+          item.append(card, remove);
+          list.append(item);
+        }
+        section.append(list);
+      }
+      body.append(section);
+    }
+    function updateAttachmentNavigationCount(owner) {
+      const button = document.querySelector('.detail-subnav');
+      if (!button || !owner) return;
+      const count = button.querySelector('.detail-subnav-count');
+      if (count) count.textContent = `${attachmentsForOwner(owner).length} 个文件`;
+    }
+    function appendAttachmentNavigation(body, owner) {
+      const button = document.createElement('button');
+      button.className = 'detail-subnav';
+      button.type = 'button';
+      button.title = '打开资料与附件';
+      const title = document.createElement('span');
+      title.className = 'detail-subnav-title';
+      title.textContent = '资料与附件';
+      const count = document.createElement('span');
+      count.className = 'detail-subnav-count';
+      count.textContent = `${attachmentsForOwner(owner).length} 个文件`;
+      const arrow = document.createElement('span');
+      arrow.className = 'detail-subnav-arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.textContent = '›';
+      button.append(title, count, arrow);
+      button.addEventListener('click', openAttachmentSubpanel);
+      body.append(button);
+    }
+    function renderAttachmentSubpanel(owner = activeDetailOwner) {
+      if (!owner) return;
+      document.getElementById('detail-subpanel-title').textContent = owner.type === 'task' ? '任务资料与附件' : '事件资料与附件';
+      const body = document.getElementById('detail-subpanel-body');
+      body.replaceChildren();
+      appendAttachmentSection(body, owner);
+    }
+    function openAttachmentSubpanel() {
+      if (!activeDetailOwner) return;
+      renderAttachmentSubpanel(activeDetailOwner);
+      const panel = document.getElementById('detail-subpanel');
+      panel.classList.add('open');
+      panel.setAttribute('aria-hidden', 'false');
+      detailSubpanelOpen = true;
+      document.getElementById('detail-subpanel-back').focus();
+    }
+    function appendEventPreviewSection(body, task, scopedEvents) {
+      const section = document.createElement('section');
+      section.className = 'detail-section';
+      const heading = document.createElement('h3');
+      heading.textContent = '事件预览（含子任务，倒序）';
+      section.append(heading);
+      if (!scopedEvents.length) {
+        const empty = document.createElement('div');
+        empty.className = 'event-preview-summary';
+        empty.textContent = '暂无事件。';
+        section.append(empty);
+      } else {
+        const list = document.createElement('div');
+        list.className = 'event-preview-list';
+        for (const event of scopedEvents.slice(0, 12)) {
+          const eventTask = tasksById.get(event.task_id) || task;
+          const item = document.createElement('div');
+          item.className = 'event-preview-item';
+          const date = document.createElement('div');
+          date.className = 'event-preview-date';
+          date.textContent = shortDate(event.date);
+          const type = document.createElement('div');
+          type.className = 'event-preview-type';
+          type.textContent = eventLabel(event.type);
+          const main = document.createElement('div');
+          main.className = 'event-preview-main';
+          const title = document.createElement('div');
+          title.className = 'event-preview-task';
+          title.textContent = taskName(eventTask);
+          const summary = document.createElement('div');
+          summary.className = 'event-preview-summary';
+          summary.textContent = cleanReportText(event.summary) || 'n/a';
+          main.append(title, summary);
+          item.append(date, type, main);
+          list.append(item);
+        }
+        section.append(list);
+      }
+      body.append(section);
+    }
+    function openDetail(title, rows, refs, options = {}) {
+      closeDetailSubpanel(false);
+      document.getElementById('detail-subpanel-body').replaceChildren();
+      document.getElementById('detail-title').textContent = title || 'Delivery summary';
+      const body = document.getElementById('detail-body');
+      body.replaceChildren();
+      const info = document.createElement('div');
+      info.className = 'detail-info';
+      activeDetailOwner = options.attachmentOwner ? { ...options.attachmentOwner } : null;
+      for (const [key, value] of rows) {
+        const row = document.createElement('div');
+        row.className = 'kv';
+        const label = document.createElement('b');
+        label.textContent = key;
+        const content = document.createElement('span');
+        content.textContent = text(value);
+        row.append(label, content);
+        info.append(row);
+      }
+      if (activeDetailOwner) appendAttachmentNavigation(info, activeDetailOwner);
+      for (const section of options.sections || []) {
+        if (section.type === 'event-preview') appendEventPreviewSection(info, section.task, section.events || []);
+      }
+      const actionsList = options.actions || [];
+      const dangerAction = options.dangerAction;
+      if (actionsList.length || options.palette || dangerAction) {
+        const actions = document.createElement('div');
+        actions.className = 'detail-actions';
+        for (const action of actionsList) {
+          const button = document.createElement('button');
+          button.className = 'action-button';
+          button.type = 'button';
+          button.textContent = action.label;
+          button.addEventListener('click', action.onClick);
+          actions.append(button);
+        }
+        if (options.palette) {
+          const label = document.createElement('div');
+          label.className = 'palette-label';
+          label.textContent = options.palette.label;
+          actions.append(label);
+          if (options.palette.onReset) {
+            const reset = document.createElement('button');
+            reset.className = 'action-button';
+            reset.type = 'button';
+            reset.textContent = options.palette.resetLabel || '恢复默认颜色';
+            reset.setAttribute('aria-pressed', options.palette.value ? 'false' : 'true');
+            reset.addEventListener('click', options.palette.onReset);
+            actions.append(reset);
+          }
+          const palette = document.createElement('div');
+          palette.className = 'palette-grid';
+          for (const color of options.palette.colors) {
+            const swatch = document.createElement('button');
+            swatch.className = 'palette-swatch';
+            swatch.type = 'button';
+            swatch.style.setProperty('--swatch', color);
+            swatch.title = color;
+            swatch.setAttribute('aria-label', color);
+            swatch.setAttribute('aria-pressed', color.toLowerCase() === String(options.palette.value || '').toLowerCase());
+            swatch.addEventListener('click', () => options.palette.onSelect(color));
+            palette.append(swatch);
+          }
+          actions.append(palette);
+        }
+        if (dangerAction) {
+          const danger = document.createElement('button');
+          danger.className = 'danger-button';
+          danger.type = 'button';
+          danger.textContent = dangerAction.label;
+          danger.addEventListener('click', dangerAction.onClick);
+          actions.append(danger);
+        }
+        info.append(actions);
+      }
+      const heading = document.createElement('h3');
+      heading.textContent = 'Source evidence';
+      info.append(heading);
+      const list = document.createElement('ul');
+      list.className = 'source-list';
+      for (const ref of (refs || []).slice(0, 12)) {
+        const item = document.createElement('li');
+        const source = ref.source || {};
+        item.textContent = `${text(ref.event_time)} · ${text(ref.event_type)} · ${text(source.table)} ${text(source.field || source.id)}`;
+        list.append(item);
+      }
+      info.append(list);
+      body.append(info);
+      const detail = document.getElementById('detail');
+      detail.classList.add('open');
+      detail.setAttribute('aria-hidden', 'false');
+    }
+    function showTask(task) {
+      selectedTaskId = task.id;
+      rebuildTaskIndex();
+      const summary = task.delivery_summary || {};
+      const taskIds = subtreeIds(task.id);
+      const previewEvents = scopedTaskEvents(taskIds);
+      openDetail(summary.title || task.title, [
+        ['Task', `${text(task.issue_key)} ${text(task.title)}`],
+        ['Owner', task.owner],
+        ['State', stateText(task.state)],
+        ['Progress', `${text(task.progress)}%`],
+        ['Range', monthRange(task)],
+        ['Blocker', summary.blocker],
+        ['Next action', summary.next_action],
+        ['Labels', (task.labels || []).join(', ')],
+        ['Modules', (task.modules || []).join(', ')],
+        ['Color', task.color || '默认']
+      ], task.source_refs, {
+        attachmentOwner: { type: 'task', id: task.id },
+        sections: [{ type: 'event-preview', task, events: previewEvents }],
+        actions: [
+          { label: '导出任务报告（含子任务）', onClick: () => exportTaskReport(task) },
+          { label: '编辑任务字段', onClick: () => editTaskFields(task) }
+        ],
+        palette: {
+          label: '任务条颜色',
+          value: task.color,
+          colors: taskColorPalette,
+          resetLabel: '恢复默认颜色',
+          onSelect: color => setTaskColor(task, color),
+          onReset: () => setTaskColor(task, null)
+        },
+        dangerAction: { label: '删除任务', onClick: () => deleteTask(task) }
+      });
+    }
+    function showEvent(event) {
+      const task = tasksById.get(event.task_id) || {};
+      selectedTaskId = event.task_id;
+      openDetail(event.summary || 'Delivery summary', [
+        ['Event', eventLabel(event.type)],
+        ['Task', `${text(task.issue_key)} ${text(task.title)}`],
+        ['Date', shortDate(event.date)],
+        ['Summary', event.summary],
+        ['Owner', task.owner],
+        ['State', stateText(task.state)],
+        ['Next action', (task.delivery_summary || {}).next_action]
+      ], event.source_refs, {
+        attachmentOwner: { type: 'event', id: event.id },
+        actions: [{ label: '修改事件', onClick: () => editEvent(event) }],
+        dangerAction: { label: '删除事件', onClick: () => deleteEvent(event) }
+      });
+    }
+    function toggleTask(task) {
+      if (!task.children || task.children.length === 0) return;
+      if (collapsed.has(task.id)) collapsed.delete(task.id);
+      else collapsed.add(task.id);
+      render();
+    }
+    function editTaskName(task) {
+      const next = prompt('修改任务名称', task.title || '');
+      if (next === null) return;
+      const title = next.trim();
+      if (!title) return;
+      task.title = title;
+      task.compact_label = compactTaskLabel(title);
+      task.delivery_summary = task.delivery_summary || {};
+      task.delivery_summary.title = title;
+      persistEdits();
+      render();
+    }
+    function editTaskOwner(task) {
+      const next = prompt('修改 Owner', task.owner || '');
+      if (next === null) return;
+      task.owner = next.trim() || null;
+      persistEdits();
+      render();
+      showTask(task);
+    }
+    function parseList(value) {
+      return String(value || '')
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+    }
+    function setTaskColor(task, color) {
+      task.color = color || null;
+      persistEdits();
+      render();
+      showTask(task);
+    }
+    function editTaskFields(task) {
+      const summary = task.delivery_summary || {};
+      const rawTitle = prompt('Task', task.title || '');
+      if (rawTitle === null) return;
+      const title = rawTitle.trim();
+      if (!title) {
+        alert('任务名称不能为空。');
+        return;
+      }
+      const owner = prompt('Owner', task.owner || '');
+      if (owner === null) return;
+      const state = prompt('State', task.state || '');
+      if (state === null) return;
+      const rawProgress = prompt('Progress 0-100', String(task.progress ?? 0));
+      if (rawProgress === null) return;
+      const progress = Math.max(0, Math.min(100, Number.parseInt(rawProgress, 10) || 0));
+      const startDate = promptDate('开始日期 YYYY-MM-DD', task.start_date || isoFromOrd(todayOrd()));
+      if (!startDate) return;
+      const targetDate = promptDate('结束日期 YYYY-MM-DD', task.target_date || startDate);
+      if (!targetDate) return;
+      const blocker = prompt('Blocker', summary.blocker || '');
+      if (blocker === null) return;
+      const nextAction = prompt('Next action', summary.next_action || '');
+      if (nextAction === null) return;
+      const labels = prompt('Labels，用英文逗号分隔', (task.labels || []).join(', '));
+      if (labels === null) return;
+      const modules = prompt('Modules，用英文逗号分隔', (task.modules || []).join(', '));
+      if (modules === null) return;
+      const startOrd = dateOrd(startDate) ?? todayOrd();
+      const targetOrd = dateOrd(targetDate) ?? startOrd;
+      task.title = title;
+      task.compact_label = compactTaskLabel(title);
+      task.owner = owner.trim() || null;
+      task.state = state.trim() || null;
+      task.progress = progress;
+      task.start_date = isoFromOrd(Math.min(startOrd, targetOrd));
+      task.target_date = isoFromOrd(Math.max(startOrd, targetOrd));
+      task.labels = parseList(labels);
+      task.modules = parseList(modules);
+      task.delivery_summary = Object.assign({}, summary, {
+        title,
+        blocker: blocker.trim() || null,
+        next_action: nextAction.trim() || null,
+        date_range: `${text(task.start_date)} - ${text(task.target_date)}`
+      });
+      persistEdits();
+      render();
+      showTask(task);
+    }
+    function taskSearchParts(task) {
+      return [task.id, task.issue_id, task.issue_key, task.title, task.compact_label]
+        .filter(Boolean)
+        .map(value => String(value).trim())
+        .filter(Boolean);
+    }
+    function findTaskFromInput(value, fallbackTask = null) {
+      const query = String(value || '').trim().toLowerCase();
+      if (!query) return fallbackTask;
+      const exact = tasks.find(task => taskSearchParts(task).some(part => part.toLowerCase() === query));
+      if (exact) return exact;
+      return tasks.find(task => taskSearchParts(task).some(part => part.toLowerCase().includes(query))) || null;
+    }
+    function promptDate(label, fallback) {
+      const raw = prompt(label, fallback);
+      if (raw === null) return null;
+      const value = raw.trim() || fallback;
+      const ord = dateOrd(value);
+      if (ord === null) {
+        alert('日期格式需要是 YYYY-MM-DD。');
+        return null;
+      }
+      return isoFromOrd(ord);
+    }
+    function normalizeEventType(value, fallback = 'milestone') {
+      const normalized = String(value || '').trim().toLowerCase();
+      if (!normalized) return fallback;
+      if (normalized.includes('todo') || normalized.includes('待') || normalized.includes('办')) return 'todo';
+      if (normalized.includes('求') || normalized.includes('助') || normalized.includes('help')) return 'blocked';
+      if (normalized.includes('阻') || normalized.includes('block') || normalized.includes('stuck') || normalized.includes('stall')) return 'stalled';
+      if (normalized.includes('重') || normalized.includes('启') || normalized.includes('restart') || normalized.includes('reopen') || normalized.includes('resume')) return 'restart';
+      if (normalized.includes('进') || normalized.includes('中') || normalized.includes('doing') || normalized.includes('progress') || normalized.includes('ongoing')) return 'in_progress';
+      if (normalized.includes('完') || normalized.includes('done') || normalized.includes('complete')) return 'completed';
+      if (normalized.includes('里') || normalized.includes('碑') || normalized.includes('mile')) return 'milestone';
+      return fallback;
+    }
+    function insertTask(task, parent) {
+      if (!parent) {
+        tasks.push(task);
+        return;
+      }
+      const childIds = subtreeIds(parent.id);
+      const lastChildIndex = Math.max(...tasks.map((item, index) => childIds.has(item.id) ? index : -1));
+      const insertAt = Math.max(0, lastChildIndex + 1);
+      tasks = [...tasks.slice(0, insertAt), task, ...tasks.slice(insertAt)];
+      collapsed.delete(parent.id);
+    }
+    function addTaskBar() {
+      rebuildTaskIndex();
+      const rawTitle = prompt('新增任务条名称', '新任务');
+      if (rawTitle === null) return;
+      const title = rawTitle.trim();
+      if (!title) {
+        alert('任务名称不能为空。');
+        return;
+      }
+      const rawParent = prompt('父任务（可空；输入任务 KEY / 名称关键字）', '');
+      if (rawParent === null) return;
+      const parent = findTaskFromInput(rawParent, null);
+      if (rawParent.trim() && !parent) {
+        alert('没有找到匹配的父任务。');
+        return;
+      }
+      const today = isoFromOrd(todayOrd());
+      const startDefault = parent?.start_date || today;
+      const targetDefault = parent?.target_date || isoFromOrd((dateOrd(startDefault) ?? todayOrd()) + 6);
+      const startDate = promptDate('开始日期 YYYY-MM-DD', startDefault);
+      if (!startDate) return;
+      const targetDate = promptDate('结束日期 YYYY-MM-DD', targetDefault);
+      if (!targetDate) return;
+      const startOrd = dateOrd(startDate) ?? todayOrd();
+      const targetOrd = dateOrd(targetDate) ?? startOrd;
+      const taskId = `local-task:${Date.now()}`;
+      const normalizedStart = isoFromOrd(Math.min(startOrd, targetOrd));
+      const normalizedTarget = isoFromOrd(Math.max(startOrd, targetOrd));
+      const task = {
+        id: taskId,
+        issue_id: null,
+        issue_key: nextLocalTaskKey(),
+        title,
+        compact_label: compactTaskLabel(title),
+        parent_id: parent?.id || null,
+        children: [],
+        depth: 0,
+        order: tasks.length,
+        project: parent?.project || '本地新增',
+        state: 'draft',
+        priority: null,
+        progress: 0,
+        owner: null,
+        color: parent?.color || null,
+        labels: ['local'],
+        modules: [],
+        start_date: normalizedStart,
+        target_date: normalizedTarget,
+        completed_at: null,
+        source_refs: [{ event_time: new Date().toISOString(), event_type: 'local_task_created', source: { table: 'localStorage', id: taskId } }],
+        delivery_summary: {
+          title,
+          next_action: '本地新增任务条，Push changes 后由受控写回流程处理。'
+        }
+      };
+      insertTask(task, parent);
+      selectedTaskId = task.id;
+      persistEdits();
+      rebuildTaskIndex();
+      render();
+      showTask(task);
+    }
+    function addEventFromButton() {
+      rebuildTaskIndex();
+      const fallbackTask = (selectedTaskId && tasksById.get(selectedTaskId)) || visibleTasks()[0] || tasks[0];
+      if (!fallbackTask) {
+        alert('当前没有任务条。请先新增任务条。');
+        return;
+      }
+      const rawTask = prompt('给哪个任务添加事件？输入任务 KEY / 名称关键字', fallbackTask.issue_key || fallbackTask.title || fallbackTask.id);
+      if (rawTask === null) return;
+      const task = findTaskFromInput(rawTask, fallbackTask);
+      if (!task) {
+        alert('没有找到匹配的任务。');
+        return;
+      }
+      const date = promptDate('事件日期 YYYY-MM-DD', isoFromOrd(todayOrd()));
+      if (!date) return;
+      selectedTaskId = task.id;
+      addEventAt(task, date);
+    }
+    function addEventAt(task, date) {
+      const raw = prompt('添加事件类型：todo / 求助 / 阻塞 / 重启 / 进行中 / 完成 / 里程碑', '里程碑');
+      if (raw === null) return;
+      const type = normalizeEventType(raw, 'milestone');
+      const summary = prompt('事件简述', eventLabel(type));
+      if (summary === null) return;
+      const label = summary.trim() || eventLabel(type);
+      events.push({
+        id: `local:${task.id}:${type}:${date}:${Date.now()}`,
+        task_id: task.id,
+        type,
+        compact_label: compact(label),
+        date,
+        summary: `${label}: ${task.title}`,
+        source_refs: [{ event_time: new Date().toISOString(), event_type: 'local_edit', source: { table: 'localStorage', id: task.id } }]
+      });
+      persistEdits();
+      render();
+    }
+    function editEvent(event) {
+      const rawType = prompt('事件类型：todo / 求助 / 阻塞 / 重启 / 进行中 / 完成 / 里程碑', eventLabel(event.type));
+      if (rawType === null) return;
+      const type = normalizeEventType(rawType, event.type);
+      const date = promptDate('事件日期 YYYY-MM-DD', event.date || isoFromOrd(todayOrd()));
+      if (!date) return;
+      const summary = prompt('事件简述', event.summary || eventLabel(type));
+      if (summary === null) return;
+      event.type = type;
+      event.date = date;
+      event.summary = summary.trim() || eventLabel(type);
+      event.compact_label = compact(event.summary);
+      event.source_refs = event.source_refs || [];
+      event.source_refs.push({ event_time: new Date().toISOString(), event_type: 'local_event_edit', source: { table: 'localStorage', id: event.id } });
+      persistEdits();
+      render();
+      showEvent(event);
+    }
+    function addDemoEvents() {
+      const task = visibleTasks()[0] || tasks[0];
+      if (!task) return;
+      const date = task.start_date || task.target_date || isoFromOrd(todayOrd());
+      const stamp = Date.now();
+      [
+        ['todo', 'Todo', 'Todo: 同日多事件测试'],
+        ['blocked', '求助', '求助: 同日多事件测试'],
+        ['stalled', '阻塞', '阻塞: 同日多事件测试'],
+        ['restart', '重启', '重启: 同日多事件测试'],
+        ['in_progress', '进行中', '进行中: 同日多事件测试'],
+        ['completed', '完成', '完成: 同日多事件测试'],
+        ['milestone', '里程碑', '里程碑: 同日多事件测试']
+      ].forEach(([type, label, summary], index) => {
+        events.push({
+          id: `local-demo:${task.id}:${date}:${stamp}:${index}`,
+          task_id: task.id,
+          type,
+          compact_label: label,
+          date,
+          summary: `${summary}: ${task.title}`,
+          source_refs: [{ event_time: new Date().toISOString(), event_type: 'local_demo', source: { table: 'localStorage', id: task.id } }]
+        });
+      });
+      persistEdits();
+      render();
+    }
+    function purgeAttachments(predicate) {
+      const removed = attachments.filter(predicate);
+      if (!removed.length) return [];
+      attachments = attachments.filter(attachment => !predicate(attachment));
+      for (const attachment of removed) {
+        deletedAttachmentIds.add(attachment.id);
+        fetch(`/api/gantt-attachments/${encodeURIComponent(attachment.storage_name)}`, { method: 'DELETE' }).catch(() => {});
+      }
+      return removed.map(attachment => attachment.id);
+    }
+    function clearAllData() {
+      const confirmation = prompt('这会清除当前 Gantt 的全部任务和事件，并写入本地保存与 autosave。请输入 CLEAR 确认。', '');
+      if (confirmation !== 'CLEAR') return;
+      const removedTaskIds = tasks.map(task => task.id).filter(Boolean);
+      const removedEventIds = events.map(event => event.id).filter(Boolean);
+      const removedAttachmentIds = purgeAttachments(() => true);
+      tasks = [];
+      events = [];
+      selectedTaskId = null;
+      collapsed.clear();
+      expandedEventStacks.clear();
+      rebuildTaskIndex();
+      closeDetail();
+      persistEdits({ deletedTaskIds: removedTaskIds, deletedEventIds: removedEventIds, deletedAttachmentIds: removedAttachmentIds });
+      render();
+      alert('已清除全部 Gantt 数据。可以通过导入迁移包或 Git 历史恢复旧快照。');
+    }
+    function deleteTask(task) {
+      if (!task || !tasksById.has(task.id)) return;
+      if (!confirm(`删除任务「${text(task.title)}」？子任务会保留并上移一层。`)) return;
+      const parentId = task.parent_id || null;
+      const removedEventIds = new Set(events.filter(event => event.task_id === task.id).map(event => event.id));
+      purgeAttachments(attachment => (
+        (attachment.owner_type === 'task' && attachment.owner_id === task.id)
+        || (attachment.owner_type === 'event' && removedEventIds.has(attachment.owner_id))
+      ));
+      tasks = tasks
+        .filter(item => item.id !== task.id)
+        .map(item => item.parent_id === task.id ? Object.assign(item, { parent_id: parentId }) : item);
+      events = events.filter(event => event.task_id !== task.id);
+      if (selectedTaskId === task.id) selectedTaskId = null;
+      collapsed.delete(task.id);
+      for (const key of [...expandedEventStacks]) {
+        if (key.startsWith(`${task.id}:`)) expandedEventStacks.delete(key);
+      }
+      persistEdits();
+      closeDetail();
+      render();
+    }
+    function deleteEvent(event) {
+      if (!event) return;
+      if (!confirm(`删除事件「${eventLabel(event.type)} · ${text(event.summary)}」？`)) return;
+      purgeAttachments(attachment => attachment.owner_type === 'event' && attachment.owner_id === event.id);
+      events = events.filter(item => item.id !== event.id);
+      expandedEventStacks.delete(eventStackKey(event.task_id, event.date));
+      persistEdits();
+      closeDetail();
+      render();
+    }
+    function expandEventStack(key) {
+      expandedEventStacks.add(key);
+      render();
+    }
+    function collapseEventStack(key) {
+      expandedEventStacks.delete(key);
+      render();
+    }
+    function createMarker(event, stackKey, expandFirst) {
+      const marker = document.createElement('button');
+      marker.className = `marker ${event.type}`;
+      marker.type = 'button';
+      marker.title = event.summary;
+      marker.setAttribute('aria-label', `${eventLabel(event.type)} · ${text(event.summary)}`);
+      const icon = document.createElement('b');
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = symbol[event.type] || '•';
+      marker.append(icon);
+      marker.addEventListener('click', eventObject => {
+        if (shouldSuppressClick(eventObject)) return;
+        eventObject.preventDefault();
+        eventObject.stopPropagation();
+        if (expandFirst && !expandedEventStacks.has(stackKey)) {
+          expandEventStack(stackKey);
+          return;
+        }
+        showEvent(event);
+      });
+      marker.addEventListener('dblclick', eventObject => {
+        eventObject.preventDefault();
+        eventObject.stopPropagation();
+        editEvent(event);
+      });
+      return marker;
+    }
+    function moveTask(taskId, drop) {
+      if (!drop || !tasksById.has(taskId) || !tasksById.has(drop.targetId || drop.anchorId)) return;
+      const movingIds = subtreeIds(taskId);
+      if (movingIds.has(drop.targetId) || movingIds.has(drop.anchorId) || (drop.parentId && movingIds.has(drop.parentId))) return;
+      const movingGroup = tasks.filter(task => movingIds.has(task.id));
+      const remaining = tasks.filter(task => !movingIds.has(task.id));
+      const movingRoot = movingGroup.find(task => task.id === taskId);
+      const anchor = remaining.find(task => task.id === (drop.anchorId || drop.targetId));
+      if (!movingRoot || !anchor) return;
+      movingRoot.parent_id = drop.parentId || null;
+      if (drop.intent === 'child' && drop.parentId) collapsed.delete(drop.parentId);
+      const anchorIndex = remaining.findIndex(task => task.id === anchor.id);
+      let insertAt = anchorIndex + 1;
+      if (drop.insert === 'before') {
+        insertAt = anchorIndex;
+      } else if (drop.insert === 'after-subtree') {
+        const anchorSubtree = subtreeIds(anchor.id);
+        insertAt = Math.max(...remaining.map((task, index) => anchorSubtree.has(task.id) ? index : -1)) + 1;
+      }
+      tasks = [...remaining.slice(0, insertAt), ...movingGroup, ...remaining.slice(insertAt)];
+      rebuildTaskIndex();
+      persistEdits();
+      render();
+    }
+    function createGhost(task, event) {
+      const ghost = document.createElement('div');
+      ghost.className = 'drag-ghost';
+      ghost.textContent = `${text(task.issue_key)} ${text(task.compact_label || task.title)}`;
+      document.body.append(ghost);
+      moveGhost(ghost, event);
+      return ghost;
+    }
+    function moveGhost(ghost, event) {
+      ghost.style.transform = `translate(${event.clientX + 12}px, ${event.clientY + 12}px)`;
+    }
+    function sameDrop(a, b) {
+      return !!a === !!b && (!a || a.key === b.key);
+    }
+    function sameDropChoiceState(targetId, choices) {
+      if (dragState?.hoverTargetId !== targetId) return false;
+      const oldKeys = (dragState.dropChoices || []).map(choice => choice.key).join('|');
+      const nextKeys = (choices || []).map(choice => choice.key).join('|');
+      return oldKeys === nextKeys;
+    }
+    function defaultDropChoice(choices, ratio) {
+      if (!choices.length) return null;
+      if (ratio < 0.28) return choices.find(choice => choice.intent === 'before') || choices[0];
+      if (ratio > 0.72) return choices.find(choice => choice.intent === 'after') || choices[choices.length - 1];
+      return choices.find(choice => choice.intent === 'child') || choices.find(choice => choice.intent === 'after') || choices[0];
+    }
+    function updateDragDrop(event) {
+      if (!dragState) return;
+      moveGhost(dragState.ghost, event);
+      const element = document.elementFromPoint(event.clientX, event.clientY);
+      const moving = subtreeIds(dragState.task.id);
+      const choiceElement = element?.closest?.('[data-drop-choice-key]');
+      if (choiceElement) {
+        const targetId = choiceElement.dataset.dropTargetId;
+        const choices = dropChoicesForTarget(targetId, moving);
+        const nextDrop = choices.find(choice => choice.key === choiceElement.dataset.dropChoiceKey) || null;
+        const changed = !sameDropChoiceState(targetId, choices) || !sameDrop(dragState.drop, nextDrop);
+        dragState.hoverTargetId = targetId;
+        dragState.dropChoices = choices;
+        dragState.drop = nextDrop;
+        if (changed) render();
+        return;
+      }
+      const row = element?.closest?.('[data-task-id]');
+      const targetId = row?.dataset.taskId;
+      let nextDrop = null;
+      if (targetId && !moving.has(targetId)) {
+        const rect = row.getBoundingClientRect();
+        const ratio = (event.clientY - rect.top) / Math.max(1, rect.height);
+        const choices = dropChoicesForTarget(targetId, moving);
+        nextDrop = defaultDropChoice(choices, ratio);
+        const changed = !sameDropChoiceState(targetId, choices) || !sameDrop(dragState.drop, nextDrop);
+        dragState.hoverTargetId = targetId;
+        dragState.dropChoices = choices;
+        dragState.drop = nextDrop;
+        if (changed) render();
+        return;
+      } else {
+        const changed = dragState.hoverTargetId || dragState.dropChoices?.length || dragState.drop;
+        dragState.hoverTargetId = null;
+        dragState.dropChoices = [];
+        dragState.drop = null;
+        if (changed) render();
+      }
+    }
+    function beginRowDrag(event, task) {
+      event.preventDefault();
+      dragState = { task, drop: null, hoverTargetId: null, dropChoices: [], ghost: createGhost(task, event) };
+      document.body.classList.add('dragging-row');
+      window.addEventListener('pointermove', updateDragDrop);
+      window.addEventListener('pointerup', finishRowDrag, { once: true });
+      render();
+    }
+    function finishRowDrag(event) {
+      window.removeEventListener('pointermove', updateDragDrop);
+      const state = dragState;
+      dragState = null;
+      document.body.classList.remove('dragging-row');
+      state?.ghost?.remove();
+      if (state?.drop) moveTask(state.task.id, state.drop);
+      else render();
+    }
+    function armRowDrag(event, task) {
+      if (event.button !== 0) return;
+      const startX = event.clientX;
+      const startY = event.clientY;
+      let started = false;
+      const timer = setTimeout(() => {
+        started = true;
+        cleanup();
+        beginRowDrag(event, task);
+      }, 360);
+      const cleanup = () => {
+        clearTimeout(timer);
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      };
+      const onMove = moveEvent => {
+        if (Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY) > 6 && !started) cleanup();
+      };
+      const onUp = () => cleanup();
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp, { once: true });
+    }
+    function beginBarResize(event, task, edge) {
+      event.preventDefault();
+      event.stopPropagation();
+      const onMove = moveEvent => {
+        setTaskDate(task, edge, ordFromPointer(moveEvent));
+        render();
+      };
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        persistEdits();
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp, { once: true });
+    }
+    function armEventCreate(event, task) {
+      if (event.button !== 0) return;
+      if (event.target?.closest?.('.bar-handle')) return;
+      const date = isoFromOrd(ordFromPointer(event));
+      const timer = setTimeout(() => {
+        suppressNextClick = true;
+        addEventAt(task, date);
+        setTimeout(() => { suppressNextClick = false; }, 500);
+      }, 520);
+      const cleanup = () => clearTimeout(timer);
+      window.addEventListener('pointerup', cleanup, { once: true });
+      window.addEventListener('pointermove', cleanup, { once: true });
+    }
+    function buildRenderItems(baseVisible) {
+      const moving = dragState ? subtreeIds(dragState.task.id) : new Set();
+      const filtered = baseVisible.filter(task => !moving.has(task.id));
+      const items = [];
+      for (const task of filtered) {
+        items.push({ kind: 'task', task });
+        if (dragState?.hoverTargetId === task.id && dragState.dropChoices?.length) {
+          items.push({
+            kind: 'drop-options',
+            target: task,
+            choices: dragState.dropChoices,
+            selectedKey: dragState.drop?.key || null
+          });
+        }
+      }
+      return items;
+    }
+    function timelineScroller() {
+      const pane = document.getElementById('timeline-scroll');
+      const paneStyle = pane ? getComputedStyle(pane) : null;
+      if (pane && pane.scrollWidth > pane.clientWidth && paneStyle?.overflowX !== 'visible') return pane;
+      const layout = document.querySelector('.gantt-layout');
+      if (layout && layout.scrollWidth > layout.clientWidth) return layout;
+      return pane || document.scrollingElement;
+    }
+    function timelineContentOffset(scroller) {
+      const content = document.getElementById('timeline-content');
+      if (!content || !scroller) return 0;
+      return content.getBoundingClientRect().left - scroller.getBoundingClientRect().left + scroller.scrollLeft;
+    }
+    function updateBarLabelPositions() {
+      const scroller = timelineScroller();
+      if (!scroller) return;
+      const contentOffset = timelineContentOffset(scroller);
+      const viewportStart = scroller.scrollLeft - contentOffset;
+      const viewportEnd = viewportStart + scroller.clientWidth;
+      for (const bar of document.querySelectorAll('.bar')) {
+        const label = bar.querySelector('.bar-label');
+        if (!label) continue;
+        const left = Number.parseFloat(bar.style.left) || 0;
+        const width = Number.parseFloat(bar.style.width) || bar.offsetWidth || 0;
+        const visibleLeft = Math.max(left, viewportStart);
+        const visibleRight = Math.min(left + width, viewportEnd);
+        const labelWidth = Math.min(label.scrollWidth || 0, Math.max(12, width - 16));
+        const minOffset = 8;
+        const maxOffset = Math.max(minOffset, width - labelWidth - 8);
+        const nextLeft = visibleRight > visibleLeft ? Math.min(Math.max(visibleLeft - left + 8, minOffset), maxOffset) : minOffset;
+        label.style.left = `${nextLeft}px`;
+        label.style.maxWidth = `${Math.max(12, width - nextLeft - 8)}px`;
+      }
+    }
+    function centerToday() {
+      const scroller = timelineScroller();
+      if (!scroller) return;
+      const today = todayOrd();
+      if (today < activeMinOrd || today > activeMaxOrd) return;
+      const todayCenter = timelineContentOffset(scroller) + (today - activeMinOrd) * dayWidth() + dayWidth() / 2;
+      const target = todayCenter - scroller.clientWidth / 2;
+      const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+      scroller.scrollLeft = Math.max(0, Math.min(maxScroll, target));
+      updateBarLabelPositions();
+    }
+    function centerTodayOnce() {
+      if (didCenterToday) return;
+      didCenterToday = true;
+      requestAnimationFrame(() => {
+        centerToday();
+        setTimeout(centerToday, 80);
+        setTimeout(centerToday, 250);
+      });
+    }
+    function render() {
+      rebuildTaskIndex();
+      updateBounds();
+      const visible = visibleTasks();
+      const renderItems = buildRenderItems(visible);
+      const chartWidth = Math.max(720, (activeMaxOrd - activeMinOrd + 1) * dayWidth());
+      const summary = summarize();
+      const byTask = eventsByTask();
+      const futureWarnings = futureEventWarnings();
+      document.getElementById('generated').textContent = `快照生成：${text(activeSnapshotGeneratedAt)} · ${summary.tasks} 个任务 · ${summary.events} 个事件`;
+      document.getElementById('summary').replaceChildren(...[
+        `Tasks ${summary.tasks}`,
+        `Links ${summary.parent_links}`,
+        `Markers ${summary.events}`,
+        `Todo ${summary.todo}`,
+        `Help ${summary.blocked}`,
+        `Blocked ${summary.stalled}`,
+        `Restart ${summary.restart}`,
+        `In Progress ${summary.in_progress}`,
+        `Completed ${summary.completed}`,
+        `Milestones ${summary.milestones}`
+      ].map(label => {
+        const span = document.createElement('span');
+        span.textContent = label;
+        return span;
+      }));
+      document.getElementById('empty').hidden = tasks.length > 0;
+      const head = document.getElementById('time-head');
+      head.style.width = `${chartWidth}px`;
+      head.replaceChildren();
+      const today = todayOrd();
+      const todayLeft = todayColumnLeft();
+      for (let ord = activeMinOrd; ord <= activeMaxOrd; ord += 1) {
+        const tick = document.createElement('div');
+        const isoDate = isoFromOrd(ord);
+        const classes = ['tick'];
+        const weekend = isWeekendOrd(ord);
+        const holiday = isHolidayDate(isoDate);
+        const isToday = ord === today;
+        if (weekend) classes.push('weekend');
+        if (holiday) classes.push('holiday');
+        if (isToday) classes.push('today');
+        const warning = futureWarnings.get(ord);
+        if (warning) {
+          classes.push('event-warning');
+          tick.style.setProperty('--event-warning-alpha', warning.alpha.toFixed(3));
+        }
+        tick.className = classes.join(' ');
+        const titleParts = [];
+        if (isToday) titleParts.push('今天');
+        if (holiday) titleParts.push('节假日');
+        else if (weekend) titleParts.push('周末');
+        if (warning) titleParts.push(`${warning.daysAway} 天后 · ${warning.count} 个事件`);
+        tick.title = `${isoDate}${titleParts.length ? ` · ${titleParts.join(' · ')}` : ''}`;
+        tick.textContent = shortDate(isoDate);
+        head.append(tick);
+      }
+      const taskRows = document.getElementById('task-rows');
+      const timelineRows = document.getElementById('timeline-rows');
+      taskRows.replaceChildren();
+      timelineRows.replaceChildren();
+      const metrics = new Map();
+      let taskIndex = 0;
+      renderItems.forEach((item, index) => {
+        if (item.kind === 'drop-options') {
+          const row = document.createElement('div');
+          row.className = 'task-row drop-options';
+          row.dataset.taskId = item.target.id;
+          const cell = document.createElement('span');
+          cell.className = 'drop-options-cell';
+          for (const choice of item.choices) {
+            const button = document.createElement('button');
+            button.className = 'drop-choice';
+            button.type = 'button';
+            button.dataset.dropTargetId = item.target.id;
+            button.dataset.dropChoiceKey = choice.key;
+            button.style.marginLeft = `${Math.min(choice.depth, 6) * 10}px`;
+            button.setAttribute('aria-pressed', choice.key === item.selectedKey ? 'true' : 'false');
+            button.title = choice.label;
+            const indent = document.createElement('span');
+            indent.className = 'drop-choice-indent';
+            for (let dot = 0; dot < Math.min(choice.depth, 4); dot += 1) {
+              const square = document.createElement('span');
+              square.className = 'indent-cell';
+              indent.append(square);
+            }
+            const label = document.createElement('span');
+            label.className = 'drop-choice-label';
+            label.textContent = choice.label;
+            button.append(indent, label);
+            cell.append(button);
+          }
+          row.append(cell);
+          taskRows.append(row);
+          const track = document.createElement('div');
+          track.className = 'timeline-row drop-options';
+          track.dataset.taskId = item.target.id;
+          track.style.width = `${chartWidth}px`;
+          applyTodayColumn(track, todayLeft);
+          applyFutureEventColumns(track, futureWarnings);
+          timelineRows.append(track);
+          return;
+        }
+        if (item.kind === 'placeholder') {
+          const row = document.createElement('div');
+          row.className = 'task-row placeholder';
+          const cell = document.createElement('span');
+          cell.className = 'task-main';
+          cell.style.paddingLeft = `${28 + item.depth * 14}px`;
+          cell.textContent = item.mode === 'child' ? '作为子任务放到这里' : '放到这里';
+          row.append(cell, makeCell(''), makeCell(''), makeCell(''));
+          taskRows.append(row);
+          const track = document.createElement('div');
+          track.className = 'timeline-row placeholder';
+          track.style.width = `${chartWidth}px`;
+          applyTodayColumn(track, todayLeft);
+          applyFutureEventColumns(track, futureWarnings);
+          timelineRows.append(track);
+          return;
+        }
+        const task = item.task;
+        const isDropParent = dragState?.drop?.intent === 'child' && dragState.drop.targetId === task.id;
+        const row = document.createElement('div');
+        row.className = `task-row ${isDropParent ? 'drop-parent' : ''}`;
+        row.dataset.taskId = task.id;
+        const buttonCell = document.createElement('span');
+        buttonCell.className = 'task-main';
+        const button = document.createElement('button');
+        button.className = 'row-button';
+        button.type = 'button';
+        button.style.paddingLeft = `${4 + task.depth * 14}px`;
+        button.title = task.title;
+        const chevron = document.createElement('span');
+        chevron.className = 'chevron';
+        chevron.textContent = task.children && task.children.length ? (collapsed.has(task.id) ? '▸' : '▾') : '•';
+        const key = document.createElement('span');
+        key.className = 'task-key';
+        key.textContent = text(task.issue_key);
+        const label = document.createElement('span');
+        label.className = 'task-label';
+        label.textContent = task.title;
+        button.append(chevron, key, label);
+        button.addEventListener('click', event => handleTaskRowClick(event, task));
+        button.addEventListener('dblclick', event => { event.stopPropagation(); editTaskName(task); });
+        button.addEventListener('pointerdown', event => armRowDrag(event, task));
+        buttonCell.append(button);
+        const ownerCell = makeOwnerCell(task);
+        const stateCell = makeCell(stateText(task.state), task.state);
+        const rangeCell = makeCell(monthRange(task), `${text(task.start_date)}→${text(task.target_date)}`);
+        row.append(buttonCell, ownerCell, stateCell, rangeCell);
+        row.addEventListener('click', event => handleTaskRowClick(event, task));
+        taskRows.append(row);
+
+        const track = document.createElement('div');
+        track.className = `timeline-row ${isDropParent ? 'drop-parent' : ''}`;
+        track.dataset.taskId = task.id;
+        track.style.width = `${chartWidth}px`;
+        applyTodayColumn(track, todayLeft);
+        applyFutureEventColumns(track, futureWarnings);
+        const left = offsetForDate(task.start_date);
+        const width = widthForTask(task);
+        const taskEvents = sortedEvents(byTask.get(task.id) || []);
+        const freshnessOpacity = taskFreshnessOpacity(task, byTask);
+        metrics.set(task.id, { left, width, y: index * rowHeight() + rowHeight() / 2 });
+        const bar = document.createElement('button');
+        bar.className = `bar ${task.children && task.children.length ? 'parent' : ''} ${(task.labels || []).includes('blocked') || (task.labels || []).includes('needs-help') ? 'blocked' : ''} ${isDropParent ? 'drop-parent' : ''}`;
+        bar.type = 'button';
+        bar.style.left = `${left}px`;
+        bar.style.width = `${width}px`;
+        if (task.color) bar.style.setProperty('--task-color', task.color);
+        bar.style.backgroundColor = hexToRgba(taskBaseColor(task), freshnessOpacity);
+        const barLabel = document.createElement('span');
+        barLabel.className = 'bar-label';
+        barLabel.textContent = task.compact_label;
+        bar.title = `${task.title} · ${taskStaleTitle(task, byTask)}`;
+        const startHandle = document.createElement('span');
+        startHandle.className = 'bar-handle start';
+        const endHandle = document.createElement('span');
+        endHandle.className = 'bar-handle end';
+        startHandle.addEventListener('pointerdown', event => beginBarResize(event, task, 'start'));
+        endHandle.addEventListener('pointerdown', event => beginBarResize(event, task, 'end'));
+        barLabel.addEventListener('dblclick', event => { event.stopPropagation(); editTaskName(task); });
+        bar.append(startHandle, barLabel, endHandle);
+        bar.addEventListener('click', event => {
+          if (shouldSuppressClick(event)) return;
+          toggleTask(task);
+          showTask(task);
+        });
+        bar.addEventListener('dblclick', event => { event.stopPropagation(); editTaskName(task); });
+        track.append(bar);
+        track.addEventListener('pointerdown', event => {
+          armEventCreate(event, task);
+        });
+        const groupedEvents = new Map();
+        for (const event of taskEvents) {
+          const eventDate = event.date || task.target_date || task.start_date || isoFromOrd(activeMinOrd);
+          if (!groupedEvents.has(eventDate)) groupedEvents.set(eventDate, []);
+          groupedEvents.get(eventDate).push(event);
+        }
+        for (const [eventDate, dateEvents] of groupedEvents) {
+          const stack = document.createElement('div');
+          const stackKey = eventStackKey(task.id, eventDate);
+          const isMulti = dateEvents.length > 1;
+          const isExpanded = isMulti && expandedEventStacks.has(stackKey);
+          stack.className = `event-stack ${isMulti ? 'multi' : ''} ${isMulti ? (isExpanded ? 'expanded' : 'collapsed') : ''}`;
+          stack.dataset.stackKey = stackKey;
+          stack.style.left = `${offsetForDate(eventDate) + (isMulti && !isExpanded ? 1 : 2)}px`;
+          stack.title = `${shortDate(eventDate)} · ${dateEvents.length} event${dateEvents.length > 1 ? 's' : ''}`;
+          if (isMulti && !isExpanded) {
+            const collapsedWidth = Math.max(16, Math.min(dayWidth() - 2, markerSize() * 1.4));
+            const visualSize = Math.max(12, Math.min(markerSize(), collapsedWidth / Math.max(1.4, 1 + (dateEvents.length - 1) * 0.22)));
+            const step = dateEvents.length <= 1 ? 0 : (collapsedWidth - visualSize) / (dateEvents.length - 1);
+            stack.style.width = `${collapsedWidth}px`;
+            stack.style.height = `${Math.max(visualSize + 4, 18)}px`;
+            stack.style.setProperty('--stack-marker-size', `${visualSize}px`);
+            dateEvents.forEach((event, markerIndex) => {
+              const marker = createMarker(event, stackKey, true);
+              marker.style.left = `${step * markerIndex}px`;
+              marker.style.zIndex = String(markerIndex + 1);
+              stack.append(marker);
+            });
+            stack.addEventListener('click', eventObject => {
+              if (shouldSuppressClick(eventObject)) return;
+              eventObject.preventDefault();
+              eventObject.stopPropagation();
+              expandEventStack(stackKey);
+            });
+          } else {
+            stack.style.removeProperty('--stack-marker-size');
+            if (isMulti) {
+              const collapse = document.createElement('button');
+              collapse.className = 'stack-collapse';
+              collapse.type = 'button';
+              collapse.title = '折叠';
+              collapse.setAttribute('aria-label', '折叠同日事件');
+              collapse.textContent = '‹';
+              collapse.addEventListener('click', eventObject => {
+                eventObject.preventDefault();
+                eventObject.stopPropagation();
+                collapseEventStack(stackKey);
+              });
+              stack.append(collapse);
+            }
+            for (const event of dateEvents) stack.append(createMarker(event, stackKey, false));
+          }
+          track.append(stack);
+        }
+        timelineRows.append(track);
+        taskIndex += 1;
+      });
+      const connectorLayer = document.getElementById('connector-layer');
+      connectorLayer.setAttribute('width', chartWidth);
+      connectorLayer.setAttribute('height', Math.max(renderItems.length * rowHeight(), 1));
+      connectorLayer.style.width = `${chartWidth}px`;
+      connectorLayer.style.height = `${Math.max(renderItems.length * rowHeight(), 1)}px`;
+      connectorLayer.replaceChildren();
+      const visibleIds = new Set(visible.map(task => task.id));
+      const childrenByParent = new Map();
+      for (const task of visible) {
+        if (!task.parent_id || !visibleIds.has(task.parent_id)) continue;
+        if (!childrenByParent.has(task.parent_id)) childrenByParent.set(task.parent_id, []);
+        childrenByParent.get(task.parent_id).push(task);
+      }
+      for (const [parentId, children] of childrenByParent) {
+        const parentMetric = metrics.get(parentId);
+        if (!parentMetric) continue;
+        const parentX = parentMetric.left + 10;
+        const parentY = parentMetric.y;
+        const childMetrics = children
+          .map(child => ({ child, metric: metrics.get(child.id) }))
+          .filter(item => item.metric)
+          .sort((a, b) => a.metric.y - b.metric.y);
+        if (!childMetrics.length) continue;
+        const trunkX = Math.min(parentX + 22, ...childMetrics.map(item => item.metric.left + 8));
+        const parts = [`M ${parentX} ${parentY} H ${trunkX}`];
+        for (const item of childMetrics) {
+          const childX = item.metric.left + 8;
+          const childY = item.metric.y;
+          parts.push(`V ${childY} H ${childX}`);
+          parts.push(`M ${trunkX} ${childY}`);
+        }
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('class', 'connector');
+        path.setAttribute('d', parts.join(' '));
+        connectorLayer.append(path);
+      }
+      updateBarLabelPositions();
+      centerTodayOnce();
+    }
+    document.getElementById('density-dense').addEventListener('click', () => setDensity('dense'));
+    document.getElementById('density-present').addEventListener('click', () => setDensity('present'));
+    document.getElementById('expand-all').addEventListener('click', () => { collapsed.clear(); render(); });
+    document.getElementById('collapse-all').addEventListener('click', () => {
+      collapsed.clear();
+      for (const task of tasks) if (task.children && task.children.length) collapsed.add(task.id);
+      render();
+    });
+    document.getElementById('refresh').addEventListener('click', () => location.reload());
+    document.getElementById('push-edits').addEventListener('click', pushEdits);
+    document.getElementById('export-portable').addEventListener('click', exportPortablePackage);
+    document.getElementById('export-report').addEventListener('click', exportReport);
+    setupPortableImportDrop();
+    document.getElementById('add-task').addEventListener('click', addTaskBar);
+    document.getElementById('add-event').addEventListener('click', addEventFromButton);
+    document.getElementById('clear-data').addEventListener('click', clearAllData);
+    document.getElementById('marker-demo').addEventListener('click', addDemoEvents);
+    document.getElementById('reset-edits').addEventListener('click', () => {
+      if (!confirm('清除本页本地修改？不会影响外部系统数据。')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      tasks = clone(gantt.tasks);
+      events = clone(gantt.events);
+      attachments = clone(gantt.attachments || []);
+      deletedAttachmentIds.clear();
+      selectedTaskId = null;
+      collapsed.clear();
+      closeDetail();
+      render();
+    });
+    document.getElementById('detail-close').addEventListener('click', () => {
+      closeDetail();
+    });
+    document.getElementById('detail-subpanel-back').addEventListener('click', () => {
+      closeDetailSubpanel();
+    });
+    document.getElementById('detail-subpanel-close').addEventListener('click', () => {
+      closeDetail();
+    });
+    document.getElementById('lightbox-close').addEventListener('click', closeImagePreview);
+    document.getElementById('image-lightbox').addEventListener('click', event => {
+      if (event.target.id === 'image-lightbox') closeImagePreview();
+    });
+    window.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      if (!document.getElementById('image-lightbox').hidden) closeImagePreview();
+      else if (detailSubpanelOpen) closeDetailSubpanel();
+      else closeDetail();
+    });
+    document.getElementById('timeline-scroll').addEventListener('scroll', updateBarLabelPositions);
+    document.querySelector('.gantt-layout').addEventListener('scroll', updateBarLabelPositions);
+    window.addEventListener('resize', render);
+    initializeGantt();
+  </script>
+</body>
+</html>

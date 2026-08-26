@@ -18,6 +18,12 @@ metrics:
   resolved_issue_targets: 1
   draft_changes: 1
   auth_gate_exit_code: 2
+requirements-completed:
+  - CONV-01
+  - CONV-02
+  - CONV-03
+  - CONV-04
+  - CONV-05
 ---
 
 # Phase 2 Plan 1 Summary
@@ -85,4 +91,3 @@ Phase 3 can use the audit JSON and timeline export as inputs for visualization a
 ## Self-Check: PASSED
 
 All Phase 2 verification commands passed, and the workflow preserves the no-direct-DB-write boundary.
-

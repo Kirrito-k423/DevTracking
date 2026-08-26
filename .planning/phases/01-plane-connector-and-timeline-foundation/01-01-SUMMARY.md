@@ -19,6 +19,12 @@ metrics:
   timeline_rows: 2
   progress_events: 2
   planned_plane_changes: 3
+requirements-completed:
+  - PLANE-01
+  - PLANE-02
+  - PLANE-03
+  - PLANE-04
+  - PLANE-05
 ---
 
 # Phase 1 Plan 1 Summary
